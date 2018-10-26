@@ -274,7 +274,7 @@ begin if is_open then
   w i "let known_%s_repr (v:%s) : bool = %s\n\n" n repr_t unknown_formula;
   ()
 end;
-	w i "type %s =\n" n;
+	w i "type %s : eqtype =\n" n;
 	List.iter (function
 	  | EnumFieldSimple (x, _) ->
 		  w i "  | %s\n" (String.capitalize_ascii x)
@@ -399,7 +399,7 @@ and compile_select o i n tagn tagt taga cl def al =
   let li = get_leninfo n in
   let tn = compile_type tagt in
   w o "friend %s\n\n" (module_name tagt);
-  w i "type %s =\n" n;
+  w i "type %s : eqtype =\n" n;
   List.iter (fun (case, ty) -> w i "  | Case_%s of %s\n" case (compile_type ty)) cl;
   (match def with Some d -> w i "  | Case_Unknown_%s: v:%s_repr{not (known_%s_repr v)} -> %s -> %s\n" tn tn tn (compile_type d) n | _ -> ());
 
@@ -667,7 +667,7 @@ and compile_typedef o i tn fn (ty:type_t) vec def al =
     match vec with
     (* Type aliasing *)
     | VectorNone ->
-      w i "type %s = %s\n\n" n ty0;
+      w i "type %s : eqtype = %s\n\n" n ty0;
       write_api o i is_private MetadataDefault n li.min_len li.max_len;
       w o "noextract let %s_parser = %s\n\n" n (pcombinator_name ty0);
       w o "noextract let %s_serializer = %s\n\n" n (scombinator_name ty0);
@@ -684,7 +684,7 @@ and compile_typedef o i tn fn (ty:type_t) vec def al =
       let (min, max) = li.min_len, li.max_len in
       w i "noextract val %s_bytesize: %s -> GTot nat\n\n" n ty0;
       w o "let %s_bytesize x = Seq.length (LP.serialize %s x)\n\n" n (scombinator_name ty0);
-      w i "type %s = x:%s{let l = %s_bytesize x in %d <= l /\\ l <= %d}\n\n" n ty0 n min max;
+      w i "type %s : eqtype = x:%s{let l = %s_bytesize x in %d <= l /\\ l <= %d}\n\n" n ty0 n min max;
       write_api o i is_private MetadataDefault n (len_len+li.min_len) (len_len+li.max_len);
       w o "type %s' = LP.parse_bounded_vldata_strong_t %d %d %s\n\n" n min max (scombinator_name ty0);
       w o "let _ = assert_norm (%s' == %s)\n\n" n n;
@@ -710,7 +710,7 @@ and compile_typedef o i tn fn (ty:type_t) vec def al =
 
     (* Fixed-length bytes *)
     | VectorFixed k when ty0 = "U8.t" ->
-      w i "type %s = lbytes %d\n\n" n k;
+      w i "type %s : eqtype = lbytes %d\n\n" n k;
       write_api o i is_private MetadataTotal n li.min_len li.max_len;
       w o "noextract let %s_parser = LP.parse_flbytes %d\n\n" n k;
       w o "noextract let %s_serializer = LP.serialize_flbytes %d\n\n" n k;
@@ -721,7 +721,7 @@ and compile_typedef o i tn fn (ty:type_t) vec def al =
     (* Fixed length list *)
     | VectorFixed k when li.min_len = li.max_len ->
       w i "unfold let %s_pred (l:list %s) (n:nat) : GTot Type0 = L.length l == n\n" n ty0;
-      w i "type %s = l:list %s{%s_pred l %d}\n\n" n ty0 n li.min_count;
+      w i "type %s : eqtype = l:list %s{%s_pred l %d}\n\n" n ty0 n li.min_count;
       write_api o i is_private MetadataDefault n li.min_len li.max_len;
       w o "type %s' = LP.array %s %d\n\n" n ty0 li.min_count;
       w o "private let eq () : Lemma (%s' == %s) = admit()\n" n n;
@@ -742,7 +742,7 @@ and compile_typedef o i tn fn (ty:type_t) vec def al =
     | VectorFixed(k) ->
       w i "noextract val %s_list_bytesize: list %s -> GTot nat\n\n" n ty0;
       w o "let %s_list_bytesize x = Seq.length (LP.serialize (LP.serialize_list _ %s) x)\n\n" n (scombinator_name ty0);
-      w i "type %s = l:list %s{%s_list_bytesize == %d}\n\n" n ty0 n k;
+      w i "type %s : eqtype = l:list %s{%s_list_bytesize == %d}\n\n" n ty0 n k;
       write_api o i is_private MetadataDefault n li.min_len li.max_len;
       w o "type %s' = LP.parse_fldata_strong_t (LP.serialize_list _ %s) %d\n\n" n (scombinator_name ty0) k;
       w o "let _ = assert_norm (%s' == %s)\n\n" n n;
@@ -764,7 +764,7 @@ and compile_typedef o i tn fn (ty:type_t) vec def al =
 
     (* Variable length bytes *)
     | VectorRange (low, high) when ty0 = "U8.t" ->
-      w i "type %s = b:bytes{%d <= length b /\\ length b <= %d}\n\n" n low high;
+      w i "type %s : eqtype = b:bytes{%d <= length b /\\ length b <= %d}\n\n" n low high;
       write_api o i is_private MetadataDefault n li.min_len li.max_len;
       w o "noextract let %s_parser = LP.parse_bounded_vlbytes %d %d\n\n" n low high;
       w o "noextract let %s_serializer = LP.serialize_bounded_vlbytes %d %d\n\n" n low high;
@@ -774,7 +774,7 @@ and compile_typedef o i tn fn (ty:type_t) vec def al =
 
     (* Variable length list of fixed-length elements *)
     | VectorRange (low, high) when li.min_len = li.max_len ->
-      w i "type %s = l:list %s{%d <= L.length l /\\ L.length l <= %d}" n ty0 li.min_count li.max_count;
+      w i "type %s : eqtype = l:list %s{%d <= L.length l /\\ L.length l <= %d}" n ty0 li.min_count li.max_count;
       write_api o i is_private MetadataDefault n li.min_len li.max_len;
       w o "let %s_parser =\n" n;
       w o "  [@inline_let] let _ = assert_norm (LP.vldata_vlarray_precond %d %d %s %d %d == true) in\n" low high (pcombinator_name ty0) li.min_count li.max_count;
@@ -793,7 +793,7 @@ and compile_typedef o i tn fn (ty:type_t) vec def al =
       let (min, max) = (li.min_len-li.len_len), (li.max_len-li.len_len) in
       w i "noextract val %s_list_bytesize: list %s -> GTot nat\n\n" n ty0;
       w o "let %s_list_bytesize x = Seq.length (LP.serialize (LP.serialize_list _ %s) x)\n\n" n (scombinator_name ty0);
-      w i "type %s = l:list %s{let x = %s_list_bytesize l in %d <= x /\\ x <= %d}\n\n" n ty0 n min max;
+      w i "type %s : eqtype = l:list %s{let x = %s_list_bytesize l in %d <= x /\\ x <= %d}\n\n" n ty0 n min max;
       write_api o i is_private MetadataDefault n li.min_len li.max_len;
       w o "type %s' = LP.parse_bounded_vldata_strong_t %d %d (LP.serialize_list _ %s)\n\n" n min max (scombinator_name ty0);
       w o "let _ = assert_norm (%s' == %s)\n\n" n n;
@@ -834,10 +834,10 @@ and compile_struct o i n (fl: struct_field_t list) (al:attr list) =
 
   (* application type *)
   if fields = [] then
-    w i "type %s = lbytes 0\n\n" n
+    w i "type %s : eqtype = lbytes 0\n\n" n
   else
    begin
-    w i "type %s = {\n" n;
+    w i "type %s : eqtype = {\n" n;
     List.iter (fun (fn, ty) ->
       w i "  %s : %s;\n" fn ty) fields;
     w i "}\n\n"
