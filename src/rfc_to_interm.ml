@@ -33,12 +33,11 @@ let rec struct_fields (fields: struct_field_t list) (accu: (string * Interm_ast.
   | [] -> List.rev accu
   | (_, TypeSimple tagt, tagn, VectorNone, None) ::
       (_, ty, n, VectorSymbolic 
-                                                                                        
+                                                                             (*           
 let struc (attrs: attr list) (fields: struct_field_t list) : Interm_ast.struct_type =
   
       
 
-      (*
 let rec prog (src: Rfc_ast.prog) (accu: Interm_ast.prog) : Interm_ast.prog =
   match src with
   | [] -> List.rev accu

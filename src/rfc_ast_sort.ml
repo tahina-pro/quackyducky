@@ -41,15 +41,17 @@ let getdep (p:gemstone_t) : typ list =
   dedup (List.flatten dep)
 
 let sort (p: prog) : prog =
-  let deps = List.map (fun d -> (d, getdep d)) in
+  let deps = List.map (fun d -> (d, getdep d)) p in
   let deps_sorted =
     List.sort
       (fun (d1, dep1) (d2, dep2) ->
-        if d1 = d2
+        let n1 = tname d1 in
+        let n2 = tname d2 in
+        if n1 = n2
         then 0
-        else if List.mem d1 dep2
+        else if List.mem n1 dep2
         then -1
-        else if List.mem d2 dep1
+        else if List.mem n2 dep1
         then 1
         else 0)
       deps

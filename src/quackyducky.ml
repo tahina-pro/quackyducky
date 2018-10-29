@@ -10,6 +10,8 @@ open Rfc_fstar_compiler
 
 let ifile : (string list) ref = ref []
 
+let () = let module M = Lowparse_ast in let module M = Rfc_ast_sort in ()
+
 let print_position outx lexbuf =
 	let pos = lexbuf.lex_curr_p in
 	fprintf outx "%s:%d:%d" pos.pos_fname
