@@ -3,7 +3,7 @@ open Interm_ast
 type vldata_payload_type =
   | VldataAtomic of atomic_type
   | VldataList of atomic_type
-
+                
 type vldata_payload = {
     vldata_payload_type: vldata_payload_type;
     vldata_payload_min: int;
@@ -18,34 +18,28 @@ type simple_type =
   | SimpleFLArray of atomic_type * int
   | SimpleVLArray of atomic_type * int * int
 
-type enum_type = {
-    enum_type_repr_type: integer_type;
-    enum_known_cases: (string * int) list;
-    enum_unknown_key: string option;
-}
-
-type enum = {
-    enum_key_type: ident;
-    enum_repr_type: ident;
-    enum_known_cases: (ident * int) list;
-    enum_is_open: bool;
-  }
-
 type def_type =
   | DefSimple   of simple_type
   | DefStruct   of struct_type
   | DefEnum     of enum
-  | DefEnumType of enum_type
 
+type parser_kind = {
+    parser_kind_min: int;
+    parser_kind_max: int;
+    parser_kind_metadata_total: bool;
+  }
+                 
 type def = {
-    sized_def_type: sized_def_type;
-    sized_def_min: int;
-    sized_def_max: int;
-}
+    def_type: def_type;
+    def_parser_kind: parser_kind;
+  }
 
-type def =
-  | SizedDef of sized_def
-
-type modul = def list
+type modul = (string * def) list
 
 type prog = (string * modul) list
+
+
+type ctxt = {
+    ctxt_curmod: modul;
+    ctxt_prog: prog;
+  }

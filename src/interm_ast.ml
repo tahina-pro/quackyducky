@@ -8,16 +8,9 @@ type ident = {
     ident_id: string;
 }
 
-type enum_type = {
+type enum = {
     enum_repr_type: integer_type;
     enum_known_keys: (string * int) list;
-    enum_unknown_key: string option;
-    enum_known_cases: int list;
-}
-
-type enum = {
-    enum_key_type: ident;
-    enum_known_cases: ident list;
     enum_is_open: bool;
   }
 
@@ -52,9 +45,8 @@ type struct_type = (string * struct_field_type) list
 type def_type =
   | DefSimple   of simple_type
   | DefStruct   of struct_type
-  | DefEnumType of enum_type
   | DefEnum     of enum
 
-type modul = def_type list
+type modul = (string * def_type) list
 
 type prog = (string * modul) list
