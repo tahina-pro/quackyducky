@@ -1055,3 +1055,65 @@ let seq_upd_bw_seq_right
 inline_for_extraction
 let refine_with_tag (#tag_t: Type0) (#data_t: Type0) (tag_of_data: (data_t -> GTot tag_t)) (x: tag_t) : Tot Type0 =
   (y: data_t { tag_of_data y == x } )
+
+(* shortcut notations, formerly abstract *)
+
+let serialized_length
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (s: serializer p)
+  (x: t)
+: GTot nat
+= Seq.length (serialize s x)
+
+let serialized_length_post
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (s: serializer p)
+  (x: t)
+: Lemma
+  (let res = serialized_length s x in
+    k.parser_kind_low <= res /\ (
+    match k.parser_kind_high with
+    | None -> True
+    | Some max -> res <= max
+  ))
+  [SMTPat (serialized_length s x)]
+= ()
+
+let serialized_length_eq
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (s: serializer p)
+  (x: t)
+: Lemma
+  (serialized_length s x == Seq.length (serialize s x))
+= ()
+
+[@"opaque_to_smt"] // to avoid fuel issues, but still enable normalization (thus NOT abstract)
+let rec serialized_list_length (#k: parser_kind) (#t: Type) (#p: parser k t) (s: serializer p) (l: list t) : GTot nat =
+  match l with
+  | [] -> 0
+  | x :: q -> serialized_length s x + serialized_list_length s q
+
+abstract
+let serialized_list_length_nil (#k: parser_kind) (#t: Type) (#p: parser k t) (s: serializer p) : Lemma
+  (serialized_list_length s [] == 0)
+  [SMTPat (serialized_list_length s [])]
+= assert_norm (serialized_list_length s [] == 0)
+
+abstract
+let serialized_list_length_cons (#k: parser_kind) (#t: Type) (#p: parser k t) (s: serializer p) (x: t) (q: list t) : Lemma
+  (serialized_list_length s (x :: q) == serialized_length s x + serialized_list_length s q)
+  [SMTPat (serialized_list_length s (x :: q))]
+= assert_norm (serialized_list_length s (x :: q) == serialized_length s x + serialized_list_length s q)
+
+abstract
+let rec serialized_list_length_append (#k: parser_kind) (#t: Type) (#p: parser k t) (s: serializer p) (l1 l2: list t) : Lemma
+  (serialized_list_length s (List.Tot.append l1 l2) == serialized_list_length s l1 + serialized_list_length s l2)
+= match l1 with
+  | [] -> ()
+  | _ :: q -> serialized_list_length_append s q l2

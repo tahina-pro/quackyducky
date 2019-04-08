@@ -182,34 +182,6 @@ let content_length
   content_length' p h sl pos
 
 abstract
-let serialized_length
-  (#k: parser_kind)
-  (#t: Type)
-  (#p: parser k t)
-  (s: serializer p)
-  (x: t)
-: Ghost nat
-  (requires True)
-  (ensures (fun res ->
-    k.parser_kind_low <= res /\ (
-    match k.parser_kind_high with
-    | None -> True
-    | Some max -> res <= max
-  )))
-= Seq.length (serialize s x)
-
-abstract
-let serialized_length_eq
-  (#k: parser_kind)
-  (#t: Type)
-  (#p: parser k t)
-  (s: serializer p)
-  (x: t)
-: Lemma
-  (serialized_length s x == Seq.length (serialize s x))
-= ()
-
-abstract
 let content_length_eq_gen
   (#rrel #rel: _)
   (#k: parser_kind)
@@ -2892,29 +2864,6 @@ let valid_list_snoc
   valid_list_append p h sl pos1 pos2 pos3
 
 (* size of a list of serialized data (should be taken from serialize_list) *)
-
-abstract
-let rec serialized_list_length (#k: parser_kind) (#t: Type) (#p: parser k t) (s: serializer p) (l: list t) : GTot nat =
-  match l with
-  | [] -> 0
-  | x :: q -> serialized_length s x + serialized_list_length s q
-
-abstract
-let serialized_list_length_nil (#k: parser_kind) (#t: Type) (#p: parser k t) (s: serializer p) : Lemma
-  (serialized_list_length s [] == 0)
-= ()
-
-abstract
-let serialized_list_length_cons (#k: parser_kind) (#t: Type) (#p: parser k t) (s: serializer p) (x: t) (q: list t) : Lemma
-  (serialized_list_length s (x :: q) == serialized_length s x + serialized_list_length s q)
-= ()
-
-abstract
-let rec serialized_list_length_append (#k: parser_kind) (#t: Type) (#p: parser k t) (s: serializer p) (l1 l2: list t) : Lemma
-  (serialized_list_length s (List.Tot.append l1 l2) == serialized_list_length s l1 + serialized_list_length s l2)
-= match l1 with
-  | [] -> ()
-  | _ :: q -> serialized_list_length_append s q l2
 
 abstract
 let rec valid_list_serialized_list_length (#k: parser_kind) (#t: Type) (#p: parser k t) (s: serializer p) (h: HS.mem) (#rrel #rel: _) (input: slice rrel rel) (pos pos' : U32.t) : Lemma
