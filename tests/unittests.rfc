@@ -180,3 +180,5 @@ struct {
 } t27;
 
 struct {} t28;
+
+opaque t29<0..100000 : uint24>;
