@@ -1,6 +1,6 @@
 module LowParse.Spec.DER
 include LowParse.Spec.Int
-include LowParse.Spec.BoundedInt
+include LowParse.Spec.BoundedInt // for bounded_int32
 
 open FStar.Mul
 
@@ -142,12 +142,6 @@ val log256_eq
 : Lemma
   (requires (x > 0 /\ x < 4294967296))
   (ensures (log256 x == log256' x))
-
-let bounded_int32
-  (min: der_length_t)
-  (max: der_length_t { min <= max })
-: Tot Type0
-= (x: U32.t { in_bounds min max x } )
 
 inline_for_extraction
 let tag_of_der_length32'

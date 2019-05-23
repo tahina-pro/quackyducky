@@ -1618,6 +1618,25 @@ and compile_vldata o i is_private n ty li elem_li lenty len_len_min len_len_max 
   (* TODO: lemma about bytesize *)
   ()
 
+and compile_vlbytes o i is_private n ty li lenty len_len_min len_len_max smin smax =
+  let (min, max) = li.min_len, li.max_len in
+  let need_validator = is_private || need_validator li.meta li.min_len li.max_len in
+  let need_jumper = is_private || need_jumper li.min_len li.max_len in
+  w i "type %s = b:bytes{%d <= length b /\\ length b <= %d}\n\n" n smin smax;
+  write_api o i is_private li.meta n min max;
+  w o "noextract let %s_parser = LP.parse_bounded_vlgenbytes %d %d %s\n\n" n smin smax (pcombinator_name lenty);
+  w o "noextract let %s_serializer = LP.serialize_bounded_vlgenbytes %d %d %s\n\n" n smin smax (scombinator_name lenty);
+  write_bytesize o is_private n;
+  wh o "let %s_parser32 = LP.parse32_bounded_vlgenbytes %d %dul %d %dul %s\n\n" n smin smin smax smax (pcombinator32_name lenty);
+  wh o "let %s_serializer32 = LP.serialize32_bounded_vlgenbytes %d %d %s\n\n" n smin smax (scombinator32_name lenty);
+  wh o "let %s_size32 = LP.size32_bounded_vlgenbytes %d %d %s\n\n" n smin smax (size32_name lenty);
+  if need_validator then
+    wl o "let %s_validator = LL.validate_bounded_vlgenbytes %d %dul %d %dul %s %s\n\n" n smin smin smax smax (validator_name lenty) (leaf_reader_name lenty);
+  if need_jumper then begin
+      let jumper_annot = if is_private then sprintf " : LL.jumper %s_parser" n else "" in
+      wl o "let %s_jumper%s = LL.jump_bounded_vlgenbytes %d %d %s %s\n\n" n jumper_annot smin smax (jumper_name lenty) (leaf_reader_name lenty)
+    end
+
 and compile_typedef o i tn fn (ty:type_t) vec def al =
   let n = if tn = "" then String.uncapitalize_ascii fn else tn^"_"^fn in
   let qname = if tn = "" then String.uncapitalize_ascii fn else tn^"@"^fn in
@@ -2017,6 +2036,11 @@ and compile_typedef o i tn fn (ty:type_t) vec def al =
         wl o "let %s_jumper : LL.jumper %s_parser = %s_eq (); LP.coerce (LL.jumper %s_parser) %s'_jumper\n\n" n n n n n
        end;
       ()
+
+    (* Variable length bytes *)
+    | VectorRange (low, high, Some (("asn1_len" | "asn1_len8" | "bitcoin_varint") as lenty)) -> (* TODO: generalize once parse_bounded_integer is refactored into a parser to bounded_int32 in LowParse *)
+       let (len_len_min, len_len_max, smax) = basic_bounds lenty in
+       compile_vlbytes o i is_private n ty li lenty len_len_min len_len_max low high
 
     (* Variable length bytes *)
     | VectorRange (low, high, repr)
