@@ -189,3 +189,15 @@ let write_u16_le =
 
 let write_u32_le =
   write_synth write_bounded_integer_le_4 synth_u32_le synth_u32_le_recip (fun x -> synth_u32_le_recip x) ()
+
+let validate_bounded_int32 min32 max32 #k #p v r =
+  validate_filter v r (in_bounds (U32.v min32) (U32.v max32)) (fun x -> not (x `U32.lt` min32 || max32 `U32.lt` x))
+
+let jump_bounded_int32 min32 max32 #k #p j =
+  jump_filter j (in_bounds (U32.v min32) (U32.v max32))
+
+let read_bounded_int32 min32 max32 #k #p r =
+  read_filter r (in_bounds (U32.v min32) (U32.v max32))
+
+let write_bounded_int32 min32 max32 #k #p #s w =
+  write_filter w (in_bounds (U32.v min32) (U32.v max32))

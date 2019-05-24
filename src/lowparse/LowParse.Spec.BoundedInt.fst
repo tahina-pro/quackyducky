@@ -288,3 +288,11 @@ let serialize_bounded_integer_le_4_eq
 = assert_norm (pow2 8 == 256)
 
 #pop-options
+
+let parse_bounded_int32
+  min max #k p
+= parse_filter p (in_bounds min max)
+
+let serialize_bounded_int32
+  min max #k #p s
+= serialize_filter s (in_bounds min max)

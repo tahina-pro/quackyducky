@@ -229,3 +229,12 @@ let serialize32_u32_le =
     serialize32_bounded_integer_le_4
     synth_u32_le_recip
     ()
+
+let parse32_bounded_int32 min32 max32 #k #p p32 =
+  parse32_filter p32 (in_bounds (U32.v min32) (U32.v max32)) (fun x -> not (x `U32.lt` min32 || max32 `U32.lt` x))
+
+let serialize32_bounded_int32 min32 max32 #k #p #s s32 =
+  serialize32_filter s32 (in_bounds (U32.v min32) (U32.v max32))
+
+let size32_bounded_int32 min32 max32 #k #p #s s32 =
+  size32_filter s32 (in_bounds (U32.v min32) (U32.v max32))

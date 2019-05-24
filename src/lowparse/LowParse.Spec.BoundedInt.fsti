@@ -161,3 +161,39 @@ let in_bounds
   (x: U32.t)
 : GTot bool
 = not (U32.v x < min || max < U32.v x)
+
+inline_for_extraction
+let bounded_int32
+  (min: nat)
+  (max: nat { min <= max })
+: Tot Type0
+= (x: U32.t { in_bounds min max x } )
+
+// unfold
+inline_for_extraction
+let parse_bounded_int32_kind (k: parser_kind) : Tot parser_kind =
+  {
+    parser_kind_low = k.parser_kind_low;
+    parser_kind_high = k.parser_kind_high;
+    parser_kind_metadata =
+      begin match k.parser_kind_metadata with
+      | Some ParserKindMetadataFail -> Some ParserKindMetadataFail
+      | _ -> None
+      end;
+    parser_kind_subkind = k.parser_kind_subkind;
+  }
+
+val parse_bounded_int32
+  (min: nat)
+  (max: nat { min <= max })
+  (#k: parser_kind)
+  (p: parser k U32.t)
+: Tot (parser (parse_bounded_int32_kind k) (bounded_int32 min max))
+
+val serialize_bounded_int32
+  (min: nat)
+  (max: nat { min <= max })
+  (#k: parser_kind)
+  (#p: parser k U32.t)
+  (s: serializer p)
+: Tot (serializer (parse_bounded_int32 min max p))

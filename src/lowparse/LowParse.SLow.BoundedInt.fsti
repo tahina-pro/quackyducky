@@ -103,3 +103,33 @@ let size32_u32_le: size32 serialize_u32_le =
   assert_norm (size32_constant_precond serialize_u32_le 4ul);
   size32_constant serialize_u32_le 4ul ()
 
+module U32 = FStar.UInt32
+
+inline_for_extraction
+val parse32_bounded_int32
+  (min32: U32.t)
+  (max32: U32.t { U32.v min32 <= U32.v max32 })
+  (#k: parser_kind)
+  (#p: parser k U32.t)
+  (p32: parser32 p)
+: Tot (parser32 (parse_bounded_int32 (U32.v min32) (U32.v max32) p))
+
+inline_for_extraction
+val serialize32_bounded_int32
+  (min32: U32.t)
+  (max32: U32.t { U32.v min32 <= U32.v max32 })
+  (#k: parser_kind)
+  (#p: parser k U32.t)
+  (#s: serializer p)
+  (s32: serializer32 s)
+: Tot (serializer32 (serialize_bounded_int32 (U32.v min32) (U32.v max32) s))
+
+inline_for_extraction
+val size32_bounded_int32
+  (min32: U32.t)
+  (max32: U32.t { U32.v min32 <= U32.v max32 })
+  (#k: parser_kind)
+  (#p: parser k U32.t)
+  (#s: serializer p)
+  (s32: size32 s)
+: Tot (size32 (serialize_bounded_int32 (U32.v min32) (U32.v max32) s))

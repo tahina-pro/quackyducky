@@ -158,3 +158,41 @@ val write_u16_le : leaf_writer_strong serialize_u16_le
 
 inline_for_extraction
 val write_u32_le : leaf_writer_strong serialize_u32_le
+
+inline_for_extraction
+val validate_bounded_int32
+  (min32: U32.t)
+  (max32: U32.t { U32.v min32 <= U32.v max32 })
+  (#k: parser_kind)
+  (#p: parser k U32.t)
+  (v: validator p)
+  (r: leaf_reader p)
+: Tot (validator (parse_bounded_int32 (U32.v min32) (U32.v max32) p))
+
+inline_for_extraction
+val jump_bounded_int32
+  (min32: U32.t)
+  (max32: U32.t { U32.v min32 <= U32.v max32 })
+  (#k: parser_kind)
+  (#p: parser k U32.t)
+  (v: jumper p)
+: Tot (jumper (parse_bounded_int32 (U32.v min32) (U32.v max32) p))
+
+inline_for_extraction
+val read_bounded_int32
+  (min32: U32.t)
+  (max32: U32.t { U32.v min32 <= U32.v max32 })
+  (#k: parser_kind)
+  (#p: parser k U32.t)
+  (v: leaf_reader p)
+: Tot (leaf_reader (parse_bounded_int32 (U32.v min32) (U32.v max32) p))
+
+inline_for_extraction
+val write_bounded_int32
+  (min32: U32.t)
+  (max32: U32.t { U32.v min32 <= U32.v max32 })
+  (#k: parser_kind)
+  (#p: parser k U32.t)
+  (#s: serializer p)
+  (v: leaf_writer_strong s)
+: Tot (leaf_writer_strong (serialize_bounded_int32 (U32.v min32) (U32.v max32) s))
