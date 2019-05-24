@@ -276,6 +276,14 @@ let parse_bounded_vlgenbytes
 : Tot (parser (parse_bounded_vlgen_kind sk min max parse_all_bytes_kind) (parse_bounded_vlbytes_t min max))
 = parse_bounded_vlgen min max pk serialize_all_bytes `parse_synth` (fun x -> (x <: parse_bounded_vlbytes_t min max))
 
+let parse_bounded_vlgen'bytes
+  (min: nat)
+  (max: nat { min <= max /\ max > 0 /\ max < 4294967296 })
+  (#sk: parser_kind)
+  (pk: parser sk U32.t)
+: Tot (parser (parse_bounded_vlgen_kind (parse_bounded_int32_kind sk) min max parse_all_bytes_kind) (parse_bounded_vlbytes_t min max))
+= parse_bounded_vlgenbytes min max (parse_bounded_int32 min max pk)
+
 let serialize_bounded_vlgenbytes
   (min: nat)
   (max: nat { min <= max /\ max > 0 /\ max < 4294967296 })
@@ -289,6 +297,15 @@ let serialize_bounded_vlgenbytes
     (serialize_bounded_vlgen min max sk serialize_all_bytes)
     (fun x -> x)
     ()
+
+let serialize_bounded_vlgen'bytes
+  (min: nat)
+  (max: nat { min <= max /\ max > 0 /\ max < 4294967296 })
+  (#kk: parser_kind)
+  (#pk: parser kk U32.t)
+  (sk: serializer pk { kk.parser_kind_subkind == Some ParserStrong })
+: Tot (serializer (parse_bounded_vlgen'bytes min max pk))
+= serialize_bounded_vlgenbytes min max (serialize_bounded_int32 min max sk)
 
 (*
 let serialize_bounded_vlbytes_upd

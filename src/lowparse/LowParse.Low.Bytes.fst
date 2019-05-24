@@ -929,6 +929,31 @@ let validate_bounded_vlgenbytes
     ()
 
 inline_for_extraction
+let validate_bounded_vlgen'bytes
+  (vmin: der_length_t)
+  (min: U32.t { U32.v min == vmin } )
+  (vmax: der_length_t { vmax > 0 })
+  (max: U32.t { U32.v max == vmax /\ U32.v min <= U32.v max } )
+  (#kk: parser_kind)
+  (#pk: parser kk U32.t)
+  (vk: validator pk)
+  (rk: leaf_reader pk)
+: Tot (validator (parse_bounded_vlgen'bytes vmin vmax pk))
+= validate_synth
+    (validate_bounded_vlgen'
+      vmin
+      min
+      vmax
+      max
+      vk
+      rk
+      serialize_all_bytes
+      (validate_all_bytes ())
+    )
+    (fun x -> (x <: parse_bounded_vlbytes_t vmin vmax))
+    ()
+
+inline_for_extraction
 let jump_bounded_vlgenbytes
   (vmin: der_length_t)
   (vmax: der_length_t { vmax > 0 /\ vmin <= vmax /\ vmax < 4294967296 })
@@ -948,3 +973,14 @@ let jump_bounded_vlgenbytes
     )
     (fun x -> (x <: parse_bounded_vlbytes_t vmin vmax))
     ()
+
+inline_for_extraction
+let jump_bounded_vlgen'bytes
+  (vmin: der_length_t)
+  (vmax: der_length_t { vmax > 0 /\ vmin <= vmax /\ vmax < 4294967296 })
+  (#kk: parser_kind)
+  (#pk: parser kk U32.t)
+  (vk: jumper pk)
+  (rk: leaf_reader pk)
+: Tot (jumper (parse_bounded_vlgen'bytes vmin vmax pk))
+= jump_bounded_vlgenbytes vmin vmax (jump_bounded_int32 (U32.uint_to_t vmin) (U32.uint_to_t vmax) vk) (read_bounded_int32 (U32.uint_to_t vmin) (U32.uint_to_t vmax) rk)
