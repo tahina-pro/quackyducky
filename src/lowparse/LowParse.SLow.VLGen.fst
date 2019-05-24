@@ -2,6 +2,7 @@ module LowParse.SLow.VLGen
 include LowParse.SLow.Combinators
 include LowParse.SLow.FLData
 include LowParse.Spec.VLGen
+include LowParse.SLow.BoundedInt // for parse32_bounded_int32
 
 module U32 = FStar.UInt32
 module B32 = LowParse.Bytes32
@@ -34,6 +35,23 @@ let parse32_bounded_vlgen
   ) <: (res: _ { parser32_correct (parse_bounded_vlgen (U32.v min) (U32.v max) pk s) input res } ))
 
 inline_for_extraction
+let parse32_bounded_vlgen'
+  (vmin: der_length_t)
+  (min: U32.t { U32.v min == vmin } )
+  (vmax: der_length_t)
+  (max: U32.t { U32.v max == vmax /\ U32.v min <= U32.v max } )
+  (#sk: parser_kind)
+  (#pk: parser sk U32.t)
+  (pk32: parser32 pk)
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (s: serializer p)
+  (p32: parser32 p)
+: Tot (parser32 (parse_bounded_vlgen' (vmin) (vmax) pk s))
+= parse32_bounded_vlgen vmin min vmax max (parse32_bounded_int32 min max pk32) s p32
+
+inline_for_extraction
 let parse32_vlgen
   (vmin: nat)
   (min: U32.t { U32.v min == vmin } )
@@ -53,6 +71,23 @@ let parse32_vlgen
     (synth_vlgen (U32.v min) (U32.v max) s)
     (parse32_bounded_vlgen vmin min vmax max pk32 s p32)
     ()
+
+inline_for_extraction
+let parse32_vlgen'
+  (vmin: nat)
+  (min: U32.t { U32.v min == vmin } )
+  (vmax: nat)
+  (max: U32.t { U32.v max == vmax /\ U32.v min <= U32.v max } )
+  (#sk: parser_kind)
+  (#pk: parser sk U32.t)
+  (pk32: parser32 pk)
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (s: serializer p { parse_vlgen_precond (U32.v min) (U32.v max) k } )
+  (p32: parser32 p)
+: Tot (parser32 (parse_vlgen' vmin vmax pk s))
+= parse32_vlgen vmin min vmax max (parse32_bounded_int32 min max pk32) s p32
 
 let serialize32_bounded_vlgen_precond
   (min: nat)
@@ -92,6 +127,22 @@ let serialize32_bounded_vlgen
   ) <: (res: _ { serializer32_correct (serialize_bounded_vlgen min max ssk s) input res } ))
 
 inline_for_extraction
+let serialize32_bounded_vlgen'
+  (min: nat)
+  (max: nat { min <= max /\ max < 4294967296 } )
+  (#sk: parser_kind)
+  (#pk: parser sk U32.t)
+  (#ssk: serializer pk)
+  (ssk32: serializer32 ssk { sk.parser_kind_subkind == Some ParserStrong } )
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (#s: serializer p)
+  (s32: serializer32 s { serialize32_bounded_vlgen_precond min max sk k } )
+: Tot (serializer32 (serialize_bounded_vlgen' min max ssk s))
+= serialize32_bounded_vlgen min max (serialize32_bounded_int32 (U32.uint_to_t min) (U32.uint_to_t max) ssk32) s32
+
+inline_for_extraction
 let serialize32_vlgen
   (min: nat)
   (max: nat { min <= max /\ max < 4294967296 } )
@@ -112,6 +163,22 @@ let serialize32_vlgen
     (serialize32_bounded_vlgen min max ssk32 s32)
     (synth_vlgen_recip min max s)
     ()
+
+inline_for_extraction
+let serialize32_vlgen'
+  (min: nat)
+  (max: nat { min <= max /\ max < 4294967296 } )
+  (#sk: parser_kind)
+  (#pk: parser sk U32.t)
+  (#ssk: serializer pk)
+  (ssk32: serializer32 ssk { sk.parser_kind_subkind == Some ParserStrong } )
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (#s: serializer p)
+  (s32: serializer32 s { parse_vlgen_precond min max k /\ serialize32_bounded_vlgen_precond min max sk k } )
+: Tot (serializer32 (serialize_vlgen' min max ssk s))
+= serialize32_vlgen min max (serialize32_bounded_int32 (U32.uint_to_t min) (U32.uint_to_t max) ssk32) s32
 
 inline_for_extraction
 let size32_bounded_vlgen
@@ -135,6 +202,22 @@ let size32_bounded_vlgen
   ) <: (res: _ { size32_postcond (serialize_bounded_vlgen min max ssk s) input res } ))
 
 inline_for_extraction
+let size32_bounded_vlgen'
+  (min: nat)
+  (max: nat { min <= max /\ max < 4294967296 } )
+  (#sk: parser_kind)
+  (#pk: parser sk U32.t)
+  (#ssk: serializer pk)
+  (ssk32: size32 ssk { sk.parser_kind_subkind == Some ParserStrong } )
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (#s: serializer p)
+  (s32: size32 s {  serialize32_bounded_vlgen_precond min max sk k } )
+: Tot (size32 (serialize_bounded_vlgen' min max ssk s))
+= size32_bounded_vlgen min max (size32_bounded_int32 (U32.uint_to_t min) (U32.uint_to_t max) ssk32) s32
+
+inline_for_extraction
 let size32_vlgen
   (min: nat)
   (max: nat { min <= max /\ max < 4294967296 } )
@@ -155,3 +238,19 @@ let size32_vlgen
     (size32_bounded_vlgen min max ssk32 s32)
     (synth_vlgen_recip min max s)
     ()
+
+inline_for_extraction
+let size32_vlgen'
+  (min: nat)
+  (max: nat { min <= max /\ max < 4294967296 } )
+  (#sk: parser_kind)
+  (#pk: parser sk U32.t)
+  (#ssk: serializer pk)
+  (ssk32: size32 ssk { sk.parser_kind_subkind == Some ParserStrong } )
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (#s: serializer p)
+  (s32: size32 s { parse_vlgen_precond min max k /\ serialize32_bounded_vlgen_precond min max sk k } )
+: Tot (size32 (serialize_vlgen' min max ssk s))
+= size32_vlgen min max (size32_bounded_int32 (U32.uint_to_t min) (U32.uint_to_t max) ssk32) s32

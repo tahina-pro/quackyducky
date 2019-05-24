@@ -190,6 +190,22 @@ val parse_bounded_int32
   (p: parser k U32.t)
 : Tot (parser (parse_bounded_int32_kind k) (bounded_int32 min max))
 
+val parse_bounded_int32_unfold
+  (min: nat)
+  (max: nat { min <= max })
+  (#k: parser_kind)
+  (p: parser k U32.t)
+  (input: bytes)
+: Lemma
+  (parse (parse_bounded_int32 min max p) input == (
+    match parse p input with
+    | None -> None
+    | Some (n, consumed) ->
+      if in_bounds min max n
+      then Some ((n <: bounded_int32 min max), consumed)
+      else None
+  ))
+
 val serialize_bounded_int32
   (min: nat)
   (max: nat { min <= max })

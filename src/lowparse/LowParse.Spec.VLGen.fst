@@ -210,6 +210,18 @@ let parse_bounded_vlgen_unfold
     then ()
     else Seq.slice_slice input sz (Seq.length input) 0 (U32.v len)
 
+let parse_bounded_vlgen'
+  (min: nat)
+  (max: nat { min <= max /\ max < 4294967296 } )
+  (#sk: parser_kind)
+  (pk: parser sk U32.t)
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (s: serializer p)
+: Tot (parser (parse_bounded_vlgen_kind (parse_bounded_int32_kind sk) min max k) (parse_bounded_vldata_strong_t min max s))
+= parse_bounded_vlgen min max (parse_bounded_int32 min max pk) s
+
 inline_for_extraction
 let synth_vlgen
   (min: nat)
@@ -280,6 +292,18 @@ let parse_vlgen_unfold
     (synth_vlgen min max s)
     input;
   parse_bounded_vlgen_unfold min max pk s input
+
+let parse_vlgen'
+  (min: nat)
+  (max: nat { min <= max /\ max < 4294967296 } )
+  (#sk: parser_kind)
+  (pk: parser sk U32.t)
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (s: serializer p { parse_vlgen_precond min max k })
+: Tot (parser (parse_bounded_vlgen_kind (parse_bounded_int32_kind sk) min max k) t)
+= parse_vlgen min max (parse_bounded_int32 min max pk) s
 
 inline_for_extraction
 let synth_bounded_vlgen_payload_recip
@@ -381,6 +405,19 @@ let serialize_bounded_vlgen_unfold
   let tg : bounded_int32 min max = tag_of_bounded_vlgen_payload min max s input in
   serialize_bounded_vlgen_payload_unfold min max s tg input
 
+let serialize_bounded_vlgen'
+  (min: nat)
+  (max: nat { min <= max /\ max < 4294967296 } )
+  (#sk: parser_kind)
+  (#pk: parser sk U32.t)
+  (ssk: serializer pk { sk.parser_kind_subkind == Some ParserStrong } )
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (s: serializer p)
+: Tot (serializer (parse_bounded_vlgen' min max pk s))
+= serialize_bounded_vlgen min max (serialize_bounded_int32 min max ssk) s
+
 inline_for_extraction
 let synth_vlgen_recip
   (min: nat)
@@ -439,3 +476,16 @@ let serialize_vlgen_unfold
     ()
     input;
   serialize_bounded_vlgen_unfold min max ssk s input
+
+let serialize_vlgen'
+  (min: nat)
+  (max: nat { min <= max /\ max < 4294967296 } )
+  (#sk: parser_kind)
+  (#pk: parser sk U32.t)
+  (ssk: serializer pk { sk.parser_kind_subkind == Some ParserStrong } )
+  (#k: parser_kind)
+  (#t: Type)
+  (#p: parser k t)
+  (s: serializer p { parse_vlgen_precond min max k })
+: Tot (serializer (parse_vlgen' min max pk s))
+= serialize_vlgen min max (serialize_bounded_int32 min max ssk) s

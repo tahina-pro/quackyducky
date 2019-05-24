@@ -293,6 +293,10 @@ let parse_bounded_int32
   min max #k p
 = parse_filter p (in_bounds min max)
 
+let parse_bounded_int32_unfold
+  min max #k p input
+= parse_filter_eq p (in_bounds min max) input
+
 let serialize_bounded_int32
   min max #k #p s
 = serialize_filter s (in_bounds min max)
