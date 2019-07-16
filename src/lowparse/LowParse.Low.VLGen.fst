@@ -56,7 +56,11 @@ let finalize_bounded_vlgen_exact
   (#sk: parser_kind)
   (#pk: parser sk (bounded_int32 (min) (max)))
   (#ssk: serializer pk)
-  (wk: leaf_writer_strong ssk)
+  (wk: leaf_writer_strong ssk {
+    let sz = U32.v sz32 in
+    sk.parser_kind_low == sz /\
+    sk.parser_kind_high == Some sz
+  })
   (#k: parser_kind)
   (#t: Type0)
   (#p: parser k t)
@@ -68,8 +72,6 @@ let finalize_bounded_vlgen_exact
 : HST.Stack unit
   (requires (fun h ->
     let sz = U32.v sz32 in
-    sk.parser_kind_low == sz /\
-    sk.parser_kind_high == Some sz /\
     U32.v pos + sz <= U32.v input.len /\ (
     let pos_payload = pos `U32.add` sz32 in
     valid_exact p h input pos_payload pos' /\ (
@@ -106,7 +108,11 @@ let finalize_bounded_vlgen
   (#sk: parser_kind)
   (#pk: parser sk (bounded_int32 (min) (max)))
   (#ssk: serializer pk)
-  (wk: leaf_writer_strong ssk)
+  (wk: leaf_writer_strong ssk {
+    let sz = U32.v sz32 in
+    sk.parser_kind_low == sz /\
+    sk.parser_kind_high == Some sz
+  })
   (#k: parser_kind)
   (#t: Type0)
   (#p: parser k t)
@@ -118,8 +124,6 @@ let finalize_bounded_vlgen
 : HST.Stack unit
   (requires (fun h ->
     let sz = U32.v sz32 in
-    sk.parser_kind_low == sz /\
-    sk.parser_kind_high == Some sz /\
     U32.v pos + sz <= U32.v input.len /\ (
     let pos_payload = pos `U32.add` U32.uint_to_t sz in
     valid_pos p h input pos_payload pos' /\
@@ -148,9 +152,7 @@ let finalize_bounded_vlgen
 inline_for_extraction
 let validate_bounded_vlgen
   (vmin: der_length_t)
-  (min: U32.t { U32.v min == vmin } )
-  (vmax: der_length_t)
-  (max: U32.t { U32.v max == vmax /\ U32.v min <= U32.v max } )
+  (vmax: der_length_t { vmin <= vmax /\ vmax < 4294967296 })
   (#sk: parser_kind)
   (#pk: parser sk (bounded_int32 (vmin) (vmax)))
   (vk: validator pk)
@@ -164,8 +166,8 @@ let validate_bounded_vlgen
 = fun #rrel #rel input pos ->
   let h = HST.get () in
   [@inline_let] let _ =
-    valid_facts (parse_bounded_vlgen (U32.v min) (U32.v max) pk s) h input pos;
-    parse_bounded_vlgen_unfold (U32.v min) (U32.v max) pk s (bytes_of_slice_from h input pos);
+    valid_facts (parse_bounded_vlgen (vmin) (vmax) pk s) h input pos;
+    parse_bounded_vlgen_unfold (vmin) (vmax) pk s (bytes_of_slice_from h input pos);
     valid_facts pk h input pos
   in
   let n = vk input pos in
@@ -221,7 +223,11 @@ let finalize_vlgen_exact
   (#sk: parser_kind)
   (#pk: parser sk (bounded_int32 (min) (max)))
   (#ssk: serializer pk)
-  (wk: leaf_writer_strong ssk)
+  (wk: leaf_writer_strong ssk {
+    let sz = U32.v sz32 in
+    sk.parser_kind_low == sz /\
+    sk.parser_kind_high == Some sz
+  })
   (#k: parser_kind)
   (#t: Type0)
   (#p: parser k t)
@@ -233,8 +239,6 @@ let finalize_vlgen_exact
 : HST.Stack unit
   (requires (fun h ->
     let sz = U32.v sz32 in
-    sk.parser_kind_low == sz /\
-    sk.parser_kind_high == Some sz /\
     U32.v pos + sz <= U32.v input.len /\ (
     let pos_payload = pos `U32.add` sz32 in
     valid_exact p h input pos_payload pos' /\ (
@@ -271,7 +275,11 @@ let finalize_vlgen
   (#sk: parser_kind)
   (#pk: parser sk (bounded_int32 (min) (max)))
   (#ssk: serializer pk)
-  (wk: leaf_writer_strong ssk)
+  (wk: leaf_writer_strong ssk {
+    let sz = U32.v sz32 in
+    sk.parser_kind_low == sz /\
+    sk.parser_kind_high == Some sz
+  })
   (#k: parser_kind)
   (#t: Type0)
   (#p: parser k t)
@@ -283,8 +291,6 @@ let finalize_vlgen
 : HST.Stack unit
   (requires (fun h ->
     let sz = U32.v sz32 in
-    sk.parser_kind_low == sz /\
-    sk.parser_kind_high == Some sz /\
     U32.v pos + sz <= U32.v input.len /\ (
     let pos_payload = pos `U32.add` U32.uint_to_t sz in
     valid_pos p h input pos_payload pos' /\
@@ -311,9 +317,7 @@ let finalize_vlgen
 inline_for_extraction
 let validate_vlgen
   (vmin: der_length_t)
-  (min: U32.t { U32.v min == vmin } )
-  (vmax: der_length_t)
-  (max: U32.t { U32.v max == vmax /\ U32.v min <= U32.v max } )
+  (vmax: der_length_t { vmin <= vmax /\ vmax < 4294967296 })
   (#sk: parser_kind)
   (#pk: parser sk (bounded_int32 (vmin) (vmax)))
   (vk: validator pk)
@@ -321,12 +325,12 @@ let validate_vlgen
   (#k: parser_kind)
   (#t: Type)
   (#p: parser k t)
-  (s: serializer p { parse_vlgen_precond (U32.v min) (U32.v max) k })
+  (s: serializer p { parse_vlgen_precond (vmin) (vmax) k })
   (v: validator p)
 : Tot (validator (parse_vlgen (vmin) (vmax) pk s))
 = validate_synth
-    (validate_bounded_vlgen vmin min vmax max vk rk s v)
-    (synth_vlgen (U32.v min) (U32.v max) s)
+    (validate_bounded_vlgen vmin vmax vk rk s v)
+    (synth_vlgen (vmin) (vmax) s)
     ()
 
 inline_for_extraction

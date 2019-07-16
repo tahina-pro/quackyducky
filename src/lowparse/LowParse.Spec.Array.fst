@@ -1,6 +1,5 @@
 module LowParse.Spec.Array
-include LowParse.Spec.FLData
-include LowParse.Spec.VLData
+include LowParse.Spec.VLGen
 include LowParse.Spec.List
 
 module Seq = FStar.Seq
@@ -331,12 +330,15 @@ inline_for_extraction
 let parse_vlarray_kind
   (array_byte_size_min: nat)
   (array_byte_size_max: nat { array_byte_size_min <= array_byte_size_max /\ array_byte_size_max > 0 /\ array_byte_size_max < 4294967296 } )
+  (hk: parser_kind)
 : Tot parser_kind
-= parse_bounded_vldata_strong_kind array_byte_size_min array_byte_size_max (log256' array_byte_size_max) parse_list_kind
+= parse_bounded_vlgen_kind hk array_byte_size_min array_byte_size_max parse_list_kind
 
 let parse_vlarray
   (array_byte_size_min: nat)
-  (array_byte_size_max: nat)
+  (array_byte_size_max: nat { array_byte_size_min <= array_byte_size_max } )
+  (#hk: parser_kind)
+  (hp: parser hk (bounded_int32 array_byte_size_min array_byte_size_max))
   (#k: parser_kind)
   (#t: Type0)
   (#p: parser k t)
@@ -346,15 +348,17 @@ let parse_vlarray
   (u: unit {
     vldata_vlarray_precond array_byte_size_min array_byte_size_max p elem_count_min elem_count_max == true  
   })
-: Tot (parser (parse_vlarray_kind array_byte_size_min array_byte_size_max) (vlarray t elem_count_min elem_count_max))
+: Tot (parser (parse_vlarray_kind array_byte_size_min array_byte_size_max hk) (vlarray t elem_count_min elem_count_max))
 = vldata_to_vlarray_inj array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u;
-  parse_bounded_vldata_strong array_byte_size_min array_byte_size_max (serialize_list _ s)
+  parse_bounded_vlgen array_byte_size_min array_byte_size_max hp (serialize_list _ s)
   `parse_synth`
   vldata_to_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u
 
 let parse_vlarray_eq_some
   (array_byte_size_min: nat)
-  (array_byte_size_max: nat)
+  (array_byte_size_max: nat { array_byte_size_min <= array_byte_size_max })
+  (#hk: parser_kind)
+  (hp: parser hk (bounded_int32 array_byte_size_min array_byte_size_max))
   (#k: parser_kind)
   (#t: Type0)
   (#p: parser k t)
@@ -367,14 +371,12 @@ let parse_vlarray_eq_some
   (input: bytes)
 : Lemma
   (requires (
-    Some? (parse (parse_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u) input)
+    Some? (parse (parse_vlarray array_byte_size_min array_byte_size_max hp s elem_count_min elem_count_max u) input)
   ))
   (ensures (
-    let sz = log256' array_byte_size_max in
-    let pi = parse (parse_bounded_integer sz) input in
+    let pi = parse hp input in
     Some? pi /\ (
     let Some (len, c_len) = pi in
-    c_len == sz /\
     array_byte_size_min <= U32.v len /\ U32.v len <= array_byte_size_max /\ (
     let input1 = Seq.slice input c_len (Seq.length input) in
     U32.v len <= Seq.length input1 /\ (
@@ -384,13 +386,13 @@ let parse_vlarray_eq_some
     let Some (l, c_l) = pl in
     c_l == U32.v len /\
     vlarray_pred elem_count_min elem_count_max l /\
-    parse (parse_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u) input == Some (l, c_len + c_l)
+    parse (parse_vlarray array_byte_size_min array_byte_size_max hp s elem_count_min elem_count_max u) input == Some (l, c_len + c_l)
   ))))))
 = 
   parser_kind_prop_equiv k p;
   vldata_to_vlarray_inj array_byte_size_min array_byte_size_max s elem_count_min elem_count_max ();
-  parse_synth_eq (parse_bounded_vldata_strong array_byte_size_min array_byte_size_max (serialize_list _ s)) (vldata_to_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max ()) input;
-  parse_vldata_gen_eq (log256' array_byte_size_max) (in_bounds array_byte_size_min array_byte_size_max) (parse_list p) input;
+  parse_synth_eq (parse_bounded_vlgen array_byte_size_min array_byte_size_max hp (serialize_list _ s)) (vldata_to_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max ()) input;
+  parse_bounded_vlgen_unfold array_byte_size_min array_byte_size_max hp (serialize_list _ s) input;
   parser_kind_prop_equiv parse_list_kind (parse_list p)
 
 let vlarray_to_vldata_correct
@@ -464,7 +466,10 @@ let vlarray_to_vldata_to_vlarray
 
 let serialize_vlarray
   (array_byte_size_min: nat)
-  (array_byte_size_max: nat)
+  (array_byte_size_max: nat { array_byte_size_min <= array_byte_size_max })
+  (#hk: parser_kind)
+  (#hp: parser hk (bounded_int32 array_byte_size_min array_byte_size_max))
+  (hs: serializer hp { hk.parser_kind_subkind == Some ParserStrong } )
   (#k: parser_kind)
   (#t: Type0)
   (#p: parser k t)
@@ -474,19 +479,22 @@ let serialize_vlarray
   (u: unit {
     vldata_vlarray_precond array_byte_size_min array_byte_size_max p elem_count_min elem_count_max == true  
   })
-: Tot (serializer (parse_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u))
+: Tot (serializer (parse_vlarray array_byte_size_min array_byte_size_max hp s elem_count_min elem_count_max u))
 = vldata_to_vlarray_inj array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u;
   vlarray_to_vldata_to_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u;
   serialize_synth
     _
     (vldata_to_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u)
-    (serialize_bounded_vldata_strong array_byte_size_min array_byte_size_max (serialize_list _ s))
+    (serialize_bounded_vlgen array_byte_size_min array_byte_size_max hs (serialize_list _ s))
     (vlarray_to_vldata array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u)
     ()
 
 let length_serialize_vlarray
   (array_byte_size_min: nat)
-  (array_byte_size_max: nat)
+  (array_byte_size_max: nat { array_byte_size_min <= array_byte_size_max })
+  (#hk: parser_kind)
+  (#hp: parser hk (bounded_int32 array_byte_size_min array_byte_size_max))
+  (hs: serializer hp { hk.parser_kind_subkind == Some ParserStrong } )
   (#k: parser_kind)
   (#t: Type0)
   (#p: parser k t)
@@ -498,15 +506,19 @@ let length_serialize_vlarray
   })
   (x: vlarray t elem_count_min elem_count_max)
 : Lemma
-  (Seq.length (serialize (serialize_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u) x) == log256' array_byte_size_max + (L.length x `FStar.Mul.op_Star` k.parser_kind_low))
+  ( let l = L.length x `FStar.Mul.op_Star` k.parser_kind_low in
+    FStar.UInt.fits l 32 /\
+    in_bounds array_byte_size_min array_byte_size_max (U32.uint_to_t l) /\
+    Seq.length (serialize (serialize_vlarray array_byte_size_min array_byte_size_max hs s elem_count_min elem_count_max u) x) == Seq.length (serialize hs (U32.uint_to_t l)) + l)
 = vldata_to_vlarray_inj array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u;
   vlarray_to_vldata_to_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u;
   serialize_synth_eq
     _
     (vldata_to_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u)
-    (serialize_bounded_vldata_strong array_byte_size_min array_byte_size_max (serialize_list _ s))
+    (serialize_bounded_vlgen array_byte_size_min array_byte_size_max hs (serialize_list _ s))
     (vlarray_to_vldata array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u)
     ()
     x
   ;
+  serialize_bounded_vlgen_unfold array_byte_size_min array_byte_size_max hs (serialize_list _ s) x;
   list_length_constant_size_parser_correct p (serialize (serialize_list _ s) x)

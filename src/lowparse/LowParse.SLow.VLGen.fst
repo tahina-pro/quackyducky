@@ -9,11 +9,9 @@ module B32 = LowParse.Bytes32
 inline_for_extraction
 let parse32_bounded_vlgen
   (vmin: der_length_t)
-  (min: U32.t { U32.v min == vmin } )
-  (vmax: der_length_t)
-  (max: U32.t { U32.v max == vmax /\ U32.v min <= U32.v max } )
+  (vmax: der_length_t { vmin <= vmax /\ vmax < 4294967296 } )
   (#sk: parser_kind)
-  (#pk: parser sk (bounded_int32 (U32.v min) (U32.v max)))
+  (#pk: parser sk (bounded_int32 vmin vmax))
   (pk32: parser32 pk)
   (#k: parser_kind)
   (#t: Type)
@@ -23,35 +21,33 @@ let parse32_bounded_vlgen
 : Tot (parser32 (parse_bounded_vlgen (vmin) (vmax) pk s))
 = fun (input: bytes32) -> ((
     [@inline_let]
-    let _ = parse_bounded_vlgen_unfold_aux (U32.v min) (U32.v max) pk s (B32.reveal input) in
+    let _ = parse_bounded_vlgen_unfold_aux (vmin) (vmax) pk s (B32.reveal input) in
     match pk32 input with
     | None -> None
     | Some (sz, consumed) ->
       let input' = B32.slice input consumed (B32.len input) in
       match parse32_fldata_strong s p32 (U32.v sz) sz input' with
       | None -> None
-      | Some (x, consumed') -> Some ((x <: parse_bounded_vldata_strong_t (U32.v min) (U32.v max) s), consumed `U32.add` consumed')
-  ) <: (res: _ { parser32_correct (parse_bounded_vlgen (U32.v min) (U32.v max) pk s) input res } ))
+      | Some (x, consumed') -> Some ((x <: parse_bounded_vldata_strong_t (vmin) (vmax) s), consumed `U32.add` consumed')
+  ) <: (res: _ { parser32_correct (parse_bounded_vlgen (vmin) (vmax) pk s) input res } ))
 
 inline_for_extraction
 let parse32_vlgen
   (vmin: nat)
-  (min: U32.t { U32.v min == vmin } )
-  (vmax: nat)
-  (max: U32.t { U32.v max == vmax /\ U32.v min <= U32.v max } )
+  (vmax: nat { vmin <= vmax /\ vmax < 4294967296 } )
   (#sk: parser_kind)
-  (#pk: parser sk (bounded_int32 (U32.v min) (U32.v max)))
+  (#pk: parser sk (bounded_int32 (vmin) (vmax)))
   (pk32: parser32 pk)
   (#k: parser_kind)
   (#t: Type)
   (#p: parser k t)
-  (s: serializer p { parse_vlgen_precond (U32.v min) (U32.v max) k } )
+  (s: serializer p { parse_vlgen_precond (vmin) (vmax) k } )
   (p32: parser32 p)
 : Tot (parser32 (parse_vlgen (vmin) (vmax) pk s))
 = parse32_synth'
     _
-    (synth_vlgen (U32.v min) (U32.v max) s)
-    (parse32_bounded_vlgen vmin min vmax max pk32 s p32)
+    (synth_vlgen (vmin) (vmax) s)
+    (parse32_bounded_vlgen vmin vmax pk32 s p32)
     ()
 
 let serialize32_bounded_vlgen_precond
@@ -125,13 +121,13 @@ let size32_bounded_vlgen
   (#t: Type)
   (#p: parser k t)
   (#s: serializer p)
-  (s32: size32 s {  serialize32_bounded_vlgen_precond min max sk k } )
+  (s32: size32 s)
 : Tot (size32 (serialize_bounded_vlgen min max ssk s))
 = fun (input: parse_bounded_vldata_strong_t min max s) -> ((
     [@inline_let]
     let _ = serialize_bounded_vlgen_unfold min max ssk s input in
     let sp = s32 input in
-    ssk32 sp `U32.add` sp
+    ssk32 sp `add_overflow` sp
   ) <: (res: _ { size32_postcond (serialize_bounded_vlgen min max ssk s) input res } ))
 
 inline_for_extraction
