@@ -139,7 +139,7 @@ type long_message_specifics =
 | MRetry:
   (unused: bitfield uint8 4) ->
   (odcid: parse_bounded_vlbytes_t 0 20) -> // TODO: change bounds to drop instead of rejecting as invalid
-  // TODO: add retry token (where is its length?)
+  (retry_token: FB.bytes) ->
   long_message_specifics
 
 noeq
@@ -155,6 +155,7 @@ type message_t =
   (key_phase: bool) ->
   // TODO: add destination connection ID (where is its length?)
   (packet_number: parse_bounded_vlbytes_t 1 4) ->
+  (payload: FB.bytes) ->
   message_t
 
 #push-options "--z3rlimit 16"
@@ -315,6 +316,29 @@ let message : bitsum = BitSum
   )
 
 #pop-options
+
+let parse_common_long : parser _ common_long_t =
+  parse_flbytes 4 `nondep_then` (parse_bounded_vlbytes 0 20 `nondep_then` parse_bounded_vlbytes 0 20)
+
+inline_for_extraction
+noextract
+let parse_message_cases
+  (x: bitsum'_key_type message.b)
+: Tot (k: parser_kind & parser k (bitsum_type_of_tag message x))
+= match coerce (bitsum'_key_type header_byte) x with
+  | (| Short, (| (), (| (), (| pn_length, () |) |) |) |) ->
+    (| _, parse_flbytes (U32.v pn_length) `nondep_len` parse_all_bytes |)
+  | (| Long, (| (), (| Initial, (| (), (| pn_length, () |) |) |) |) |) ->
+    // TODO: use LowParse.*.DepLen
+    (| _, parse_common_long `nondep_then` (parse_bounded_vlbytes 0 127 `nondep_then` parse_flbytes (U32.v pn_length)) |)
+
+
+  | (| Long, (| (), (| ZeroRTT, (| (), (| pn_length, () |) |) |) |) |) ->
+    (common_long_t & FB.lbytes (U32.v pn_length))
+  | (| Long, (| (), (| Handshake, (| (), (| pn_length, () |) |) |) |) |) ->
+    (common_long_t & FB.lbytes (U32.v pn_length))
+  | (| Long, (| (), (| Retry, () |) |) |) ->
+    (common_long_t & parse_bounded_vlbytes_t 0 20)
 
 let main
   (argc: Int32.t)
