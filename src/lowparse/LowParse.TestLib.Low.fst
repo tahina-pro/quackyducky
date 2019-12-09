@@ -17,13 +17,13 @@ module M = LowStar.Modifies
     and returns a newly formatted buffer8.  Or it returns None if
     there is a fail to parse. *)
 inline_for_extraction
-type testbuffer_t = (#rrel: _) -> (#rel: _) -> (input: slice rrel rel) -> ST (option (slice rrel rel))
+type testbuffer_t = (#rrel: _) -> (#rel: _) -> (input: slice rrel rel) -> ST (option (s: slice rrel rel & slice_length s))
   (requires(fun h -> live_slice h input))
   (ensures(fun h0 y h1 ->
     M.modifies M.loc_none h0 h1 /\ (
     match y with
     | None -> true
-    | Some out ->
+    | Some (| out, len |) ->
       B.unused_in out.base h0 /\
       live_slice h1 out
   )))
@@ -60,7 +60,7 @@ val beqb: unit -> (#rrel1: _) -> (#rel1: _) -> (#rrel2: _) -> (#rel2: _) -> b1:B
 (** Test one parser+formatter pair against an in-memory buffer of UInt8.t *)
 inline_for_extraction
 noextract
-let test_buffer (t:testbuffer_t) (testname:string) (#rrel #rel: _) (input:slice rrel rel)
+let test_buffer (t:testbuffer_t) (testname:string) (#rrel #rel: _) (input:slice rrel rel) (input_len: slice_length input)
 : ST unit 
 (requires (fun h -> live_slice h input))
 (ensures (fun _ _ _ -> true)) =
@@ -68,9 +68,9 @@ let test_buffer (t:testbuffer_t) (testname:string) (#rrel #rel: _) (input:slice 
   print_string (sprintf "==== Testing buffer %s ====\n" testname);
   let result = t input in
   (match result with
-  | Some output -> (
-    if U32.lte output.len input.len then (
-      if beqb () input.base output.base output.len then
+  | Some (| output, output_len |) -> (
+    if U32.lte output_len input_len then (
+      if beqb () input.base output.base output_len then
         print_string "Formatted data matches original input data\n"
       else (
         print_string "FAIL:  formatted data does not match original input data\n"

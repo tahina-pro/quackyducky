@@ -2125,6 +2125,7 @@ inline_for_extraction
 let validator (#k: parser_kind) (#t: Type) (p: parser k t) : Tot Type =
   (#rrel: _) -> (#rel: _) ->
   (sl: slice rrel rel) ->
+  (len: slice_length sl) ->
   (pos: U32.t) ->
   HST.Stack U32.t
   (requires (fun h -> live_slice h sl /\ U32.v pos <= U32.v sl.len /\ U32.v sl.len <= U32.v validator_max_length))
@@ -2143,6 +2144,7 @@ let validate_bounded_strong_prefix
   (v: validator p)
   (#rrel: _) (#rel: _)
   (sl: slice rrel rel)
+  (len: slice_length sl)
   (pos: U32.t)
 : HST.Stack U32.t
   (requires (fun h ->
@@ -2160,12 +2162,12 @@ let validate_bounded_strong_prefix
     else
       (~ (valid p h sl pos))
   )))
-= if sl.len `U32.lte` validator_max_length
-  then v sl pos
+= if len `U32.lte` validator_max_length
+  then v sl len pos
   else
     let h = HST.get () in
     let sl' = make_slice sl.base validator_max_length in
-    let res = v sl' pos in
+    let res = v sl' validator_max_length pos in
     let phi () : Lemma
       (ensures (
         if U32.v res <= U32.v validator_max_length
@@ -2218,7 +2220,7 @@ let validate
   else
     [@inline_let]
     let sl = make_slice b len in
-    v sl 0ul `U32.lte` validator_max_length
+    v sl len 0ul `U32.lte` validator_max_length
 
 let valid_total_constant_size
   (h: HS.mem)
@@ -2254,10 +2256,10 @@ let validate_total_constant_size
     k.parser_kind_metadata == Some ParserKindMetadataTotal
   })
 : Tot (validator p)
-= fun #rrel #rel (input: slice rrel rel) (pos: U32.t) ->
+= fun #rrel #rel (input: slice rrel rel) len (pos: U32.t) ->
   let h = HST.get () in
   [@inline_let] let _ = valid_total_constant_size h p sz input pos in
-  if U32.lt (input.len `U32.sub` pos) sz
+  if U32.lt (len `U32.sub` pos) sz
   then validator_error_not_enough_data
   else
     pos `U32.add` sz
@@ -2289,12 +2291,12 @@ let validate_weaken
   (#p2: parser k2 t)
   (v2: validator p2 { k1 `is_weaker_than` k2 } )
 : Tot (validator (weaken k1 p2))
-= fun #rrel #rel sl pos ->
+= fun #rrel #rel sl len pos ->
   let h = HST.get () in
   [@inline_let] let _ =
     valid_weaken k1 p2 h sl pos
   in
-  v2 sl pos
+  v2 sl len pos
 
 [@unifier_hint_injective]
 inline_for_extraction
@@ -2687,6 +2689,7 @@ let leaf_writer_weak
 = (x: t) ->
   (#rrel: _) -> (#rel: _) ->
   (sl: slice rrel rel) ->
+  (len: slice_length sl) ->
   (pos: U32.t) ->
   HST.Stack U32.t
   (requires (fun h ->
@@ -2840,8 +2843,8 @@ let leaf_writer_weak_of_strong_constant_size
     k.parser_kind_low < U32.v max_uint32
   ))
 : Tot (leaf_writer_weak s)
-= fun x #rrel #rel input pos ->
-  if (input.len `U32.sub` pos) `U32.lt` sz
+= fun x #rrel #rel input len pos ->
+  if (len `U32.sub` pos) `U32.lt` sz
   then max_uint32
   else begin
     let h = HST.get () in
@@ -2953,6 +2956,7 @@ let copy_weak_with_length
   (src: slice rrel1 rel1) // FIXME: length is useless here
   (spos spos' : U32.t)
   (dst: slice rrel2 rel2)
+  (dst_len: slice_length dst)
   (dpos: U32.t)
 : HST.Stack U32.t
   (requires (fun h ->
@@ -2972,7 +2976,7 @@ let copy_weak_with_length
     else
       valid_content_pos p h' dst dpos (contents p h src spos) dpos'
   )))
-= if (dst.len `U32.sub` dpos) `U32.lt` (spos' `U32.sub` spos)
+= if (dst_len `U32.sub` dpos) `U32.lt` (spos' `U32.sub` spos)
   then max_uint32
   else copy_strong p src spos spos' dst dpos
 
@@ -2986,6 +2990,7 @@ let copy_weak
   (src: slice rrel1 rel1)
   (spos : U32.t)
   (dst: slice rrel2 rel2)
+  (dst_len: slice_length dst)
   (dpos: U32.t)
 : HST.Stack U32.t
   (requires (fun h ->
@@ -3006,7 +3011,7 @@ let copy_weak
       valid_content_pos p h' dst dpos (contents p h src spos) dpos'
   )))
 = let spos' = jmp src spos in
-  copy_weak_with_length p src spos spos' dst dpos
+  copy_weak_with_length p src spos spos' dst dst_len dpos
 
 
 (* lists, to avoid putting LowParse.*.List into the user context *)

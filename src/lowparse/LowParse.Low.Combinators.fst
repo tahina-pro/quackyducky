@@ -75,17 +75,17 @@ let validate_nondep_then
   (p2' : validator p2)
 : Tot (validator (nondep_then p1 p2))
 = fun   (#rrel #rel: _)
-  (input: slice rrel rel) (pos: U32.t) ->
+  (input: slice rrel rel) input_len (pos: U32.t) ->
   let h = HST.get () in
   [@inline_let] let _ = valid_nondep_then h p1 p2 input pos in
-  let pos1 = p1' input pos in
+  let pos1 = p1' input input_len pos in
   if pos1 `U32.gt` validator_max_length
   then begin
     pos1
   end
   else
     [@inline_let] let _ = valid_facts p2 h input pos1 in
-    p2' input pos1
+    p2' input input_len pos1
 
 inline_for_extraction
 let jump_nondep_then
@@ -185,10 +185,10 @@ let validate_synth
   })
 : Tot (validator (parse_synth p1 f2))
 = fun   (#rrel #rel: _)
-  (input: slice rrel rel) (pos: U32.t) ->
+  (input: slice rrel rel) input_len (pos: U32.t) ->
   let h = HST.get () in
   [@inline_let] let _ = valid_synth h p1 f2 input pos in
-  p1' input pos
+  p1' input input_len pos
 
 inline_for_extraction
 let jump_synth
@@ -257,10 +257,10 @@ let validate_dtuple2
   (v2: (x: t1) -> Tot (validator (p2 x)))
 : Tot (validator (parse_dtuple2 p1 p2))
 = fun   (#rrel #rel: _)
-  (input: slice rrel rel) (pos: U32.t) ->
+  (input: slice rrel rel) input_len (pos: U32.t) ->
   let h = HST.get () in
   [@inline_let] let _ = valid_dtuple2 h p1 p2 input pos in
-  let pos1 = v1 input pos in
+  let pos1 = v1 input input_len pos in
   if pos1 `U32.gt` validator_max_length
   then begin
     pos1
@@ -268,7 +268,7 @@ let validate_dtuple2
   else
     let x = r1 input pos in
     [@inline_let] let _ = valid_facts (p2 x) h input pos1 in
-    v2 x input pos1
+    v2 x input input_len pos1
 
 inline_for_extraction
 let jump_dtuple2
@@ -324,7 +324,7 @@ let validate_empty () : Tot (validator parse_empty)
 
 inline_for_extraction
 let validate_false () : Tot (validator parse_false)
-= fun #rrel #rel input pos ->
+= fun #rrel #rel input len pos ->
   let h = HST.get () in
   [@inline_let]
   let _ = valid_facts parse_false h input pos in
@@ -853,10 +853,10 @@ let validate_filter
   (f: (t -> GTot bool))
   (f' : ((x: t) -> Tot (y: bool { y == f x } )))
 : Tot (validator (parse_filter p f))
-= fun #rrel #rel input pos ->
+= fun #rrel #rel input len pos ->
   let h = HST.get () in
   [@inline_let] let _ = valid_filter h p f input pos in
-  let res = v32 input pos in
+  let res = v32 input len pos in
   if res `U32.gt` validator_max_length
   then res
   else
@@ -917,10 +917,10 @@ let write_filter_weak
   (s32: leaf_writer_weak s)
   (f: (t -> GTot bool))
 : Tot (leaf_writer_weak (serialize_filter s f))
-= fun x #rrel #rel input pos ->
+= fun x #rrel #rel input len pos ->
   [@inline_let] let _ = serialized_length_eq s x in
   [@inline_let] let _ = serialized_length_eq (serialize_filter s f) x in 
-  let res = s32 x input pos in
+  let res = s32 x input len pos in
   let h = HST.get () in
   [@inline_let] let _ = valid_filter h p f input pos in
   res
@@ -1005,11 +1005,11 @@ let write_synth_weak
   (g1' : (x2: t2) -> Tot (x1: t1 { x1 == g1 x2 } ))
   (u: squash (synth_injective f2 /\ synth_inverse f2 g1))
 : Tot (leaf_writer_weak (serialize_synth p1 f2 s1 g1 ()))
-= fun x #rrel #rel input pos ->
+= fun x #rrel #rel input len pos ->
   [@inline_let] let _ = serialize_synth_eq p1 f2 s1 g1 () x in
   [@inline_let] let _ = serialized_length_eq (serialize_synth p1 f2 s1 g1 ()) x in
   [@inline_let] let _ = serialized_length_eq s1 (g1 x) in
-  let pos' = s1' (g1' x) input pos in
+  let pos' = s1' (g1' x) input len pos in
   let h = HST.get () in
   [@inline_let] let _ = valid_synth h p1 f2 input pos in
   pos'
@@ -1052,7 +1052,7 @@ let validate_filter_and_then
     and_then_cases_injective p2
   })
 : Tot (validator (parse_filter p1 f `and_then` p2))
-= fun #rrel #rel input pos ->
+= fun #rrel #rel input len pos ->
   let h = HST.get () in
   [@inline_let]
   let _ =
@@ -1062,7 +1062,7 @@ let validate_filter_and_then
     parse_filter_eq p1 f sinput;
     valid_facts p1 h input pos
   in
-  let res = v1 input pos in
+  let res = v1 input len pos in
   if validator_max_length `U32.lt` res
   then res
   else
@@ -1071,7 +1071,7 @@ let validate_filter_and_then
     then
       [@inline_let]
       let _ = valid_facts (p2 va) h input res in
-      v2 va input res
+      v2 va input len res
     else validator_error_generic
 
 inline_for_extraction
@@ -1083,13 +1083,13 @@ let validate_weaken
   (v2: validator p2)
   (sq: squash (k1 `is_weaker_than` k2))
 : Tot (validator (weaken k1 p2))
-= fun #rrel #rel input pos ->
+= fun #rrel #rel input len pos ->
   let h = HST.get () in
   [@inline_let]
   let _ = valid_facts (weaken k1 p2) h input pos in
   [@inline_let]
   let _ = valid_facts p2 h input pos in
-  v2 input pos
+  v2 input len pos
 
 inline_for_extraction
 let jump_weaken
@@ -1117,13 +1117,13 @@ let validate_strengthen
   (v1: validator p1)
   (sq: squash (parser_kind_prop k2 p1))
 : Tot (validator (strengthen k2 p1))
-= fun #rrel #rel input pos ->
+= fun #rrel #rel input len pos ->
   let h = HST.get () in
   [@inline_let]
   let _ = valid_facts (strengthen k2 p1) h input pos in
   [@inline_let]
   let _ = valid_facts p1 h input pos in
-  v1 input pos
+  v1 input len pos
 
 inline_for_extraction
 let validate_compose_context
@@ -1135,7 +1135,7 @@ let validate_compose_context
   (v: ((k: kt1) -> Tot (validator (p k))))
   (k: kt2)
 : Tot (validator (p (f k)))
-= fun #rrel #rel input pos -> v (f k) input pos
+= fun #rrel #rel input len pos -> v (f k) input len pos
 
 inline_for_extraction
 let jump_compose_context

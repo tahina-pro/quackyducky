@@ -145,7 +145,9 @@ let fwriter
   (pout_from0: U32.t)
   (x: t)
 : Tot Type
-= (pout_from: U32.t) ->
+=
+  (sout_len: slice_length sout) ->
+  (pout_from: U32.t) ->
   HST.Stack U32.t
   (requires (fun h ->
     B.modifies (loc_slice_from sout pout_from0) h0 h /\
@@ -206,7 +208,7 @@ let weaken_writer
 : Pure (w' : writer s h1 sout pout_from1 { wvalue w' == wvalue w } )
   (requires (B.modifies (loc_slice_from sout pout_from0) h0 h1 /\ U32.v pout_from0 <= U32.v pout_from1))
   (ensures (fun _ -> True))
-= Writer w.v (fun pout_from -> w.w pout_from)
+= Writer w.v (fun  pout_from -> w.w pout_from)
 
 inline_for_extraction
 noextract
@@ -253,8 +255,8 @@ let write_leaf_cs
   (x: t)
 : Tot (y: writer s h0 sout pout_from0 { wvalue y == x } )
 = Writer (Ghost.hide x)
-  (fun pout_from ->
-    if U32.uint_to_t k.parser_kind_low `U32.gt` (sout.len `U32.sub` pout_from)
+  (fun sout_len pout_from ->
+    if U32.uint_to_t k.parser_kind_low `U32.gt` (sout_len `U32.sub` pout_from)
     then max_uint32
     else w x sout pout_from
   )
@@ -271,7 +273,8 @@ let flwriter
   (pout_from0: U32.t)
   (x: list t)
 : Tot Type
-= (pout_from: U32.t) ->
+= (sout_len: slice_length sout) ->
+  (pout_from: U32.t) ->
   HST.Stack U32.t
   (requires (fun h ->
     live_slice h sout /\
@@ -364,7 +367,7 @@ let lwriter_nil
   (pout_from0: U32.t)
 : Tot (x: lwriter s h0 sout pout_from0 { lwvalue x == [] })
 = LWriter (Ghost.hide  [])
-  (fun pout_from ->
+  (fun sout_len pout_from ->
     let h = HST.get () in
     valid_list_nil p h sout pout_from;
     pout_from
@@ -383,8 +386,8 @@ let lwriter_singleton
   (w: writer s h0 sout pout_from0)
 : Tot (x: lwriter s h0 sout pout_from0 { lwvalue x == [wvalue w] } )
 = LWriter (Ghost.hide [wvalue w])
-  (fun pout_from ->
-    let res = write w pout_from in
+  (fun sout_len pout_from ->
+    let res = write w sout_len pout_from in
     if res `U32.lt` max_uint32
     then begin
       let h = HST.get () in
@@ -413,14 +416,14 @@ let lwriter_append
   (#pout_from0: U32.t)
   (w1 w2: lwriter s h0 sout pout_from0)
 : Tot (x: lwriter s h0 sout pout_from0 { lwvalue x == lwvalue w1 `List.Tot.append` lwvalue w2 } )
-= LWriter (Ghost.hide (lwvalue w1 `List.Tot.append` lwvalue w2)) (fun pout_from ->
-    let res1 = lwrite w1 pout_from in
+= LWriter (Ghost.hide (lwvalue w1 `List.Tot.append` lwvalue w2)) (fun sout_len pout_from ->
+    let res1 = lwrite w1 sout_len pout_from in
     Classical.forall_intro_2 (serialized_list_length_append s);
     if res1 = max_uint32
     then
       res1
     else begin
-      let res2 = lwrite w2 res1 in
+      let res2 = lwrite w2 sout_len res1 in
       let h = HST.get () in
       valid_list_serialized_list_length s h sout pout_from res1;
       if res2 `U32.lt` (max_uint32)
@@ -480,7 +483,7 @@ let lwriter_list_map
     Tot (y: writer s2 h0 sout pout_from0 { wvalue y == f (contents p1 h0 sin pos) })
   ))
 : Tot (x: lwriter s2 h0 sout pout_from0 { lwvalue x == List.Tot.map f (contents_list p1 h0 sin pin_from pin_to) } )
-= LWriter (Ghost.hide (List.Tot.map f (contents_list p1 h0 sin pin_from pin_to))) (fun pout_from ->
+= LWriter (Ghost.hide (List.Tot.map f (contents_list p1 h0 sin pin_from pin_to))) (fun sout_len pout_from ->
     assert (k1.parser_kind_subkind == Some ParserStrong);
     let h = HST.get () in
     list_map
@@ -492,7 +495,7 @@ let lwriter_list_map
       sout pout_from
       (fun pin_ pout_ ->
         valid_pos_frame_strong p1 h0 sin pin_ (get_valid_pos p1 h sin pin_) (loc_slice_from sout pout_from0) h;
-        write (f' pin_) pout_
+        write (f' pin_) sout_len pout_
       )
   )
 
@@ -511,7 +514,8 @@ let fowriter
   (pout_from0: U32.t)
   (x: option t)
 : Tot Type
-= (pout_from: U32.t) ->
+= (sout_len: slice_length sout) ->
+  (pout_from: U32.t) ->
   HST.Stack U32.t
   (requires (fun h ->
     B.modifies (loc_slice_from sout pout_from0) h0 h /\

@@ -25,14 +25,14 @@ noeq
 inline_for_extraction
 type slice (rrel rel: srel byte) = {
   base: B.mbuffer byte (buffer_srel_of_srel rrel) (buffer_srel_of_srel rel);
-  len: (len: U32.t { U32.v len <= B.length base } );
+  len: (len: Ghost.erased U32.t { U32.v (Ghost.reveal len) <= B.length base } );
 }
 
 inline_for_extraction
 let make_slice
   (#rrel #rel: _)
   (b: B.mbuffer byte rrel rel)
-  (len: U32.t { U32.v len <= B.length b } )
+  (len: Ghost.erased U32.t { U32.v len <= B.length b } )
 : Tot (slice (srel_of_buffer_srel rrel) (srel_of_buffer_srel rel))
 = {
   base = b;
@@ -44,7 +44,7 @@ let live_slice  (#rrel #rel: _) (h: HS.mem) (s: slice rrel rel) : GTot Type0 = B
 let bytes_of_slice_from   (#rrel #rel: _)
   (h: HS.mem) (s: slice rrel rel) (pos: U32.t) : GTot bytes =
   if (U32.v pos <= U32.v s.len)
-  then Seq.slice (B.as_seq h s.base) (U32.v pos) (U32.v s.len)  
+  then Seq.slice (B.as_seq h s.base) (U32.v pos) (U32.v s.len)
   else Seq.empty
 
 let loc_slice_from_to (#rrel #rel: _) (s: slice rrel rel) (pos pos' : U32.t) : GTot B.loc =
@@ -52,3 +52,7 @@ let loc_slice_from_to (#rrel #rel: _) (s: slice rrel rel) (pos pos' : U32.t) : G
 
 let loc_slice_from (#rrel #rel: _) (s: slice rrel rel) (pos: U32.t) : GTot B.loc =
   loc_slice_from_to s pos s.len
+
+inline_for_extraction
+let slice_length #rrel #rel (s: slice rrel rel) : Tot Type0 =
+  (len: U32.t { len == Ghost.reveal s.len })
