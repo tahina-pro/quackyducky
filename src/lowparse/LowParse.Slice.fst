@@ -21,12 +21,34 @@ let buffer_srel_of_srel_of_buffer_srel (#a: Type) (s: B.srel a) : Lemma
   [SMTPat (buffer_srel_of_srel (srel_of_buffer_srel s))]
 = ()
 
+inline_for_extraction
+noextract
+let cslice_len_t
+  (#rrel #rel: srel byte)
+  (base: B.mbuffer byte (buffer_srel_of_srel rrel) (buffer_srel_of_srel rel))
+: Tot Type0
+= (len: U32.t { U32.v len <= B.length base } )
+
+inline_for_extraction
+noextract
+let slice_len_t
+  (#rrel #rel: srel byte)
+  (base: B.mbuffer byte (buffer_srel_of_srel rrel) (buffer_srel_of_srel rel))
+: Tot Type0
+= Ghost.erased (cslice_len_t base)
+
 noeq
 inline_for_extraction
-type slice (rrel rel: srel byte) = {
+type _slice (rrel rel: srel byte) (len_t: (B.mbuffer byte (buffer_srel_of_srel rrel) (buffer_srel_of_srel rel) -> Tot Type0)) = {
   base: B.mbuffer byte (buffer_srel_of_srel rrel) (buffer_srel_of_srel rel);
-  len: (len: U32.t { U32.v len <= B.length base } );
+  len: len_t base;
 }
+
+inline_for_extraction
+let slice (rrel rel: srel byte) : Tot Type0 = _slice rrel rel slice_len_t
+
+inline_for_extraction
+let cslice (rrel rel: srel byte) : Tot Type0 = _slice rrel rel cslice_len_t
 
 inline_for_extraction
 let make_slice
@@ -34,6 +56,17 @@ let make_slice
   (b: B.mbuffer byte rrel rel)
   (len: U32.t { U32.v len <= B.length b } )
 : Tot (slice (srel_of_buffer_srel rrel) (srel_of_buffer_srel rel))
+= {
+  base = b;
+  len = Ghost.hide len;
+}
+
+inline_for_extraction
+let make_cslice
+  (#rrel #rel: _)
+  (b: B.mbuffer byte rrel rel)
+  (len: U32.t { U32.v len <= B.length b } )
+: Tot (cslice (srel_of_buffer_srel rrel) (srel_of_buffer_srel rel))
 = {
   base = b;
   len = len;
@@ -52,3 +85,10 @@ let loc_slice_from_to (#rrel #rel: _) (s: slice rrel rel) (pos pos' : U32.t) : G
 
 let loc_slice_from (#rrel #rel: _) (s: slice rrel rel) (pos: U32.t) : GTot B.loc =
   loc_slice_from_to s pos s.len
+
+inline_for_extraction
+let slice_of_cslice
+  #rrel #rel
+  (s: cslice rrel rel)
+: Tot (slice rrel rel)
+= make_slice s.base s.len

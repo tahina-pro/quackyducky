@@ -2124,17 +2124,17 @@ let validator_error_not_enough_data : validator_error = normalize_term (validato
 inline_for_extraction
 let validator (#k: parser_kind) (#t: Type) (p: parser k t) : Tot Type =
   (#rrel: _) -> (#rel: _) ->
-  (sl: slice rrel rel) ->
+  (sl: cslice rrel rel) ->
   (pos: U32.t) ->
   HST.Stack U32.t
-  (requires (fun h -> live_slice h sl /\ U32.v pos <= U32.v sl.len /\ U32.v sl.len <= U32.v validator_max_length))
+  (requires (fun h -> live_slice h (slice_of_cslice sl) /\ U32.v pos <= U32.v sl.len /\ U32.v sl.len <= U32.v validator_max_length))
   (ensures (fun h res h' ->
     B.modifies B.loc_none h h' /\ (
     if U32.v res <= U32.v validator_max_length
     then
-      valid_pos p h sl pos res
+      valid_pos p h (slice_of_cslice sl) pos res
     else
-      (~ (valid p h sl pos))
+      (~ (valid p h (slice_of_cslice sl) pos))
   )))
 
 inline_for_extraction
@@ -2142,11 +2142,11 @@ let validate_bounded_strong_prefix
   (#k: parser_kind) (#t: Type) (#p: parser k t)
   (v: validator p)
   (#rrel: _) (#rel: _)
-  (sl: slice rrel rel)
+  (sl: cslice rrel rel)
   (pos: U32.t)
 : HST.Stack U32.t
   (requires (fun h ->
-    live_slice h sl /\
+    live_slice h (slice_of_cslice sl) /\
     Some? k.parser_kind_high /\
     U32.v pos <= U32.v sl.len /\
     U32.v pos + Some?.v k.parser_kind_high <= U32.v validator_max_length /\
@@ -2156,7 +2156,7 @@ let validate_bounded_strong_prefix
     B.modifies B.loc_none h h' /\ (
     if U32.v res <= U32.v validator_max_length
     then
-      valid_pos p h sl pos res
+      valid_pos p h (slice_of_cslice sl) pos res
     else
       (~ (valid p h sl pos))
   )))
