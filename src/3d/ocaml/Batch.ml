@@ -106,7 +106,10 @@ let krml_args0 = OS.getenv_array "EVERPARSE_KREMLIN_OPTIONS"
 
 let all_krmls_in_dir
   dir
-= let h = Unix.opendir dir in
+=
+  print_endline (Printf.sprintf "About to opendir: %s" dir);
+  let h = Unix.opendir dir in
+  print_endline (Printf.sprintf "Just opendir: %s" dir);
   let rec aux accu =
     match
       begin try
