@@ -482,7 +482,13 @@ let parse_dep_pair_with_terminator
   (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
   (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
 : Tot (LP.parser (parse_dep_pair_with_terminator_kind kt) (dep_pair_with_terminator terminator pl))
-= LowParse.Spec.Combinators.parse_dtuple2 pt (augment_with_terminator terminator pl f)
+= LowParse.Spec.Combinators.parse_dtuple2
+    #kt
+    #t
+    pt
+    #parse_dep_pair_with_terminator_payload_kind
+    #(augment_with_terminator_type terminator pl)
+    (augment_with_terminator terminator pl f)
 
 let parse_list_dep_pair_with_terminator
   (#nz: bool)
@@ -495,6 +501,54 @@ let parse_list_dep_pair_with_terminator
   (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
 : Tot (LP.parser LowParse.Spec.List.parse_list_kind (list (dep_pair_with_terminator terminator pl)))
 = LowParse.Spec.List.parse_list (parse_dep_pair_with_terminator pt terminator pl f)
+
+#push-options "--fuel 2" // for append
+
+let rec parse_list_dep_pair_with_terminator_only_last
+  (#nz: bool)
+  (#kt: parser_kind nz)
+  (#t: eqtype)
+  (pt: LP.parser kt t)
+  (terminator: t)
+  (#k: LP.parser_kind)
+  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
+  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+  (b: LP.bytes)
+  (l1: list (dep_pair_with_terminator terminator pl))
+  (z: zeros_t)
+  (l2: list (dep_pair_with_terminator terminator pl))
+: Lemma
+  (requires (
+    match LP.parse (parse_list_dep_pair_with_terminator pt terminator pl f) b with
+    | None -> False
+    | Some (l, _) -> l == l1 `FStar.List.Tot.append` ((| terminator, z |) :: l2)
+  ))
+  (ensures (Nil? l2))
+  (decreases l1)
+=
+  LowParse.Spec.List.parse_list_eq (parse_dep_pair_with_terminator pt terminator pl f) b;
+  let Some (_, consumed) = LP.parse (parse_dep_pair_with_terminator pt terminator pl f) b in
+  let b' = Seq.slice b consumed (Seq.length b) in
+  LowParse.Spec.Combinators.parse_dtuple2_eq'
+    #kt
+    #t
+    pt
+    #parse_dep_pair_with_terminator_payload_kind
+    #(augment_with_terminator_type terminator pl)
+    (augment_with_terminator terminator pl f) 
+    b
+  ;
+  LP.parser_kind_prop_equiv LowParse.Spec.List.parse_list_kind parse_zeros;
+  LowParse.Spec.List.parse_list_eq (parse_dep_pair_with_terminator pt terminator pl f) b';
+  match l1 with
+  | [] -> ()
+  | x :: l1' ->
+    let (| hd, tl |) = x in
+    if hd = terminator
+    then ()
+    else parse_list_dep_pair_with_terminator_only_last pt terminator pl f b' l1' z l2
+
+#pop-options
 
 inline_for_extraction
 noextract
