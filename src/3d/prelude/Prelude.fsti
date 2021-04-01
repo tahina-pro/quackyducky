@@ -153,7 +153,7 @@ noextract
 val kind_t_at_most : parser_kind false
 
 inline_for_extraction noextract
-val parse_t_at_most (n:U32.t) (#k:parser_kind true) (#t:_) (p:parser k t)
+val parse_t_at_most (n:U32.t) (#nz: bool) (#k:parser_kind nz) (#t:_) (p:parser k t)
   : Tot (parser kind_t_at_most (t_at_most n t))
 
 ////////////////////////////////////////////////////////////////////////////////

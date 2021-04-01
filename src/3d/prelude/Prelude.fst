@@ -169,7 +169,7 @@ module B32 = FStar.Bytes
 let t_at_most (n:U32.t) (t:Type) = t & B32.bytes
 let kind_t_at_most : parser_kind false = kind_nlist
 inline_for_extraction noextract
-let parse_t_at_most (n:U32.t) (#k:parser_kind true) #t (p:parser k t)
+let parse_t_at_most' (n:U32.t) (#k:LP.parser_kind) #t (p:LP.parser k t)
   : Tot (parser kind_t_at_most (t_at_most n t))
   = let open LowParse.Spec.FLData in
     let open LowParse.Spec.List in
@@ -181,11 +181,16 @@ let parse_t_at_most (n:U32.t) (#k:parser_kind true) #t (p:parser k t)
             #false
             kind_t_at_most
 
+let parse_t_at_most
+  n #nz #k #t p
+=
+  parse_t_at_most' n p
+
 ////////////////////////////////////////////////////////////////////////////////
 let t_exact (n:U32.t) (t:Type) = t
 let kind_t_exact : parser_kind false = kind_nlist
 inline_for_extraction noextract
-let parse_t_exact (n:U32.t) (#nz:bool) (#k:parser_kind nz) #t (p:parser k t)
+let parse_t_exact' (n:U32.t) (#k:LP.parser_kind) #t (p:LP.parser k t)
   : Tot (parser kind_t_exact (t_exact n t))
   = let open LowParse.Spec.FLData in
     let open LowParse.Spec.List in
@@ -196,6 +201,10 @@ let parse_t_exact (n:U32.t) (#nz:bool) (#k:parser_kind nz) #t (p:parser k t)
                 (U32.v n))
             #false
             kind_t_exact
+let parse_t_exact
+  n #nz #k #t p
+=
+  parse_t_exact' n p
 
 ////////////////////////////////////////////////////////////////////////////////
 // Readers
@@ -395,6 +404,120 @@ let parse_string
 =
   LowParse.Spec.Base.parser_kind_prop_equiv k p;
   LP.weaken parse_string_kind (LUT.parse_list_up_to (cond_string_up_to terminator) p (fun _ _ _ -> ()))
+
+inline_for_extraction noextract
+let is_zero (x: FStar.UInt8.t) : Tot bool = x = 0uy
+
+inline_for_extraction noextract
+let zeros_t = list (LowParse.Spec.Combinators.parse_filter_refine is_zero)
+
+let parse_zeros : LP.parser LowParse.Spec.List.parse_list_kind zeros_t = LowParse.Spec.List.parse_list (LowParse.Spec.Combinators.parse_filter LowParse.Spec.Int.parse_u8 _)
+
+inline_for_extraction noextract
+let is_not_terminator
+  (#t: eqtype)
+  (terminator: t)
+  (x: t)
+: Tot bool
+= x <> terminator
+
+inline_for_extraction
+noextract
+let augment_with_terminator_type
+  (#t: eqtype)
+  (terminator: t)
+  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
+  (x: t)
+: Tot Type
+= if x = terminator
+  then zeros_t
+  else f x
+
+inline_for_extraction
+noextract
+let parse_dep_pair_with_terminator_payload_kind : LP.parser_kind =
+  let open LP in
+  {
+    parser_kind_low = 0;
+    parser_kind_high = None;
+    parser_kind_metadata = None;
+    parser_kind_subkind = None;
+  }
+
+let augment_with_terminator
+  (#k: LP.parser_kind)
+  (#t: eqtype)
+  (terminator: t)
+  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
+  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+  (x: t)
+: Tot (LP.parser parse_dep_pair_with_terminator_payload_kind (augment_with_terminator_type terminator pl x))
+= if x = terminator
+  then LowParse.Spec.Combinators.weaken parse_dep_pair_with_terminator_payload_kind parse_zeros
+  else LowParse.Spec.Combinators.weaken parse_dep_pair_with_terminator_payload_kind (f x)
+
+inline_for_extraction
+noextract
+let parse_dep_pair_with_terminator_kind
+  (kt: LP.parser_kind)
+: Tot LP.parser_kind
+= LowParse.Spec.Combinators.and_then_kind kt parse_dep_pair_with_terminator_payload_kind
+
+inline_for_extraction
+noextract
+let dep_pair_with_terminator
+  (#t: eqtype)
+  (terminator: t)
+  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
+: Tot Type
+= dtuple2 t (augment_with_terminator_type terminator pl)
+
+let parse_dep_pair_with_terminator
+  (#nz: bool)
+  (#kt: parser_kind nz)
+  (#t: eqtype)
+  (pt: LP.parser kt t)
+  (terminator: t)
+  (#k: LP.parser_kind)
+  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
+  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+: Tot (LP.parser (parse_dep_pair_with_terminator_kind kt) (dep_pair_with_terminator terminator pl))
+= LowParse.Spec.Combinators.parse_dtuple2 pt (augment_with_terminator terminator pl f)
+
+let parse_list_dep_pair_with_terminator
+  (#nz: bool)
+  (#kt: parser_kind nz)
+  (#t: eqtype)
+  (pt: LP.parser kt t)
+  (terminator: t)
+  (#k: LP.parser_kind)
+  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
+  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+: Tot (LP.parser LowParse.Spec.List.parse_list_kind (list (dep_pair_with_terminator terminator pl)))
+= LowParse.Spec.List.parse_list (parse_dep_pair_with_terminator pt terminator pl f)
+
+inline_for_extraction
+noextract
+let sized_list_dep_pair_with_terminator
+  (n: U32.t)
+  (#t: eqtype)
+  (terminator: t)
+  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
+: Tot Type
+= t_exact n (list (dep_pair_with_terminator terminator pl))
+
+let parse_sized_list_dep_pair_with_terminator
+  (n: U32.t)
+  (#nz: bool)
+  (#kt: parser_kind nz)
+  (#t: eqtype)
+  (pt: LP.parser kt t)
+  (terminator: t)
+  (#k: LP.parser_kind)
+  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
+  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+: Tot (parser kind_t_exact (sized_list_dep_pair_with_terminator n terminator pl))
+= parse_t_exact' n (parse_list_dep_pair_with_terminator pt terminator pl f)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Base types
