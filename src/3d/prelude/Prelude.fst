@@ -473,8 +473,7 @@ let dep_pair_with_terminator
 = dtuple2 t (augment_with_terminator_type terminator pl)
 
 let parse_dep_pair_with_terminator
-  (#nz: bool)
-  (#kt: parser_kind nz)
+  (#kt: LP.parser_kind)
   (#t: eqtype)
   (pt: LP.parser kt t)
   (terminator: t)
@@ -491,8 +490,7 @@ let parse_dep_pair_with_terminator
     (augment_with_terminator terminator pl f)
 
 let parse_list_dep_pair_with_terminator
-  (#nz: bool)
-  (#kt: parser_kind nz)
+  (#kt: LP.parser_kind)
   (#t: eqtype)
   (pt: LP.parser kt t)
   (terminator: t)
@@ -505,8 +503,7 @@ let parse_list_dep_pair_with_terminator
 #push-options "--fuel 2" // for append
 
 let rec parse_list_dep_pair_with_terminator_only_last
-  (#nz: bool)
-  (#kt: parser_kind nz)
+  (#kt: LP.parser_kind)
   (#t: eqtype)
   (pt: LP.parser kt t)
   (terminator: t)
@@ -565,11 +562,12 @@ let parse_sized_list_dep_pair_with_terminator
   (#nz: bool)
   (#kt: parser_kind nz)
   (#t: eqtype)
-  (pt: LP.parser kt t)
+  (pt: parser kt t)
   (terminator: t)
-  (#k: LP.parser_kind)
+  (#nzpl: bool)
+  (#k: parser_kind nzpl)
   (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
-  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (parser k (pl x))))
 : Tot (parser kind_t_exact (sized_list_dep_pair_with_terminator n terminator pl))
 = parse_t_exact' n (parse_list_dep_pair_with_terminator pt terminator pl f)
 
