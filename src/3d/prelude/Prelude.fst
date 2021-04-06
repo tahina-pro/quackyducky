@@ -554,7 +554,7 @@ let sized_list_dep_pair_with_terminator
   (#t: eqtype)
   (terminator: t)
   (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
-: Tot Type
+: Tot Type0
 = t_exact n (list (dep_pair_with_terminator terminator pl))
 
 let parse_sized_list_dep_pair_with_terminator
@@ -568,7 +568,6 @@ let parse_sized_list_dep_pair_with_terminator
   (#k: parser_kind nzpl)
   (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
   (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (parser k (pl x))))
-: Tot (parser kind_t_exact (sized_list_dep_pair_with_terminator n terminator pl))
 = parse_t_exact' n (parse_list_dep_pair_with_terminator pt terminator pl f)
 
 ////////////////////////////////////////////////////////////////////////////////

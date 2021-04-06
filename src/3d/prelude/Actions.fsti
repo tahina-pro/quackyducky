@@ -408,6 +408,44 @@ val validate_string
   (terminator: t)
 : Tot (validate_with_action_t (parse_string p terminator) true_inv eloc_none false)
 
+inline_for_extraction noextract
+let dep_pair_no_terminator_validators
+  (#t: eqtype)
+  (#terminator: t)
+  (#nz: bool)
+  (#k: parser_kind nz)
+  (#pl: dep_pair_no_terminator_types terminator)
+  (f: dep_pair_no_terminator_parsers k pl)
+  (inv: slice_inv)
+  (l: eloc)
+  (allow_reading: bool)
+: Tot Type0
+=
+  (x: t { x <> terminator }) -> Tot (validate_with_action_t (f x) inv l allow_reading)
+
+inline_for_extraction
+noextract
+val validate_sized_list_dep_pair_with_terminator
+  (n: U32.t)
+  (#nz: bool)
+  (#kt: parser_kind nz)
+  (#t: eqtype)
+  (#pt: parser kt t)
+  (#invt: slice_inv)
+  (#lt: eloc)
+  (vt: validate_with_action_t pt invt lt true)
+  (rt: leaf_reader pt)
+  (terminator: t)
+  (#nzpl: bool)
+  (#k: parser_kind nzpl)
+  (#pl: dep_pair_no_terminator_types terminator)
+  (#f: dep_pair_no_terminator_parsers k pl)
+  (#inv: slice_inv)
+  (#l: eloc)
+  (#allow_reading: bool)
+  (v: dep_pair_no_terminator_validators f inv l allow_reading)
+: Tot (validate_with_action_t (parse_sized_list_dep_pair_with_terminator n pt terminator pl f) (conj_inv invt inv) (lt `eloc_union` l) false)
+
 ////////////////////////////////////////////////////////////////////////////////
 
 noextract
