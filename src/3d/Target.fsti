@@ -94,6 +94,12 @@ type typ =
   | T_with_action: typ -> action -> typ
   | T_with_dep_action: typ -> a:lam action -> typ
   | T_with_comment: typ -> A.comments -> typ
+  | T_sized_list_dep_pair :
+      size: expr ->
+      tag: typ ->
+      terminator: expr ->
+      payload: (A.ident & typ) ->
+      typ
 
 (* An index is an F* type or an expression
    -- we reuse Ast expressions for this
@@ -176,6 +182,12 @@ type parser' =
   | Parse_with_error: f:A.field_num -> parser -> parser'
   | Parse_with_comment: p:parser -> c:A.comments -> parser'
   | Parse_string    : p:parser -> zero:expr -> parser'
+  | Parse_sized_list_dep_pair :
+      size: expr ->
+      tag_parser: parser ->
+      terminator: expr ->
+      payload_parser: lam parser ->
+      parser'
 
 and parser = {
   p_kind:parser_kind;
@@ -216,6 +228,13 @@ type validator' =
   | Validate_with_error: f:A.ident (* field identifier obtained by Binding.lookup_field_num *) -> validator -> validator'
   | Validate_with_comment: v:validator -> c:A.comments -> validator'
   | Validate_string: v:validator -> r:reader -> zero:expr -> validator'
+  | Validate_sized_list_dep_pair :
+      size: expr ->
+      tag_validator: validator ->
+      tag_reader: reader ->
+      terminator: expr ->
+      payload_validator: lam validator ->
+      validator'
 
 and validator = {
   v_allow_reading: bool;

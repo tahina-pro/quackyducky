@@ -304,6 +304,14 @@ let rec print_typ (mname:string) (t:typ) : ML string = //(decreases t) =
   | T_with_action t _
   | T_with_dep_action t _
   | T_with_comment t _ -> print_typ mname t
+  | T_sized_list_dep_pair size tag terminator (x, payload) ->
+    let tag = print_typ mname tag in
+    Printf.sprintf "(sized_list_dep_pair_with_terminator %s %s (fun (%s: %s) -> %s))"
+      (print_expr mname size)
+      tag
+      (print_expr mname terminator)
+      (print_ident x)
+      (print_typ mname payload)
 
 and print_indexes (mname:string) (is:list index) : ML (list string) = //(decreases is) =
   match is with
@@ -391,6 +399,12 @@ let rec print_parser (mname:string) (p:parser) : ML string = //(decreases p) =
   | Parse_with_comment p _ -> print_parser mname p
   | Parse_string elem zero ->
     Printf.sprintf "(parse_string %s %s)" (print_parser mname elem) (print_expr mname zero)
+  | Parse_sized_list_dep_pair size tag_parser terminator payload_parser ->
+    Printf.sprintf "(parse_sized_list_dep_pair_with_terminator %s %s %s %s)"
+      (print_expr mname size)
+      (print_parser mname tag_parser)
+      (print_expr mname terminator)
+      (print_lam (print_parser mname) payload_parser)
 
 let rec print_reader (mname:string) (r:reader) : ML string =
   match r with
@@ -553,6 +567,13 @@ let rec print_validator (mname:string) (v:validator) : ML string = //(decreases 
       (print_validator mname v)
   | Validate_string velem relem zero ->
     Printf.sprintf "(validate_string %s %s %s)" (print_validator mname velem) (print_reader mname relem) (print_expr mname zero)
+  | Validate_sized_list_dep_pair size tag_validator tag_reader terminator payload_validator ->
+    Printf.sprintf "(validate_sized_list_dep_pair_with_terminator %s %s %s %s %s)"
+      (print_expr mname size)
+      (print_validator mname tag_validator)
+      (print_reader mname tag_reader)
+      (print_expr mname terminator)
+      (print_lam (print_validator mname) payload_validator)
 
 let print_typedef_name (mname:string) (tdn:typedef_name) : ML string =
   Printf.sprintf "%s %s"

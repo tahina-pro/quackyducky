@@ -407,6 +407,17 @@ let rec parse_typ (env:global_env) (name: A.ident) (t:T.typ) : ML T.parser =
   | T.T_pointer _ ->
     failwith "No parsers for pointer types"
 
+  | T.T_sized_list_dep_pair size tag terminator (x, payload) ->
+    mk_parser
+      pk_t_exact
+      t
+      (Parse_sized_list_dep_pair
+        size
+        (parse_typ env name tag)
+        terminator
+        (Some x, parse_typ env name payload)
+      )
+
 let pv ar p v = T.({
   v_allow_reading = ar;
   v_parser = p;
@@ -506,6 +517,7 @@ let rec parser_is_constant_size_without_actions
   | T.Parse_with_action _ _ _
   | T.Parse_if_else _ _ _
   | T.Parse_string _ _
+  | T.Parse_sized_list_dep_pair _ _ _ _
     -> false
   | T.Parse_map p _
   | T.Parse_refinement _ p _
@@ -628,6 +640,16 @@ let rec make_validator (env:global_env) (p:T.parser) : ML T.validator =
 
   | Parse_string elem zero ->
     pv false p (Validate_string (make_validator env elem) (make_reader env elem.p_typ) zero)
+
+  | Parse_sized_list_dep_pair size tag_parser terminator payload_parser ->
+    pv false p
+      (Validate_sized_list_dep_pair
+        size
+        (make_validator env tag_parser)
+        (make_reader env tag_parser.p_typ)
+        terminator
+        (map_lam payload_parser (make_validator env))
+      )
 
 // x:t1;
 // t2;
@@ -976,6 +998,12 @@ let rec hoist_typ
 
     | T_pointer _ ->
       [], t
+
+    | T_sized_list_dep_pair size tag terminator (x, payload) ->
+      let ds, tag = hoist_typ fn genv env tag in
+      let ds', payload = hoist_typ fn genv ((x, tag)::env) payload in
+      ds@ds', T_sized_list_dep_pair size tag terminator (x, payload)
+
 
 let add_parser_kind_nz (genv:global_env) (id:A.ident) (nz:bool) =
   let _ = Options.debug_print_string
