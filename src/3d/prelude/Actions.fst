@@ -255,11 +255,11 @@ let validate_ret
 inline_for_extraction noextract
 let validate_pair'
        (name1: string)
-       #nz1 (#k1:parser_kind nz1) #t1 (#p1:parser k1 t1)
-       (#inv1:_) (#l1:eloc) (#ar1:_) (v1:validate_with_action_t p1 inv1 l1 ar1)
-       #nz2 (#k2:parser_kind nz2) #t2 (#p2:parser k2 t2)
-       (#inv2:_) (#l2:eloc) (#ar2:_) (v2:validate_with_action_t p2 inv2 l2 ar2)
-  : validate_with_action_t (p1 `parse_pair` p2) (conj_inv inv1 inv2) (l1 `eloc_union` l2) (ar1 && ar2)
+       (#k1:LP.parser_kind) #t1 (#p1:LP.parser k1 t1)
+       (#inv1:_) (#l1:eloc) (#ar1:_) (v1:validate_with_action_t' p1 inv1 l1 ar1)
+       (#k2:LP.parser_kind) #t2 (#p2:LP.parser k2 t2)
+       (#inv2:_) (#l2:eloc) (#ar2:_) (v2:validate_with_action_t' p2 inv2 l2 ar2)
+  : validate_with_action_t' (p1 `parse_pair'` p2) (conj_inv inv1 inv2) (l1 `eloc_union` l2) (ar1 && ar2)
   = fun #inputLength  input
         startPosition ->
     let h = HST.get () in
@@ -1408,17 +1408,17 @@ let validate_augment_with_terminator
   (#k: LP.parser_kind)
   (#t: eqtype)
   (terminator: t)
-  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
-  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+  (pl: t -> Tot Type)
+  (f: (x: t) -> Tot (LP.parser k (pl x)))
   (#inv: slice_inv)
   (#l: eloc)
   (#allow_reading: bool)
-  (v: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator)) -> Tot (validate_with_action_t' (f x) inv l allow_reading))
+  (v: (x: t) -> Tot (validate_with_action_t' (f x) inv l allow_reading))
   (x: t)
 : Tot (validate_with_action_t' (augment_with_terminator terminator pl f x) inv l false)
 = fun #len input startPosition ->
   if x = terminator
-  then validate_weaken' (validate_weaken_inv_loc' inv l validate_zeros) parse_dep_pair_with_terminator_payload_kind input startPosition
+  then validate_drop' (validate_weaken' (validate_pair' "payload" (v terminator) validate_zeros) parse_dep_pair_with_terminator_payload_kind) input startPosition
   else validate_drop' (validate_weaken' (v x) parse_dep_pair_with_terminator_payload_kind) input startPosition
 
 inline_for_extraction
@@ -1433,12 +1433,12 @@ let validate_dep_pair_with_terminator
   (rt: leaf_reader' pt)
   (terminator: t)
   (#k: LP.parser_kind)
-  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
-  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+  (pl: t -> Tot Type)
+  (f: (x: t) -> Tot (LP.parser k (pl x)))
   (#inv: slice_inv)
   (#l: eloc)
   (#allow_reading: bool)
-  (v: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator)) -> Tot (validate_with_action_t' (f x) inv l allow_reading))
+  (v: (x: t) -> Tot (validate_with_action_t' (f x) inv l allow_reading))
 : Tot (validate_with_action_t' (parse_dep_pair_with_terminator pt terminator pl f) (conj_inv invt inv) (lt `eloc_union` l) false)
 = validate_dep_pair'
     "validate_dep_pair_with_terminator"
@@ -1457,12 +1457,12 @@ let validate_list_dep_pair_with_terminator
   (rt: leaf_reader' pt)
   (terminator: t)
   (#k: LP.parser_kind)
-  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
-  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+  (pl: t -> Tot Type)
+  (f: (x: t) -> Tot (LP.parser k (pl x)))
   (#inv: slice_inv)
   (#l: eloc)
   (#allow_reading: bool)
-  (v: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator)) -> Tot (validate_with_action_t' (f x) inv l allow_reading))
+  (v: (x: t) -> Tot (validate_with_action_t' (f x) inv l allow_reading))
 : Tot (validate_with_action_t' (parse_list_dep_pair_with_terminator pt terminator pl f) (conj_inv invt inv) (lt `eloc_union` l) false)
 = validate_list (validate_dep_pair_with_terminator vt rt terminator pl f v)
 
@@ -1481,13 +1481,13 @@ let validate_sized_list_dep_pair_with_terminator
   (terminator: t)
   (#nzpl: bool)
   (#k: parser_kind nzpl)
-  (#pl: dep_pair_no_terminator_types terminator)
-  (#f: dep_pair_no_terminator_parsers k pl)
+  (#pl: _)
+  (#f: _)
   (#inv: slice_inv)
   (#l: eloc)
   (#allow_reading: bool)
-  (v: dep_pair_no_terminator_validators f inv l allow_reading)
-: Tot (validate_with_action_t (parse_sized_list_dep_pair_with_terminator n pt terminator pl f) (conj_inv invt inv) (lt `eloc_union` l) false)
+  (v: _)
+: Tot (validate_with_action_t (parse_sized_list_dep_pair_with_terminator n pt terminator f) (conj_inv invt inv) (lt `eloc_union` l) false)
 =
   validate_t_exact_consumes_all n (validate_list_dep_pair_with_terminator vt rt terminator pl f v)
 

@@ -83,10 +83,16 @@ let parse_dep_pair #nz1 (#k1:parser_kind nz1) (#t1: Type) (p1: parser k1 t1)
 
 /// Parser: sequencing
 inline_for_extraction noextract
+let parse_pair' (#k1:LP.parser_kind) #t1 (p1:LP.parser k1 t1)
+                (#k2:LP.parser_kind) #t2 (p2:LP.parser k2 t2)
+  : Tot (LP.parser (LPC.and_then_kind k1 k2) (t1 * t2))
+  = LPC.nondep_then p1 p2
+
+inline_for_extraction noextract
 let parse_pair #nz1 (#k1:parser_kind nz1) #t1 (p1:parser k1 t1)
                #nz2 (#k2:parser_kind nz2) #t2 (p2:parser k2 t2)
   : Tot (parser (and_then_kind k1 k2) (t1 * t2))
-  = LPC.nondep_then p1 p2
+  = parse_pair' p1 p2
 
 /// Parser: map
 let injective_map a b = (a -> Tot b) //{LPC.synth_injective f}
@@ -426,11 +432,11 @@ noextract
 let augment_with_terminator_type
   (#t: eqtype)
   (terminator: t)
-  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
+  (f: t -> Tot Type)
   (x: t)
 : Tot Type
 = if x = terminator
-  then zeros_t
+  then (f terminator & zeros_t)
   else f x
 
 inline_for_extraction
@@ -448,12 +454,12 @@ let augment_with_terminator
   (#k: LP.parser_kind)
   (#t: eqtype)
   (terminator: t)
-  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
-  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+  (pl: t -> Tot Type)
+  (f: (x: t) -> Tot (LP.parser k (pl x)))
   (x: t)
 : Tot (LP.parser parse_dep_pair_with_terminator_payload_kind (augment_with_terminator_type terminator pl x))
 = if x = terminator
-  then LowParse.Spec.Combinators.weaken parse_dep_pair_with_terminator_payload_kind parse_zeros
+  then LowParse.Spec.Combinators.weaken parse_dep_pair_with_terminator_payload_kind (f terminator `parse_pair'` parse_zeros)
   else LowParse.Spec.Combinators.weaken parse_dep_pair_with_terminator_payload_kind (f x)
 
 inline_for_extraction
@@ -468,7 +474,7 @@ noextract
 let dep_pair_with_terminator
   (#t: eqtype)
   (terminator: t)
-  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
+  (pl: t -> Tot Type)
 : Tot Type
 = dtuple2 t (augment_with_terminator_type terminator pl)
 
@@ -478,8 +484,8 @@ let parse_dep_pair_with_terminator
   (pt: LP.parser kt t)
   (terminator: t)
   (#k: LP.parser_kind)
-  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
-  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+  (pl: t -> Tot Type)
+  (f: (x: t) -> Tot (LP.parser k (pl x)))
 : Tot (LP.parser (parse_dep_pair_with_terminator_kind kt) (dep_pair_with_terminator terminator pl))
 = LowParse.Spec.Combinators.parse_dtuple2
     #kt
@@ -495,8 +501,8 @@ let parse_list_dep_pair_with_terminator
   (pt: LP.parser kt t)
   (terminator: t)
   (#k: LP.parser_kind)
-  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
-  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+  (pl: t -> Tot Type)
+  (f: (x: t) -> Tot (LP.parser k (pl x)))
 : Tot (LP.parser LowParse.Spec.List.parse_list_kind (list (dep_pair_with_terminator terminator pl)))
 = LowParse.Spec.List.parse_list (parse_dep_pair_with_terminator pt terminator pl f)
 
@@ -508,11 +514,11 @@ let rec parse_list_dep_pair_with_terminator_only_last
   (pt: LP.parser kt t)
   (terminator: t)
   (#k: LP.parser_kind)
-  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
-  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (LP.parser k (pl x))))
+  (pl: t -> Tot Type)
+  (f: (x: t) -> Tot (LP.parser k (pl x)))
   (b: LP.bytes)
   (l1: list (dep_pair_with_terminator terminator pl))
-  (z: zeros_t)
+  (z: augment_with_terminator_type terminator pl terminator)
   (l2: list (dep_pair_with_terminator terminator pl))
 : Lemma
   (requires (
@@ -535,7 +541,7 @@ let rec parse_list_dep_pair_with_terminator_only_last
     (augment_with_terminator terminator pl f) 
     b
   ;
-  LP.parser_kind_prop_equiv LowParse.Spec.List.parse_list_kind parse_zeros;
+  LP.parser_kind_prop_equiv (k `LPC.and_then_kind` LowParse.Spec.List.parse_list_kind) (f terminator `parse_pair'` parse_zeros);
   LowParse.Spec.List.parse_list_eq (parse_dep_pair_with_terminator pt terminator pl f) b';
   match l1 with
   | [] -> ()
@@ -553,7 +559,7 @@ let sized_list_dep_pair_with_terminator
   (n: U32.t)
   (#t: eqtype)
   (terminator: t)
-  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
+  (pl: t -> Tot Type)
 : Tot Type0
 = t_exact n (list (dep_pair_with_terminator terminator pl))
 
@@ -566,8 +572,8 @@ let parse_sized_list_dep_pair_with_terminator
   (terminator: t)
   (#nzpl: bool)
   (#k: parser_kind nzpl)
-  (pl: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot Type))
-  (f: (x: LowParse.Spec.Combinators.parse_filter_refine (is_not_terminator terminator) -> Tot (parser k (pl x))))
+  (#pl: t -> Tot Type0)
+  (f: (x: t) -> Tot (parser k (pl x)))
 = parse_t_exact' n (parse_list_dep_pair_with_terminator pt terminator pl f)
 
 ////////////////////////////////////////////////////////////////////////////////

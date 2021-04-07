@@ -207,33 +207,12 @@ val parse_string
 
 inline_for_extraction
 noextract
-let dep_pair_no_terminator_types
-  (#t: eqtype)
-  (terminator: t)
-: Tot (Type u#1)
-=
-  (x: t { x <> terminator }) -> Tot Type0
-
-inline_for_extraction
-noextract
 val sized_list_dep_pair_with_terminator
   (n: U32.t)
   (#t: eqtype)
   (terminator: t)
-  (pl: dep_pair_no_terminator_types terminator)
+  (pl: t -> Tot Type0)
 : Tot Type0
-
-inline_for_extraction
-noextract
-let dep_pair_no_terminator_parsers
-  (#t: eqtype)
-  (#terminator: t)
-  (#nz: bool)
-  (k: parser_kind nz)
-  (pl: dep_pair_no_terminator_types terminator)
-: Tot Type0
-=
-  (x: t { x <> terminator }) -> Tot (parser k (pl x))
 
 val parse_sized_list_dep_pair_with_terminator
   (n: U32.t)
@@ -244,8 +223,8 @@ val parse_sized_list_dep_pair_with_terminator
   (terminator: t)
   (#nzpl: bool)
   (#k: parser_kind nzpl)
-  (pl: dep_pair_no_terminator_types terminator)
-  (f: dep_pair_no_terminator_parsers k pl)
+  (#pl: t -> Tot Type0)
+  (f: (x: t) -> Tot (parser k (pl x)))
 : Tot (parser kind_t_exact (sized_list_dep_pair_with_terminator n terminator pl))
 
 
