@@ -48,6 +48,7 @@
 %token          DEFINE LPAREN RPAREN LBRACE RBRACE DOT COMMA SEMICOLON COLON QUESTION
 %token          STAR DIV MINUS PLUS LEQ LESS_THAN GEQ GREATER_THAN WHERE REQUIRES IF ELSE
 %token          LBRACK RBRACK LBRACK_LEQ LBRACK_EQ LBRACK_BYTESIZE LBRACK_BYTESIZE_AT_MOST LBRACK_SINGLE_ELEMENT_BYTESIZE
+%token          BYTESIZE_TERMINATOR
 %token          LBRACK_STRING LBRACK_STRING_AT_MOST
 %token          MUTABLE LBRACE_ONSUCCESS FIELD_POS FIELD_PTR VAR ABORT RETURN
 %token          REM SHIFT_LEFT SHIFT_RIGHT BITWISE_AND BITWISE_OR BITWISE_XOR BITWISE_NOT AS
@@ -203,9 +204,14 @@ pointer_typ:
 refinement:
   | LBRACE e=expr RBRACE { e }
 
+array_size_terminator:
+  |                            { None }
+  | BYTESIZE_TERMINATOR e=expr { Some e }
+
 array_size:
   | LBRACK e=expr RBRACK                         { (e, ByteArrayByteSize) }
-  | LBRACK_BYTESIZE e=expr RBRACK                { (e, ArrayByteSize) }
+  | LBRACK_BYTESIZE e=expr t=array_size_terminator RBRACK
+                                                 { (e, ArrayByteSize t) }
   | LBRACK_LEQ e=expr RBRACK                     { (e, ArrayByteSizeAtMost) }
   | LBRACK_BYTESIZE_AT_MOST e=expr RBRACK        { (e, ArrayByteSizeAtMost) }
   | LBRACK_EQ e=expr RBRACK                      { (e, ArrayByteSizeSingleElementArray) }

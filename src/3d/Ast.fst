@@ -299,9 +299,10 @@ and bitfield_attr = with_meta_t bitfield_attr'
 
 let field_bitwidth_t = either (with_meta_t int) bitfield_attr
 
+noeq
 type array_qualifier =
   | ByteArrayByteSize  //[
-  | ArrayByteSize      //[:byte-size
+  | ArrayByteSize of (option expr)      //[:byte-size   :terminator?
   | ArrayByteSizeAtMost //[:byte-size-at-most
   | ArrayByteSizeSingleElementArray //[:byte-size-single-element-array
 
@@ -704,7 +705,12 @@ let print_field (f:field) : ML string =
     | FieldArrayQualified (e, q) ->
       begin match q with
       | ByteArrayByteSize -> Printf.sprintf "[%s]" (print_expr e)
-      | ArrayByteSize -> Printf.sprintf "[:byte-size %s]" (print_expr e)
+      | ArrayByteSize terminator ->
+        let terminator = match terminator with
+        | None -> ""
+        | Some e -> Printf.sprintf " :terminator %s" (print_expr e)
+        in
+        Printf.sprintf "[:byte-size %s%s]" (print_expr e) terminator
       | ArrayByteSizeAtMost -> Printf.sprintf "[:byte-size-at-most %s]" (print_expr e)
       | ArrayByteSizeSingleElementArray -> Printf.sprintf "[:byte-size-single-element-array %s]" (print_expr e)
       end

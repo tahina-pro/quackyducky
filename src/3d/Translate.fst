@@ -681,9 +681,12 @@ let translate_field (f:A.field) : ML T.struct_field =
         match sf.field_array_opt with
         | FieldScalar -> t
         | FieldArrayQualified (e, ByteArrayByteSize)
-        | FieldArrayQualified (e, ArrayByteSize) ->
+        | FieldArrayQualified (e, ArrayByteSize _) ->
           let e = translate_expr e in
-          T.T_app (with_range (to_ident' "nlist") sf.field_type.range) [Inr e; Inl t]
+          begin match sf.field_array_opt with
+          | FieldArrayQualified (_, ArrayByteSize (Some terminator)) -> failwith "TODO: implement terminator:, unfolding type application"
+          | _ -> T.T_app (with_range (to_ident' "nlist") sf.field_type.range) [Inr e; Inl t] 
+         end
         | FieldArrayQualified (e, ArrayByteSizeAtMost) ->
           mk_at_most t e
         | FieldArrayQualified (e, ArrayByteSizeSingleElementArray) ->

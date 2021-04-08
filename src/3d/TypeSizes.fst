@@ -178,7 +178,7 @@ let size_and_alignment_of_field (env:env_t) (f:field)
         end
 
       | FieldString (Some n)
-      | FieldArrayQualified (n, ArrayByteSize)
+      | FieldArrayQualified (n, ArrayByteSize _)
       | FieldArrayQualified (n, ArrayByteSizeSingleElementArray) ->
         let n = value_of_const_expr env n in
         begin
