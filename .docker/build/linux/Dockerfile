@@ -16,6 +16,9 @@ ARG BRANCHNAME
 # Install sphinx (for the documentation)
 RUN pip3 install --upgrade pip && pip3 install --user sphinx-rtd-theme
 
+# CI: install re
+RUN opam install re
+
 # ADD SSH KEY
 RUN mkdir -p ${MYHOME}/.ssh
 RUN chown everest ${MYHOME}/.ssh
