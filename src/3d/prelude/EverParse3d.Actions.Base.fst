@@ -1246,8 +1246,6 @@ let validate____UINT8
       "Checking that we have enough space for a UINT8, i.e., 1 byte"
       (validate_total_constant_size_no_read parse____UINT8 1ul () _ _)
 
-(* FIXME: Reading currently performs two copies, one from `read`, another from kremlib's implementations of load16_be, etc. *)
-
 inline_for_extraction noextract
 let lift_reader
   (#nz: _)
@@ -1265,6 +1263,9 @@ let lift_reader
   ))
   (ensures (fun _ -> True))
 = fun input ->
+  EverParse3d.InputStream.All.lift_reader r sz input
+
+(* // TODO: this is the generic case, to be moved to the `extern` case
   LP.parser_kind_prop_equiv k p;
   let h0 = HST.get () in
   HST.push_frame ();
@@ -1278,6 +1279,7 @@ let lift_reader
   let res = r (LPL.make_slice temp sz) 0ul in
   HST.pop_frame ();
   res
+*)
 
 inline_for_extraction noextract
 let read____UINT8
