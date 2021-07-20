@@ -60,26 +60,6 @@ class input_stream_inst (t: Type) : Type = {
       (res == true <==> Seq.length (get_remaining x h) >= U32.v n)
     ));
 
-  read:
-    (x: t) ->
-    (n: U32.t) ->
-    (dst: B.buffer U8.t) ->
-    HST.Stack unit
-    (requires (fun h ->
-      live x h /\
-      B.live h dst /\
-      B.loc_disjoint (footprint x) (B.loc_buffer dst) /\
-      B.length dst == U32.v n /\
-      Seq.length (get_remaining x h) >= U32.v n
-    ))
-    (ensures (fun h _ h' ->
-      let s = get_remaining x h in
-      B.modifies (B.loc_buffer dst `B.loc_union` footprint x) h h' /\
-      B.as_seq h' dst `Seq.equal` Seq.slice s 0 (U32.v n) /\
-      live x h' /\
-      get_remaining x h' `Seq.equal` Seq.slice s (U32.v n) (Seq.length s)
-    ));
-
   skip:
     (x: t) ->
     (n: U32.t) ->

@@ -116,16 +116,6 @@ let inst = {
     n `U32.lte` (x.len `U32.sub` currentPosition)
   end;
 
-  read = begin fun x n dst ->
-    let h0 = HST.get () in
-    let currentPosition = !* x.pos in
-    B.blit x.buf currentPosition dst 0ul n;
-    x.pos *= currentPosition `U32.add` n;
-    let h' = HST.get () in
-    assert (B.deref h' x.pos == currentPosition `U32.add` n);
-    ()
-  end;
-
   skip = begin fun x n ->
     let h0 = HST.get () in
     let currentPosition = !* x.pos in
