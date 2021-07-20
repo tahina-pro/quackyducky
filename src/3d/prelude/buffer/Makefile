@@ -57,5 +57,5 @@ EverParse.h: EverParse.rsp
 .PHONY: all extract clean
 
 clean:
-	rm -f *.checked *.krml EverParse.h EverParse.rsp .depend *.tmp
+	rm -f *.checked *.krml EverParse.h EverParse.rsp .depend *.tmp *~
 

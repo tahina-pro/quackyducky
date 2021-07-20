@@ -47,4 +47,4 @@ EverParse.rsp: $(ALL_KRML_FILES)
 
 clean:
 	+$(MAKE) -C buffer clean || true
-	rm -f *.checked *.krml .depend *.cmi *.cmx *.cmxs WeakenTac.ml LowParse_TacLib.ml EverParse.rsp *.tmp
+	rm -f *.checked *.krml .depend *.cmi *.cmx *.cmxs *.ml *.o EverParse.rsp *.tmp *~
