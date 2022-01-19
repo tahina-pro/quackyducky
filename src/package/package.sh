@@ -39,6 +39,9 @@ if ! Z3_DIR=$(dirname $(which $z3)) ; then
         wget --output-document=$z3_archive https://github.com/Z3Prover/z3/releases/download/$z3_tagged/$z3_archive
         unzip $z3_archive
         mv z3-4.8.5-x64-win z3
+        chmod +x z3/bin/z3.exe
+        if [[ -f z3/bin/*.dll ]] ; then chmod +x z3/bin/*.dll ; fi
+        if [[ -f z3/lib/*.dll ]] ; then chmod +x z3/lib/*.dll ; fi
     elif [[ "$OS" = "Linux" ]] && [[ "$platform" = x86_64 ]] ; then
         # Download a dependency-free z3
         z3_tagged=z3-4.8.5-linux-clang
