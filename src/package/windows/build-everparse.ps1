@@ -12,7 +12,7 @@ function global:Invoke-BashCmd
     $cygpath = c:\cygwin64\bin\cygpath.exe -u ${pwd}
     c:\cygwin64\bin\bash.exe --login -c "cd $cygpath && $args"
 
-    if ($?) {
+    if (-not $?) {
         Write-Host "*** Error:"
         $Error
         exit 1
@@ -34,24 +34,16 @@ $Error.Clear()
 Write-Host "Install Cygwin with git"
 wget "https://www.cygwin.com/setup-x86_64.exe" -outfile "cygwinsetup.exe"
 cmd.exe /c start /wait .\cygwinsetup.exe --root C:\cygwin64 -P git,wget --no-desktop --no-shortcuts --no-startmenu --wait --quiet-mode --site https://mirrors.kernel.org/sourceware/cygwin/
+if (-not $?) {
+    $Error
+    exit 1
+}
 Remove-Item "cygwinsetup.exe"
-if ($?) {
-    $Error
-    exit 1
-}
-
-$Error.Clear()
-Write-Host "Load bash.ps1"
-.\bash.ps1
-if ($?) {
-    $Error
-    exit 1
-}
 
 $Error.Clear()
 Write-Host "Install and build everparse dependencies"
 Invoke-BashCmd "./everest.sh check"
-if ($?) {
+if (-not $?) {
     $Error
     exit 1
 }
@@ -59,7 +51,7 @@ if ($?) {
 $Error.Clear()
 Write-Host "build everparse"
 Invoke-BashCmd "./build-everparse.sh"
-if ($?) {
+if (-not $?) {
     $Error
     exit 1
 }
