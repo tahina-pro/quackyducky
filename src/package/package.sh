@@ -49,7 +49,7 @@ if ! Z3_DIR=$(dirname $(which $z3)) ; then
         echo "z3 4.8.5 is missing, please add it to your PATH"
         exit 1
     fi
-    Z3_DIR="$PWD/z3"
+    Z3_DIR="$PWD/z3/bin"
     export PATH="$Z3_DIR:$PATH"
 fi
 
@@ -163,7 +163,9 @@ make_everparse() {
     if $is_windows
     then
         $cp $LIBGMP10_DLL everparse/bin/
-        $cp $Z3_DIR/*.exe $Z3_DIR/*.dll $Z3_DIR/*.lib everparse/bin/
+        $cp $Z3_DIR/*.exe everparse/bin/
+        if [[ -f $Z3_DIR/*.dll ]] ; then $cp $Z3_DIR/*.dll everparse/bin/ ; fi
+        if [[ -f $Z3_DIR/../lib/*.dll ]] ; then cp $Z3_DIR/../lib/*.dll everparse/bin/ ; fi
         if [[ -z "$NO_EVERCRYPT" ]] ; then
             for f in $(ocamlfind printconf destdir)/stublibs $($SED 's![\t\v\f \r\n]*$!!' < $(ocamlfind printconf ldconf)) $(ocamlfind query hacl-star-raw) ; do
                 libevercrypt_dll=$f/libevercrypt.dll
