@@ -256,38 +256,6 @@ parse_z3_version () {
 # The functions that implement the main actions
 # ------------------------------------------------------------------------------
 
-get_z3_bin () {
-  if ! [[ -d fstarlang_binaries ]]; then
-    echo "... cloning FStarLang/binaries"
-    try_git_clone "git@github.com:FStarLang/binaries.git" "https://github.com/FStarLang/binaries.git" fstarlang_binaries
-  fi
-  (cd fstarlang_binaries && git fetch && git checkout z3-4.8.5 && git reset --hard origin/z3-4.8.5)
-  if is_windows; then
-    local new_z3_file=fstarlang_binaries/z3-tested/z3-4.8.5*-x64-win.zip
-  elif is_osx; then
-    local new_z3_file=fstarlang_binaries/z3-tested/z3-4.8.5*-x64-osx-*.zip
-  elif [[ $(lsb_release -i | awk '{ print $3; }') == "Ubuntu" ]]; then
-    local new_z3_file=fstarlang_binaries/z3-tested/z3-4.8.5*-x64-ubuntu-14.04.zip
-  elif [[ $(lsb_release -i | awk '{ print $3; }') == "Debian" ]]; then
-    local new_z3_file=fstarlang_binaries/z3-tested/z3-4.8.5*-x64-debian-*.zip
-  else
-    red "WARNING: could not figure out your system via lsb_release; defaulting to Debian"
-    local new_z3_file=fstarlang_binaries/z3-tested/z3-4.8.5*-x64-debian-*.zip
-  fi
-  echo "... ls fstarlang_binaries/z3-tested"
-  ls -altrh fstarlang_binaries/z3-tested
-  echo "... ls $new_z3_file"
-  ls -altrh $new_z3_file
-  echo "... unzipping $new_z3_file"
-  unzip $new_z3_file
-  local new_z3_folder=${new_z3_file%%.zip}
-  find $new_z3_folder -iname '*.dll' -or -iname '*.exe' | xargs chmod a+x
-  magenta "Automatically customize $EVEREST_ENV_DEST_FILE with the z3 path? [Yn]"
-  prompt_yes "write_z3_env_dest_file $new_z3_folder" true
-  rm -f z3
-  ln -sf $new_z3_folder z3
-}
-
 compile_z3 () {
     if ! [[ -d z3-source ]] ; then
         try_git_clone "git@github.com:Z3Prover/Z3.git" "https://github.com/Z3Prover/z3.git" z3-source
@@ -311,12 +279,9 @@ do_update_z3 () {
   local new_z3=4.8.5
   if [[ $new_z3 != $current_z3 ]]; then
     red "This is not z3 $current_z3"
-    magenta "Get the freshest z3 from FStarLang/binaries? [Yn]"
+    magenta "Compile z3 from sources? [Yn]"
     if prompt_yes true false ; then
-        get_z3_bin
-    else
-        magenta "Compile z3 from sources? [Yn]"
-        prompt_yes compile_z3 false
+        compile_z3
     fi
   fi
 }
