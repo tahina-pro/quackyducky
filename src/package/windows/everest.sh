@@ -280,9 +280,7 @@ do_update_z3 () {
   if [[ $new_z3 != $current_z3 ]]; then
     red "This is not z3 $current_z3"
     magenta "Compile z3 from sources? [Yn]"
-    if prompt_yes true false ; then
-        compile_z3
-    fi
+    prompt_yes compile_z3 false
   fi
 }
 
