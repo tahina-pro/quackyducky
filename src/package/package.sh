@@ -198,6 +198,10 @@ make_everparse() {
             # Locate libffi
             {
                 # Debian:
+                libffi=$(dpkg -L libffi7 | grep '/libffi.so.7$' | head -n 1)
+                [[ -n "$libffi" ]]
+            } || {
+                # Debian (older):
                 libffi=$(dpkg -L libffi6 | grep '/libffi.so.6$' | head -n 1)
                 [[ -n "$libffi" ]]
             } || {
