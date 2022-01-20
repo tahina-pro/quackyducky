@@ -110,45 +110,6 @@ write_to_env_dest_file () {
   magenta "Remember to run source \"$EVEREST_ENV_DEST_FILE\" in your terminal afterwards!"
 }
 
-# Append $1 to the (Cygwin) path
-windows_append_path () {
-  path=$(cygpath -m -d "$1")
-  path=$(cygpath "$path")
-  str="
-    # This line automatically added by $0
-    export PATH=\"$path\":\$PATH"
-  write_to_env_dest_file "$str"
-  export PATH="$path":"$PATH"
-}
-
-# Windows requires several tools that can be installed via Visual Studio, but
-# these usually aren't in the PATH. Check in the usual locations, then offer to
-# customize "$EVEREST_ENV_DEST_FILE"
-#   $1: name of command to check for
-#   $2: candidate directory where it may reside
-# NOTE: this function is also used to locate python and scons
-windows_check_or_modify_env_dest_file () {
-  if ! command -v $1 >/dev/null 2>&1; then
-    red "ERROR: $1 not found in PATH"
-    if [ -f "$2"/$1 ]; then
-      magenta "$1 found in $2; add to PATH via $EVEREST_ENV_DEST_FILE ? [Yn]"
-      if prompt_yes true false; then
-        windows_append_path "$2"
-      fi
-    else
-      red "$1 not found in $2, bailing"
-      echo Hint: it looks like some VS2015 components are missing. We need \
-        VS2015, including the C++ components. You can run the VS2015 installer \
-        and choose a custom setup, to ensure you have both F# and the C++ \
-        components. Download it from: \
-        https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409
-      exit 1
-    fi
-  fi
-
-  echo "... found $1"
-}
-
 write_z3_env_dest_file () {
   str="
     # This line automatically added by $0
