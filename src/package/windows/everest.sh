@@ -225,7 +225,11 @@ compile_z3 () {
     (
         cd z3-source
         git checkout Z3-4.8.5
-        CXX=x86_64-w64-mingw32-g++ CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar python scripts/mk_make.py --prefix="$z3_dir"
+        if is_windows ; then
+            CXX=x86_64-w64-mingw32-g++ CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar python scripts/mk_make.py --prefix="$z3_dir"
+        else
+            python scripts/mk_make.py --prefix="$z3_dir"
+        fi
     )
     make -C z3-source/build
     rm -f z3
