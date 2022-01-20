@@ -116,17 +116,23 @@ make_everparse() {
         export KREMLIN_HOME=$(fixpath "$KREMLIN_HOME")
     fi
 
-    fstar_commit_id=$(print_component_commit_id "$FSTAR_HOME")
-    fstar_commit_date_iso=$(print_component_commit_date_iso "$FSTAR_HOME")
-    fstar_commit_date_hr=$(print_date_utc_of_iso_hr "$fstar_commit_date_iso")
-    kremlin_commit_id=$(print_component_commit_id "$KREMLIN_HOME")
-    kremlin_commit_date_iso=$(print_component_commit_date_iso "$KREMLIN_HOME")
-    kremlin_commit_date_hr=$(print_date_utc_of_iso_hr "$kremlin_commit_date_iso")
+    if fstar_commit_id=$(print_component_commit_id "$FSTAR_HOME") ; then
+        fstar_commit_date_iso=$(print_component_commit_date_iso "$FSTAR_HOME")
+        fstar_commit_date_hr=$(print_date_utc_of_iso_hr "$fstar_commit_date_iso")" UTC+0000"
+    fi
+    if kremlin_commit_id=$(print_component_commit_id "$KREMLIN_HOME") ; then
+        kremlin_commit_date_iso=$(print_component_commit_date_iso "$KREMLIN_HOME")
+        kremlin_commit_date_hr=$(print_date_utc_of_iso_hr "$kremlin_commit_date_iso")" UTC+0000"
+    fi
     z3_version_string=$($Z3_DIR/$z3 --version)
 
     # Rebuild F* and kremlin
     export OTHERFLAGS='--admit_smt_queries true'
     $MAKE -C "$FSTAR_HOME" "$@"
+    if [[ -z "$fstar_commit_id" ]] ; then
+        fstar_commit_id=$("$FSTAR_HOME/bin/fstar.exe" --version | grep '^commit=' | sed 's!^.*=!!')
+        fstar_commit_date_hr=$("$FSTAR_HOME/bin/fstar.exe" --version | grep '^date=' | sed 's!^.*=!!')
+    fi
     $MAKE -C "$KREMLIN_HOME" "$@" minimal
     $MAKE -C "$KREMLIN_HOME/kremlib" "$@" verify-all
 
@@ -255,8 +261,8 @@ make_everparse() {
         $cp -r $QD_HOME/src/package/README.pkg everparse/README
     fi
     echo "This is EverParse $everparse_version" >> everparse/README
-    echo "Running with F* $fstar_commit_id ($fstar_commit_date_hr UTC+0000)" >> everparse/README
-    echo "Running with KReMLin $kremlin_commit_id ($kremlin_commit_date_hr UTC+0000)" >> everparse/README
+    echo "Running with F* $fstar_commit_id ($fstar_commit_date_hr)" >> everparse/README
+    echo "Running with KReMLin $kremlin_commit_id ($kremlin_commit_date_hr)" >> everparse/README
     echo -n "Running with $z3_version_string" >> everparse/README
 
     # Download and copy clang-format
