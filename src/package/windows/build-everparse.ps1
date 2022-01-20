@@ -32,7 +32,7 @@ Set-Location -ErrorAction Stop -LiteralPath $PSScriptRoot
 
 $Error.Clear()
 Write-Host "Install Cygwin with git"
-wget "https://www.cygwin.com/setup-x86_64.exe" -outfile "cygwinsetup.exe"
+Invoke-WebRequest "https://www.cygwin.com/setup-x86_64.exe" -outfile "cygwinsetup.exe"
 cmd.exe /c start /wait .\cygwinsetup.exe --root C:\cygwin64 -P git,wget --no-desktop --no-shortcuts --no-startmenu --wait --quiet-mode --site https://mirrors.kernel.org/sourceware/cygwin/
 if (-not $?) {
     $Error
