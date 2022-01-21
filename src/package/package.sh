@@ -343,17 +343,20 @@ HELP
 
 case "$1" in
     -zip)
-        make_everparse
+        shift
+        make_everparse "$@"
             zip_everparse true
         ;;
 
     -zip-noversion)
-        make_everparse
+        shift
+        make_everparse "$@"
             zip_everparse false
         ;;
 
     -make)
-        make_everparse
+        shift
+        make_everparse "$@"
         ;;
 
     *)
