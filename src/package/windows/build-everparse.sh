@@ -7,5 +7,6 @@ unset CDPATH
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 pwd | grep '/src/package/windows$' > /dev/null
 cd ../../..
+git submodule update --init || true
 rm -rf everparse
 make everparse
