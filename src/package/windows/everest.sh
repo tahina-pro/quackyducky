@@ -232,9 +232,9 @@ compile_z3 () {
             python scripts/mk_make.py --prefix="$z3_dir"
         fi
     )
-    make -C z3-source/build
+    $MAKE -C z3-source/build $make_opts
     rm -f z3
-    make -C z3-source/build install
+    $MAKE -C z3-source/build install
     magenta "Automatically customize $EVEREST_ENV_DEST_FILE with the z3 path? [Yn]"
     prompt_yes "write_z3_env_dest_file z3" true
 }
