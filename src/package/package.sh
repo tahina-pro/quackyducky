@@ -4,7 +4,7 @@ set -e
 set -x
 
 SED=$(which gsed >/dev/null 2>&1 && echo gsed || echo sed)
-MAKE=$(which gmake >/dev/null 2>&1 && echo gmake || echo make)
+MAKE="$(which gmake >/dev/null 2>&1 && echo gmake || echo make) $EVERPARSE_MAKE_OPTS"
 DATE=$(which gdate >/dev/null 2>&1 && echo gdate || echo date)
 
 

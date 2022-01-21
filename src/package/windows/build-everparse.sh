@@ -9,4 +9,4 @@ pwd | grep '/src/package/windows$' > /dev/null
 cd ../../..
 git submodule update --init || true
 rm -rf everparse
-make everparse
+env EVERPARSE_MAKE_OPTS='-j 12' make everparse
