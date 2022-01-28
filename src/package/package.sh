@@ -17,9 +17,19 @@ if [[ "$OS" = "Windows_NT" ]] ; then
    is_windows=true
 fi
 
+fixpath () {
+    if $is_windows ; then
+        cygpath -m "$1"
+    else
+        echo "$1"
+    fi
+}
+
 if [[ -z "$QD_HOME" ]] ; then
     # This file MUST be run from the EverParse root directory
-    export QD_HOME=$PWD
+    export QD_HOME=$(fixpath $PWD)
+else
+    export QD_HOME=$(fixpath "$QD_HOME")
 fi
 
 if $is_windows ; then
@@ -91,14 +101,6 @@ if [[ -z "$everparse_version" ]] ; then
     fi
 fi
 
-fixpath () {
-    if $is_windows ; then
-        cygpath -m "$1"
-    else
-        echo "$1"
-    fi
-}
-
 make_everparse() {
     # Verify if F* and KReMLin are here
     cp0=$(which gcp >/dev/null 2>&1 && echo gcp || echo cp)
@@ -148,6 +150,8 @@ make_everparse() {
         if [[ -z $HACL_HOME ]] ; then
             [[ -d hacl-star ]] || git clone --branch _taramana_shorten_cmdline https://github.com/project-everest/hacl-star
             HACL_HOME=$(fixpath $PWD/hacl-star)
+        else
+            HACL_HOME=$(fixpath "$HACL_HOME")
         fi
         if ! ocamlfind query hacl-star-raw ; then
             (cd $HACL_HOME/dist/gcc-compatible ; ./configure --disable-bzero)
