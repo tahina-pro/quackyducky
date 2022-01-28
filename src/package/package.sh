@@ -104,7 +104,7 @@ make_everparse() {
     cp0=$(which gcp >/dev/null 2>&1 && echo gcp || echo cp)
     cp="$cp0 --preserve=mode,timestamps"
     if [[ -z "$FSTAR_HOME" ]] ; then
-        [[ -d FStar ]] || git clone https://github.com/FStarLang/FStar
+        [[ -d FStar ]] || git clone --branch taramana_rsp https://github.com/FStarLang/FStar
         export FSTAR_HOME=$(fixpath $PWD/FStar)
     else
         export FSTAR_HOME=$(fixpath "$FSTAR_HOME")
