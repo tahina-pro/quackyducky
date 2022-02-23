@@ -759,3 +759,4 @@ noeq
 type backend_flag_t =
 | BackendFlagBuffer
 | BackendFlagExtern
+| BackendFlagFunPtr

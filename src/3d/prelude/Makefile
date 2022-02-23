@@ -1,4 +1,4 @@
-all: verify buffer extern
+all: verify buffer extern funptr
 
 FSTAR_HOME?=$(realpath ../../../../FStar)
 KREMLIN_HOME?=$(realpath ../../../../kremlin)
@@ -23,6 +23,9 @@ buffer: EverParse.rsp
 
 extern: EverParse.rsp
 	+$(MAKE) -C extern
+
+funptr: EverParse.rsp
+	+$(MAKE) -C funptr
 
 extract: EverParse.rsp
 
