@@ -126,8 +126,7 @@ let elim_aparse
     (fun va -> AP.arrayptr a va)
     True
     (fun va -> arrayptr_parse p va == Some vp)
-= let gva = elim_exists () in
-  elim_pure _;
-  let va = Ghost.reveal gva in
-  noop ();
+= rewrite (aparse p a vp) (aparse0 p a vp);
+  let _ = gen_elim () in
+  let va = vpattern (fun va -> AP.arrayptr a va) in
   va

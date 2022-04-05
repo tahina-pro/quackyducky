@@ -26,6 +26,7 @@ let arrayptr
   (#base #a: Type0)
   (r: t base a)
   ([@@@smt_fallback] value: v base a)
+: Tot vprop
 = S.varrayptr r `C.vselect` value
 
 let intro_arrayptr'
