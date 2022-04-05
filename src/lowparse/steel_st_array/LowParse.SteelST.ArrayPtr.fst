@@ -145,18 +145,6 @@ let extract_some
 : Tot a
 = Some?.v v
 
-[@@solve_can_be_split_lookup; (solve_can_be_split_for exists_)]
-let _intro_can_be_split_exists = intro_can_be_split_exists
-
-[@@solve_can_be_split_forall_dep_lookup; (solve_can_be_split_forall_dep_for exists_)]
-let _intro_can_be_split_forall_dep_exists = intro_can_be_split_forall_dep_exists
-
-[@@solve_can_be_split_lookup; (solve_can_be_split_for pure)]
-let _intro_can_be_split_pure = intro_can_be_split_pure
-
-[@@solve_can_be_split_forall_dep_lookup; (solve_can_be_split_forall_dep_for pure)]
-let _intro_can_be_split_forall_dep_pure = intro_can_be_split_forall_dep_pure
-
 let elim_arrayptr_or_null_some'
   (#opened: _)
   (#base #a: Type)
