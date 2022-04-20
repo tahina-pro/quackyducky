@@ -72,7 +72,83 @@ let parse'
   | None -> None
   | Some (v, c) -> Some (v, c)
 
-#push-options "--z3rlimit 16"
+#set-options "--ide_id_info_off"
+
+let peek_strong_with_size1
+  (#base: Type)
+  (#k: parser_kind)
+  (#t: Type)
+  (#va: AP.v base byte)
+  (p: parser k t)
+  (a: byte_array base)
+  (sz: SZ.size_t)
+: ST (byte_array base)
+    (AP.arrayptr a va)
+    (fun res -> exists_ (fun vp -> aparse p a vp `star` exists_ (fun vres -> AP.arrayptr res vres  (* `star` pure (
+True      let consumed = AP.length (array_of vp) in
+      AP.merge_into (array_of vp) (AP.array_of vres) (AP.array_of va) /\
+      consumed <= AP.length (AP.array_of va) /\
+      AP.contents_of' vres == AP.seq_slice (AP.contents_of' va) consumed (AP.length (AP.array_of va)) /\
+      parse' p (AP.seq_slice (AP.contents_of' va) 0 consumed) == Some (vp.contents, consumed)
+    ) *) )  ))
+    (k.parser_kind_subkind == Some ParserStrong /\
+      begin match parse' p (AP.contents_of' va) with
+      | None -> False
+      | Some (_, consumed) -> (consumed <: nat) == SZ.size_v sz
+      end
+    )
+    (fun _ -> True)
+=
+  noop ();
+//  assert (SZ.size_v sz <= Seq.length (AP.contents_of' va));
+  parse_strong_prefix p (AP.contents_of' va) (AP.seq_slice (AP.contents_of' va) 0 (SZ.size_v sz));
+  let res = AP.split a sz in
+  let _ = elim_exists () in
+  let _ = elim_exists () in
+  let _ = elim_pure _ in
+  noop ();
+  let _ = intro_aparse p a in
+  let vres = vpattern_replace (fun vres -> AP.arrayptr res vres) in
+//  drop (AP.arrayptr res vres);
+  noop ();
+  return res
+
+let peek_strong_with_size2
+  (#base: Type)
+  (#k: parser_kind)
+  (#t: Type)
+  (#va: AP.v base byte)
+  (p: parser k t)
+  (a: byte_array base)
+  (sz: SZ.size_t)
+: ST (byte_array base)
+    (AP.arrayptr a va)
+    (fun res -> exists_ (fun vp -> aparse p a vp `star` exists_ (fun vres -> AP.arrayptr res vres  (* `star` pure (
+True      let consumed = AP.length (array_of vp) in
+      AP.merge_into (array_of vp) (AP.array_of vres) (AP.array_of va) /\
+      consumed <= AP.length (AP.array_of va) /\
+      AP.contents_of' vres == AP.seq_slice (AP.contents_of' va) consumed (AP.length (AP.array_of va)) /\
+      parse' p (AP.seq_slice (AP.contents_of' va) 0 consumed) == Some (vp.contents, consumed)
+    ) *) )  ))
+    (k.parser_kind_subkind == Some ParserStrong /\
+      begin match parse' p (AP.contents_of' va) with
+      | None -> False
+      | Some (_, consumed) -> (consumed <: nat) == SZ.size_v sz
+      end
+    )
+    (fun _ -> True)
+=
+  noop ();
+  assert (SZ.size_v sz <= Seq.length (AP.contents_of' va));
+  parse_strong_prefix p (AP.contents_of' va) (AP.seq_slice (AP.contents_of' va) 0 (SZ.size_v sz));
+  let res = AP.split a sz in
+  let _ = gen_elim () in
+  noop ();
+  let _ = intro_aparse p a in
+  let vres = vpattern_replace (fun vres -> AP.arrayptr res vres) in
+  intro_exists _ (fun vres -> AP.arrayptr res vres);
+  noop ();
+  return res
 
 let peek_strong_with_size
   (#base: Type)
@@ -90,7 +166,7 @@ let peek_strong_with_size
       consumed <= AP.length (AP.array_of va) /\
       AP.contents_of' vres == AP.seq_slice (AP.contents_of' va) consumed (AP.length (AP.array_of va)) /\
       parse' p (AP.seq_slice (AP.contents_of' va) 0 consumed) == Some (vp.contents, consumed)
-    ))))
+    )) )  )
     (k.parser_kind_subkind == Some ParserStrong /\
       begin match parse' p (AP.contents_of' va) with
       | None -> False
@@ -104,11 +180,10 @@ let peek_strong_with_size
   parse_strong_prefix p (AP.contents_of' va) (AP.seq_slice (AP.contents_of' va) 0 (SZ.size_v sz));
   let res = AP.split a sz in
   let _ = gen_elim () in
+  noop ();
   let _ = intro_aparse p a in
   noop ();
   return res
-
-#pop-options
 
 let peek_strong
   (#base: Type)

@@ -1,5 +1,4 @@
 module LowParse.SteelST.ArrayPtr
-module S = LowParse.Steel.ArrayPtr
 
 open Steel.Memory
 open Steel.FractionalPermission
@@ -8,19 +7,20 @@ module SZ = LowParse.Steel.StdInt
 module SC = Steel.ST.Coercions
 module C = Steel.ST.Combinators
 open Steel.ST.Util
+module S = LowParse.Steel.ArrayPtr
 
 let t = S.t
-let v = S.v
+let null = S.null
 let g_is_null = S.g_is_null
 let array = S.array
-let length = S.length
 let len = S.len
+let v = S.v
 let array_of #base #a (v: v base a) : Tot (array base a) =
   v.S.array
 let contents_of #base #a (v: v base a) : GTot (Seq.lseq a (length (array_of v))) =
   v.S.contents
-let contents_of' #base #a (v: v base a) : GTot (Seq.seq a) =
-  contents_of v
+
+let array_contents_inj _ _ = ()
 
 let arrayptr
   (#base #a: Type0)
@@ -139,13 +139,6 @@ let intro_arrayptr_or_null_some
 =
   SC.coerce_ghost (intro_arrayptr_or_null_some' x)
 
-let extract_some
-  (#a: Type)
-  (v: option a)
-  (sq: squash (Some? v))
-: Tot a
-= Some?.v v
-
 let elim_arrayptr_or_null_some'
   (#opened: _)
   (#base #a: Type)
@@ -237,7 +230,6 @@ let is_null
 
 let adjacent = S.adjacent
 let merge = S.merge
-let merge_into = S.merge_into
 
 let arrayptr0
   (#base #a: Type0)
@@ -275,12 +267,6 @@ let join (#opened: _) (#base #a:Type) (#vl #vr: v base a) (al ar:t base a)
             contents_of res == contents_of vl `Seq.append` contents_of vr
           )
 = SC.coerce_ghost (join' al ar)
-
-let seq_slice
-  (#a:Type) (s:Seq.seq a) (i: nat) (j: nat) : Pure (Seq.seq a)
-  (requires (i <= j /\ j <= Seq.length s))
-  (ensures (fun _ -> True))
-= Seq.slice s i j
 
 let split' (#opened: _) (#base #a:Type) (#value: v base a) (x: t base a) (i:SZ.size_t)
   (_: unit)

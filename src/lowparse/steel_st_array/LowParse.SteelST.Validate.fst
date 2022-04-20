@@ -18,11 +18,14 @@ let validator_prop
   (v_err: U32.t)
   (res: SZ.size_t)
 : Tot prop
-= match parse p (AP.contents_of b), (U32.v v_err = 0) with
+= 
+  SZ.size_v res <= AP.length (AP.array_of b) /\
+  begin match parse p (AP.contents_of b), (U32.v v_err = 0) with
   | None, false -> True
   | Some (_, consumed), true ->
     SZ.size_v res == consumed
   | _ -> False
+  end
 
 let validator
   (#k: parser_kind)
@@ -40,6 +43,26 @@ let validator
     (fun res -> AP.arrayptr a b `star` exists_ (fun v_err ->
       R.pts_to err full_perm v_err `star`
       pure (validator_prop p b v_err res)
+    ))
+    (SZ.size_v len == AP.length (AP.array_of b))
+    (fun _ -> True)
+
+// For debugging purposes only: "validator" without precondition
+let debug_validator
+  (#k: parser_kind)
+  (#t: Type)
+  (p: parser k t)
+: Tot Type
+= 
+  (#base: Type) ->
+  (#b: AP.v base byte) ->
+  (a: byte_array base) ->
+  (len: SZ.size_t) ->
+  (err: R.ref U32.t) ->
+  ST SZ.size_t
+    (AP.arrayptr a b `star` R.pts_to err full_perm 0ul)
+    (fun res -> AP.arrayptr a b `star` exists_ (fun v_err ->
+      R.pts_to err full_perm v_err
     ))
     (SZ.size_v len == AP.length (AP.array_of b))
     (fun _ -> True)

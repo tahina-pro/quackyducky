@@ -113,6 +113,8 @@ let intro_aparse
   rewrite (aparse0 p a vp) (aparse p a vp); 
   vp
 
+#set-options "--ide_id_info_off"
+
 let elim_aparse
   (#opened: _)
   (#base: Type)
@@ -129,4 +131,5 @@ let elim_aparse
 = rewrite (aparse p a vp) (aparse0 p a vp);
   let _ = gen_elim () in
   let va = vpattern (fun va -> AP.arrayptr a va) in
+  noop (); // FIXME: WHY WHY WHY?
   va
