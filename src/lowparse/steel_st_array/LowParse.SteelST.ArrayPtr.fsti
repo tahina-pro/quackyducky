@@ -164,7 +164,30 @@ let seq_slice
   (ensures (fun _ -> True))
 = Seq.slice s i j
 
-val split (#opened: _) (#base #a:Type) (#value: v base a) (x: t base a) (i:SZ.size_t)
+val gsplit (#opened: _) (#base #a:Type) (#value: v base a) (x: t base a) (i:SZ.size_t)
+  : STGhost (Ghost.erased (t base a)) opened
+          (arrayptr x value)
+          (fun res -> exists_ (fun vl -> exists_ (fun vr ->
+            arrayptr x vl `star` arrayptr res vr `star` pure (
+            SZ.size_v i <= length (array_of value) /\
+            merge_into (array_of vl) (array_of vr) (array_of value) /\
+            contents_of' vl == seq_slice (contents_of' value) 0 (SZ.size_v i) /\
+            length (array_of vl) == SZ.size_v i /\
+            length (array_of vr) == length (array_of value) - SZ.size_v i /\
+            contents_of' vr == seq_slice (contents_of' value) (SZ.size_v i) (length (array_of value)) /\
+            contents_of' value == contents_of' vl `Seq.append` contents_of' vr
+          ))))
+          (SZ.size_v i <= length (array_of value))
+          (fun _ -> True)
+
+val split' (#opened: _) (#base #a:Type) (#vl #vr: v base a) (x: t base a) (i: SZ.size_t) (x': Ghost.erased (t base a))
+  : STAtomicBase (t base a) false opened Unobservable
+          (arrayptr x vl `star` arrayptr x' vr)
+          (fun res -> arrayptr x vl `star` arrayptr res vr)
+          (adjacent (array_of vl) (array_of vr) /\ SZ.size_v i == length (array_of vl))
+          (fun res -> res == Ghost.reveal x')
+
+let split (#opened: _) (#base #a:Type) (#value: v base a) (x: t base a) (i:SZ.size_t)
   : STAtomicBase (t base a) false opened Unobservable
           (arrayptr x value)
           (fun res -> exists_ (fun vl -> exists_ (fun vr ->
@@ -179,6 +202,10 @@ val split (#opened: _) (#base #a:Type) (#value: v base a) (x: t base a) (i:SZ.si
           ))))
           (SZ.size_v i <= length (array_of value))
           (fun _ -> True)
+= let gres = gsplit x i in
+  let _ = gen_elim () in
+  let res = split' x i gres in
+  res
 
 val index (#base: Type) (#a:Type) (#value: v base a) (r: t base a) (i: SZ.size_t)
   : ST a

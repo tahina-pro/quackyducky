@@ -27,6 +27,9 @@ let array_t (base: Type) (k: parser_kind) : Tot Type =
 let array_of (#base: Type) (#k: parser_kind) (#t: Type) (w: v base k t) : GTot (array_t base k) =
   w.array_perm
 
+let array_of' (#base: Type) (#k: parser_kind) (#t: Type) (w: v base k t) : GTot (AP.array base byte) =
+  array_of w
+
 let arrayptr_parse
   (#base: Type)
   (#k: parser_kind)
@@ -107,7 +110,10 @@ let intro_aparse
     (AP.arrayptr a va)
     (fun vp -> aparse p a vp)
     (Some? (arrayptr_parse p va))
-    (fun vp -> arrayptr_parse p va == Some vp)
+    (fun vp ->
+      AP.array_of va == array_of vp /\
+      arrayptr_parse p va == Some vp
+    )
 = let vp = Some?.v (arrayptr_parse p va) in
   noop ();
   rewrite (aparse0 p a vp) (aparse p a vp); 
@@ -127,9 +133,35 @@ let elim_aparse
     (aparse p a vp)
     (fun va -> AP.arrayptr a va)
     True
-    (fun va -> arrayptr_parse p va == Some vp)
+    (fun va ->
+      AP.array_of va == array_of vp /\
+      arrayptr_parse p va == Some vp
+    )
 = rewrite (aparse p a vp) (aparse0 p a vp);
   let _ = gen_elim () in
   let va = vpattern (fun va -> AP.arrayptr a va) in
   noop (); // FIXME: WHY WHY WHY?
   va
+
+let rewrite_aparse
+  (#opened: _)
+  (#k1: parser_kind)
+  (#t1: Type)
+  (#p1: parser k1 t1)
+  (#base: _)
+  (#y1: v base k1 t1)
+  (a: byte_array base)
+  (#k2: parser_kind)
+  (#t2: Type)
+  (p2: parser k2 t2)
+: STGhost (v base k2 t2) opened
+    (aparse p1 a y1)
+    (fun y2 -> aparse p2 a y2)
+    (t1 == t2 /\ (forall bytes . parse p1 bytes == parse p2 bytes))
+    (fun y2 ->
+      t1 == t2 /\
+      array_of' y1 == array_of' y2 /\
+      y1.contents == y2.contents
+    )
+= let _ = elim_aparse p1 a in
+  intro_aparse p2 a
