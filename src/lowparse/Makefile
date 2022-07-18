@@ -42,12 +42,7 @@ include .depend
 
 lowparse: $(ALL_CHECKED_FILES)
 
-steel_st_array: lowparse
-ifdef WITH_STEEL_ST_ARRAY
-	+$(MAKE) -C $@
-endif
-
-verify-all: steel_st_array
+verify-all: lowparse
 
 tot: $(filter LowParse.Tot.%,$(ALL_CHECKED_FILES))
 
@@ -63,7 +58,7 @@ $(ALL_CHECKED_FILES): %.checked:
 	$(FSTAR_EXE) $(FSTAR_OPTIONS) $(OTHERFLAGS) $<
 	touch $@
 
-.PHONY: all verify-all clean %.fst-in %.fsti-in fstar-test lowparse steel_st_array
+.PHONY: all verify-all clean %.fst-in %.fsti-in fstar-test lowparse
 
 %.fst-in %.fsti-in:
 	@echo $(FSTAR_OPTIONS) $(OTHERFLAGS)
