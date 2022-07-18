@@ -79,7 +79,7 @@ function build_and_test_quackyducky() {
     # Rebuild the EverParse documentation and push it to project-everest.github.io
     rebuild_doc &&
     # Test EverParse proper
-    env WITH_STEEL_ST_ARRAY=1 make -j $threads -k ci &&
+    make -j $threads -k ci &&
     # Build incrementality test
     pushd tests/sample && {
         {
