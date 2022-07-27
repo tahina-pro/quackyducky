@@ -397,45 +397,11 @@ let validate_list_body
 
 #pop-options
 
-inline_for_extraction // TODO: move to Steel library with primitive Karamel extraction
-let with_local
-  (#t: Type)
-  (init: t)
-  (#pre: vprop)
-  (#ret_t: Type)
-  (#post: ret_t -> vprop)
-  (body: (r: R.ref t) ->
-    STT ret_t
-    (R.pts_to r full_perm init `star` pre)
-    (fun v -> exists_ (R.pts_to r full_perm) `star` post v)
-  )
-: STF ret_t pre post True (fun _ -> True)
-= let r = R.alloc init in
-  let v = body r in
-  let _ = gen_elim () in
-  R.free r;
-  return v
+inline_for_extraction let with_local #t = R.with_local #t
 
 module GR = Steel.ST.GhostReference
 
-inline_for_extraction // this one is fine
-let with_ghost_local
-  (#t: Type)
-  (init: Ghost.erased t)
-  (#pre: vprop)
-  (#ret_t: Type)
-  (#post: ret_t -> vprop)
-  (body: (r: GR.ref t) ->
-    STT ret_t
-    (GR.pts_to r full_perm init `star` pre)
-    (fun v -> exists_ (GR.pts_to r full_perm) `star` post v)
-  )
-: STF ret_t pre post True (fun _ -> True)
-= let r = GR.alloc init in
-  let v = body r in
-  let _ = gen_elim () in
-  GR.free r;
-  return v
+inline_for_extraction let with_ghost_local #t = R.with_local #t
 
 #push-options "--z3rlimit 16"
 
