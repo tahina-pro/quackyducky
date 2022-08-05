@@ -40,6 +40,10 @@ clean:
 
 include .depend
 
+spec: $(addsuffix .checked,$(wildcard LowParse.Spec*.fst) $(wildcard LowParse.Spec*.fsti))
+
+steel: $(addsuffix .checked,$(wildcard LowParse.Steel*.fst) $(wildcard LowParse.Steel*.fsti))
+
 lowparse: $(ALL_CHECKED_FILES)
 
 verify-all: lowparse
@@ -58,7 +62,7 @@ $(ALL_CHECKED_FILES): %.checked:
 	$(FSTAR_EXE) $(FSTAR_OPTIONS) $(OTHERFLAGS) $<
 	touch $@
 
-.PHONY: all verify-all clean %.fst-in %.fsti-in fstar-test lowparse
+.PHONY: all verify-all clean %.fst-in %.fsti-in fstar-test lowparse spec steel
 
 %.fst-in %.fsti-in:
 	@echo $(FSTAR_OPTIONS) $(OTHERFLAGS)
