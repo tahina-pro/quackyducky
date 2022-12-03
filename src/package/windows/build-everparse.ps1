@@ -2,8 +2,13 @@
 # and builds EverParse.
 
 # Choose a temporary directory name for Cygwin
-$tmpRoot = [System.IO.Path]::GetTempPath()
-[string] $tmpBaseName = [System.Guid]::NewGuid()
+$tmpRoot = "C:\"
+[string] $tmpBaseName = "everparse-cygwin64.tmp"
+New-Item -Path $tmpRoot -Name $tmpBaseName -ItemType directory
+if (-not $?) {
+   $Error
+   exit 1
+}
 $Global:cygwinRoot = (Join-Path $tmpRoot $tmpBaseName)
 
 function global:Invoke-BashCmd
@@ -15,8 +20,10 @@ function global:Invoke-BashCmd
 
     # Exec command
     $cygwinRoot = $Global:cygwinRoot
-    $cygpath = $cygwinRoot\bin\cygpath.exe -u ${pwd}
-    $cygwinRoot\bin\bash.exe --login -c "cd $cygpath && $args"
+    $cygpathExe = "$cygwinRoot\bin\cygpath.exe"
+    $cygpath = & $cygpathExe -u ${pwd}
+    $bashExe = "$cygwinRoot\bin\bash.exe"
+    & $bashExe --login -c "cd $cygpath && $args"
 
     if (-not $?) {
         Write-Host "*** Error:"
@@ -64,7 +71,7 @@ if (-not $?) {
 
 $Error.Clear()
 Write-Host "remove our copy of Cygwin"
-Remove-Item -path $Global:cygwinRoot
+Remove-Item -Recurse -Force -Path $Global:cygwinRoot
 if (-not $?) {
     $Error
     exit 1
