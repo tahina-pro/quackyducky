@@ -4,7 +4,7 @@
 # Choose a temporary directory name for Cygwin
 $tmpRoot = [System.IO.Path]::GetTempPath()
 [string] $tmpBaseName = [System.Guid]::NewGuid()
-$cygwinRoot = (Join-Path $tmpRoot $tmpBaseName)
+$Global:cygwinRoot = (Join-Path $tmpRoot $tmpBaseName)
 
 function global:Invoke-BashCmd
 {
@@ -14,6 +14,7 @@ function global:Invoke-BashCmd
     Write-Host "Args:" $args
 
     # Exec command
+    $cygwinRoot = $Global:cygwinRoot
     $cygpath = $cygwinRoot\bin\cygpath.exe -u ${pwd}
     $cygwinRoot\bin\bash.exe --login -c "cd $cygpath && $args"
 
@@ -38,7 +39,7 @@ Set-Location -ErrorAction Stop -LiteralPath $PSScriptRoot
 $Error.Clear()
 Write-Host "Install Cygwin with git"
 Invoke-WebRequest "https://www.cygwin.com/setup-x86_64.exe" -outfile "cygwinsetup.exe"
-cmd.exe /c start /wait .\cygwinsetup.exe --root $cygwinRoot -P git,wget --no-desktop --no-shortcuts --no-startmenu --wait --quiet-mode --site https://mirrors.kernel.org/sourceware/cygwin/
+cmd.exe /c start /wait .\cygwinsetup.exe --root $Global:cygwinRoot -P git,wget --no-desktop --no-shortcuts --no-startmenu --wait --quiet-mode --site https://mirrors.kernel.org/sourceware/cygwin/
 if (-not $?) {
     $Error
     exit 1
@@ -63,7 +64,7 @@ if (-not $?) {
 
 $Error.Clear()
 Write-Host "remove our copy of Cygwin"
-Remove-Item -path $cygwinRoot
+Remove-Item -path $Global:cygwinRoot
 if (-not $?) {
     $Error
     exit 1
