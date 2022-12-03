@@ -1,6 +1,11 @@
 # This script installs EverParse build dependencies (including Cygwin)
 # and builds EverParse.
 
+# Choose a temporary directory name for Cygwin
+$tmpRoot = [System.IO.Path]::GetTempPath()
+[string] $tmpBaseName = [System.Guid]::NewGuid()
+$cygwinRoot = (Join-Path $tmpRoot $tmpBaseName)
+
 function global:Invoke-BashCmd
 {
     # This function invokes a Bash command via Cygwin bash.
@@ -9,8 +14,8 @@ function global:Invoke-BashCmd
     Write-Host "Args:" $args
 
     # Exec command
-    $cygpath = c:\cygwin64\bin\cygpath.exe -u ${pwd}
-    c:\cygwin64\bin\bash.exe --login -c "cd $cygpath && $args"
+    $cygpath = $cygwinRoot\bin\cygpath.exe -u ${pwd}
+    $cygwinRoot\bin\bash.exe --login -c "cd $cygpath && $args"
 
     if (-not $?) {
         Write-Host "*** Error:"
@@ -33,7 +38,7 @@ Set-Location -ErrorAction Stop -LiteralPath $PSScriptRoot
 $Error.Clear()
 Write-Host "Install Cygwin with git"
 Invoke-WebRequest "https://www.cygwin.com/setup-x86_64.exe" -outfile "cygwinsetup.exe"
-cmd.exe /c start /wait .\cygwinsetup.exe --root C:\cygwin64 -P git,wget --no-desktop --no-shortcuts --no-startmenu --wait --quiet-mode --site https://mirrors.kernel.org/sourceware/cygwin/
+cmd.exe /c start /wait .\cygwinsetup.exe --root $cygwinRoot -P git,wget --no-desktop --no-shortcuts --no-startmenu --wait --quiet-mode --site https://mirrors.kernel.org/sourceware/cygwin/
 if (-not $?) {
     $Error
     exit 1
@@ -51,6 +56,14 @@ if (-not $?) {
 $Error.Clear()
 Write-Host "build everparse"
 Invoke-BashCmd "./build-everparse.sh"
+if (-not $?) {
+    $Error
+    exit 1
+}
+
+$Error.Clear()
+Write-Host "remove our copy of Cygwin"
+Remove-Item -path $cygwinRoot
 if (-not $?) {
     $Error
     exit 1
