@@ -9,10 +9,9 @@ pwd | grep '/src/package/windows$' > /dev/null
 cd ../../..
 # This config is necessary if everparse was cloned with non-Cygwin git
 git config --global --add safe.directory $(pwd)
-# Revert back to a clean working copy
-git clean -ffdx
-rm -rf FStar karamel hacl-star
-git reset HEAD -- .
-git checkout .
+# Revert the submodules back to a clean working copy
+submodules="FStar karamel hacl-star"
+rm -rf $submodules
+git checkout $submodules
 git submodule update --init
 env EVERPARSE_MAKE_OPTS='-j 12' make everparse
