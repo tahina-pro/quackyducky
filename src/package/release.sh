@@ -34,8 +34,8 @@ fi
 remote="https://${GH_TOKEN}@github.com/${EVERPARSE_RELEASE_ORG}/${EVERPARSE_RELEASE_REPO}.git"
 
 branchname=$(git rev-parse --abbrev-ref HEAD)
-git diff --staged --exit-code
-git diff --exit-code
+git diff --staged --exit-code --ignore-cr-at-eol
+git diff --exit-code --ignore-cr-at-eol
 git fetch $remote --tags
 git pull $remote $branchname --ff-only
 
