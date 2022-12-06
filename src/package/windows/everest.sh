@@ -570,7 +570,7 @@ set_opt () {
 # ------------------------------------------------------------------------------
 
 OPTIONS=j:k
-LONGOPTS=yes,windows,openssl,opt,admit,no-vale-archive
+LONGOPTS=yes,release,windows,openssl,opt,admit,no-vale-archive
 
 # Temporarily stores output to check for errors
 # --alternative allows long options to start with a single '-'
@@ -601,7 +601,7 @@ while true; do
             shift
             ;;
 
-        (--release)
+        (-release|--release)
             everparse_do_release=1
             shift
             ;;
