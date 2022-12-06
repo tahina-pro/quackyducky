@@ -148,7 +148,7 @@ write_everest_env_dest_file () {
 write_gh_env_dest_file () {
   str="
     # This line automatically added by $0
-    export PATH=$(pwd)/bin:\$PATH"
+    export PATH=$(pwd)/gh/bin:\$PATH"
   write_to_env_dest_file "$str"
 }
 
@@ -493,7 +493,9 @@ OCAML
   fi
 
   echo "Checking for gh (GitHub CLI)"
-  if command -v gh >/dev/null 2>&1 ; then
+  if [[ -z "$everparse_do_release" ]] ; then
+      echo "Check skipped, not releasing"
+  elif command -v gh >/dev/null 2>&1 ; then
       echo "... gh found in PATH"
   else
       red "ERROR: gh (GitHub CLI) not found in PATH"
@@ -501,13 +503,12 @@ OCAML
           gh_version=2.20.2
           magenta "Do you want to download gh $gh_version ?"
           prompt_yes true "exit 1"
-          mkdir gh
-          pushd gh
-          gh_zip=gh_${gh_version}_windows_amd64.zip
-          wget "https://github.com/cli/cli/releases/download/v${gh_version}/${gh_zip}"
-          unzip $gh_zip
+          if ! [[ -d gh ]] ; then
+              gh_zip=gh_${gh_version}_windows_amd64.zip
+              wget "https://github.com/cli/cli/releases/download/v${gh_version}/${gh_zip}"
+              unzip -d gh $gh_zip
+          fi
           write_gh_env_dest_file
-          popd
       else
           red "Please install it following https://github.com/cli/cli#installation"
           exit 1
@@ -597,6 +598,11 @@ while true; do
 
         -yes|--yes)
             make_non_interactive
+            shift
+            ;;
+
+        (--release)
+            everparse_do_release=1
             shift
             ;;
 

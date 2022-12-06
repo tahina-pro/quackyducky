@@ -69,7 +69,11 @@ Remove-Item "cygwinsetup.exe"
 
 $Error.Clear()
 Write-Host "Install and build everparse dependencies"
-Invoke-BashCmd "./everest.sh --yes -j 6 check"
+if ($Release) {
+    Invoke-BashCmd "./everest.sh --yes --release -j 6 check"
+} else {
+    Invoke-BashCmd "./everest.sh --yes -j 6 check"
+}
 if (-not $?) {
     $Error
     exit 1
