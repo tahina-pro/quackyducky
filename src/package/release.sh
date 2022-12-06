@@ -39,7 +39,7 @@ git diff --exit-code --ignore-cr-at-eol
 git fetch $remote --tags
 git pull $remote $branchname --ff-only
 
-everparse_version=$(cat $EVERPARSE_HOME/version.txt)
+everparse_version=$(sed 's!\r!!g' $EVERPARSE_HOME/version.txt)
 everparse_last_version=$(git show --no-patch --format=%h $everparse_version || true)
 everparse_commit=$(git show --no-patch --format=%h)
 if [[ $everparse_commit != $everparse_last_version ]] ; then
