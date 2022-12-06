@@ -14,7 +14,7 @@ submodules="FStar karamel hacl-star"
 rm -rf $submodules
 git checkout $submodules
 git submodule update --init
-rm -rf everparse
+rm -rf everparse* EverParse* nuget_package
 export EVERPARSE_MAKE_OPTS='-j 12'
 if [[ "$1" = "--release" ]] ; then
     make release
