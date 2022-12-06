@@ -65,7 +65,13 @@ else
     ext=.tar.gz
 fi
 
-gh="gh -R ${EVERPARSE_RELEASE_ORG}/${EVERPARSE_RELEASE_REPO}"
+if $is_windows ; then
+    exe=.exe
+else
+    exe=
+fi
+
+gh="gh$exe -R ${EVERPARSE_RELEASE_ORG}/${EVERPARSE_RELEASE_REPO}"
 
 function upload_archive () {
     archive="$1"

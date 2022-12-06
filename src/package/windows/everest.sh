@@ -145,6 +145,13 @@ write_everest_env_dest_file () {
   write_to_env_dest_file "$str"
 }
 
+write_gh_env_dest_file () {
+  str="
+    # This line automatically added by $0
+    export PATH=$(pwd)/bin:\$PATH"
+  write_to_env_dest_file "$str"
+}
+
 cygsetup="setup-x86_64.exe"
 cygsetup_args="--no-desktop --no-shortcuts --no-startmenu --wait --quiet-mode"
 # Find Cygwin's setup utility, or download it from the internet.
@@ -483,6 +490,28 @@ OCAML
       magenta "Don't do that, follow the suggestion below, and check all your other *_HOME variables."
       unset FSTAR_HOME
     fi
+  fi
+
+  echo "Checking for gh (GitHub CLI)"
+  if command -v gh >/dev/null 2>&1 ; then
+      echo "... gh found in PATH"
+  else
+      red "ERROR: gh (GitHub CLI) not found in PATH"
+      if is_windows ; then
+          gh_version=2.20.2
+          magenta "Do you want to download gh $gh_version ?"
+          prompt_yes true "exit 1"
+          mkdir gh
+          pushd gh
+          gh_zip=gh_${gh_version}_windows_amd64.zip
+          wget "https://github.com/cli/cli/releases/download/v${gh_version}/${gh_zip}"
+          unzip $gh_zip
+          write_gh_env_dest_file
+          popd
+      else
+          red "Please install it following https://github.com/cli/cli#installation"
+          exit 1
+      fi
   fi
 
   echo

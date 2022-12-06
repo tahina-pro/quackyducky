@@ -15,4 +15,9 @@ rm -rf $submodules
 git checkout $submodules
 git submodule update --init
 rm -rf everparse
-env EVERPARSE_MAKE_OPTS='-j 12' make everparse
+export EVERPARSE_MAKE_OPTS='-j 12'
+if [[ "$1" = "--release" ]] ; then
+    make release
+else
+    make everparse
+fi

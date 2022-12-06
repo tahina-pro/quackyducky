@@ -1,6 +1,20 @@
 # This script installs EverParse build dependencies (including Cygwin)
 # and builds EverParse.
 
+param(
+  [switch] $Release,
+  [string] $GHToken,
+  [string] $ReleaseOrg,
+  [string] $ReleaseRepo
+)
+
+if ($Release) {
+    if (! $GHToken) {
+        Write-Host "Error: -GHToken needed if -Release is specified"
+        exit 1
+    }
+}
+
 # Choose a temporary directory name for Cygwin
 $tmpRoot = "C:\"
 [string] $tmpBaseName = "everparse-cygwin64.tmp"
@@ -61,13 +75,34 @@ if (-not $?) {
     exit 1
 }
 
+$OldGHToken = $Env:GH_TOKEN
+if ($GHToken) {
+    $Env:GH_TOKEN = $GHToken
+}
+$OldReleaseOrg = $Env:EVERPARSE_RELEASE_ORG
+if ($ReleaseOrg) {
+    $Env:EVERPARSE_RELEASE_ORG = $ReleaseOrg
+}
+$OldReleaseRepo = $Env:EVERPARSE_RELEASE_REPO
+if ($ReleaseRepo) {
+    $Env:EVERPARSE_RELEASE_REPO = $ReleaseRepo
+}
+
 $Error.Clear()
 Write-Host "build everparse"
-Invoke-BashCmd "./build-everparse.sh"
+if ($Release) {
+    Invoke-BashCmd "./build-everparse.sh --release"
+} else {
+    Invoke-BashCmd "./build-everparse.sh"
+}
 if (-not $?) {
     $Error
     exit 1
 }
+
+$Env:GH_TOKEN = $OldGHToken
+$Env:EVERPARSE_RELEASE_ORG = $OldReleaseOrg
+$Env:EVERPARSE_RELEASE_REPO = $OldReleaseRepo
 
 $Error.Clear()
 Write-Host "remove our copy of Cygwin"
