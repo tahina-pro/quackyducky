@@ -41,7 +41,7 @@ $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 # Switch to this script's directory
-Set-Location -ErrorAction Stop -LiteralPath $PSScriptRoot
+Push-Location -ErrorAction Stop -LiteralPath $PSScriptRoot
 
 $Error.Clear()
 Write-Host "Install Cygwin with git"
@@ -77,4 +77,5 @@ if (-not $?) {
     exit 1
 }
 
+Pop-Location
 Write-Host "EverParse is now built."
