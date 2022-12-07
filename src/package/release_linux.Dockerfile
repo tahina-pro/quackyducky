@@ -5,7 +5,8 @@ FROM ocaml/opam:ubuntu-ocaml-$ocaml_version
 
 # Set up git identity
 RUN git config --global user.name 'Dzomo, the Everest Yak'
-RUN --mount=type=secret,id=DZOMO_EMAIL git config --global user.email $(sudo cat /run/secrets/DZOMO_EMAIL)
+ARG DZOMO_EMAIL
+RUN git config --global user.email $DZOMO_EMAIL
 
 # Install GitHub CLI
 # From https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
@@ -27,4 +28,5 @@ RUN eval $(opam env) && src/package/windows/everest.sh opam
 ARG CI_THREADS=24
 ARG EVERPARSE_RELEASE_ORG=project-everest
 ARG EVERPARSE_RELEASE_REPO=everparse
-RUN --mount=type=secret,id=DZOMO_GITHUB_TOKEN eval $(opam env) && GH_TOKEN=$(sudo cat /run/secrets/DZOMO_GITHUB_TOKEN) EVERPARSE_RELEASE_ORG=$EVERPARSE_RELEASE_ORG EVERPARSE_RELEASE_REPO=$EVERPARSE_RELEASE_REPO make -j $CI_THREADS release
+ARG DZOMO_GITHUB_TOKEN
+RUN eval $(opam env) && GH_TOKEN=$DZOMO_GITHUB_TOKEN EVERPARSE_RELEASE_ORG=$EVERPARSE_RELEASE_ORG EVERPARSE_RELEASE_REPO=$EVERPARSE_RELEASE_REPO make -j $CI_THREADS release
