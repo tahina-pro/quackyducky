@@ -508,6 +508,7 @@ OCAML
               wget "https://github.com/cli/cli/releases/download/v${gh_version}/${gh_zip}"
               unzip -d gh $gh_zip
           fi
+          chmod +x gh/bin/gh.exe
           write_gh_env_dest_file
       else
           red "Please install it following https://github.com/cli/cli#installation"
