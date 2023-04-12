@@ -1,7 +1,11 @@
-all: quackyducky lowparse 3d
+all: quackyducky lowparse 3d cbor
 
 lowparse:
 	+$(MAKE) -C src/lowparse
+
+.PHONY: cbor
+cbor: lowparse
+	+$(MAKE) -C src/$@
 
 3d: lowparse
 	+$(MAKE) -C src/3d
