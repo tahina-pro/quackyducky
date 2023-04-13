@@ -8,6 +8,11 @@ export FSTAR_HOME
 export LOWPARSE_HOME
 export KRML_HOME
 
+ifeq (,$(STEEL_HOME))
+  # assuming an Everest directory hierarchy
+  STEEL_HOME=$(realpath ../../../steel)
+endif
+
 DEPEND_FILE=.depend
 CACHE_DIR=cache
 CHECKED_EXT=.checked
@@ -18,6 +23,7 @@ FSTAR_OPTIONS := --odir krml --cache_dir $(CACHE_DIR) $(LAX_OPT) --cache_checked
 		--include $(FSTAR_HOME)/ulib \
 		--include $(FSTAR_HOME)/ulib/experimental \
 		--include $(LOWPARSE_HOME) \
+		--include $(STEEL_HOME)/lib/steel --load_cmxs steel \
 		--include $(KRML_HOME)/krmllib --include $(KRML_HOME)/krmllib/obj --cmi
 
 FSTAR_EXE=$(FSTAR_HOME)/bin/fstar.exe

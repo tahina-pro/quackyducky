@@ -25,11 +25,16 @@ endif
 ifdef KRML_HOME
   KRMLLIB:=$(KRML_HOME)/krmllib
 endif
+ifeq (,$(STEEL_HOME))
+  # assuming an Everest directory hierarchy
+  STEEL_HOME=$(realpath ../../../steel)
+endif
 LOWPARSE_HOME=../lowparse
 INCLUDE_KRML=--include $(KRMLLIB) --include $(KRMLLIB)/obj --include $(LOWPARSE_HOME)
+INCLUDE_STEEL=--include $(STEEL_HOME)/lib/steel --load_cmxs steel
 
 ALREADY_CACHED = --already_cached *,-CBOR
-FSTAR_OPTIONS += --use_hints --cache_checked_modules $(addprefix --include , $(INCLUDE_PATHS)) $(INCLUDE_KRML) $(ALREADY_CACHED) --cmi
+FSTAR_OPTIONS += --use_hints --cache_checked_modules $(addprefix --include , $(INCLUDE_PATHS)) $(INCLUDE_KRML) $(INCLUDE_STEEL) $(ALREADY_CACHED) --cmi
 
 ifdef STEEL_C
 STEEL_C_PATH=$(FSTAR_HOME)/examples/steel/arraystructs/my_fstar

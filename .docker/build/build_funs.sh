@@ -1,3 +1,23 @@
+function fetch_steel() {
+    if [ ! -d steel ]; then
+        git clone https://github.com/tahina-pro/steel-draft steel
+    fi
+
+    cd steel
+    git fetch origin
+    local ref=$(jq -c -r '.RepoVersions["steel_version"]' "$rootPath/.docker/build/config.json" )
+    echo Switching to Steel $ref
+    git reset --hard $ref
+    cd ..
+    export_home STEEL "$(pwd)/steel"
+}
+
+function fetch_and_make_steel() {
+    fetch_steel
+
+    OTHERFLAGS='--admit_smt_queries true' make -C steel -j $threads
+}
+
 function export_home() {
     local home_path=""
     if command -v cygpath >/dev/null 2>&1; then
@@ -81,6 +101,7 @@ function build_and_test_quackyducky() {
     rebuild_doc &&
     # Test EverParse proper
     fetch_and_make_karamel &&
+    fetch_and_make_steel &&
     make -j $threads -k ci &&
     # Build incrementality test
     pushd tests/sample && {

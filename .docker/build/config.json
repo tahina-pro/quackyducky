@@ -28,6 +28,7 @@
     "FoldersToExclude" : [ ],
 
     "RepoVersions" : {
+        "steel_version": "origin/main",
         "mitls_version" : "origin/dev",
         "karamel_version" : "origin/taramana_no_steel"
     }
