@@ -37,12 +37,9 @@ ALREADY_CACHED = --already_cached *,-CBOR
 FSTAR_OPTIONS += --use_hints --cache_checked_modules $(addprefix --include , $(INCLUDE_PATHS)) $(INCLUDE_KRML) $(INCLUDE_STEEL) $(ALREADY_CACHED) --cmi
 
 ifdef STEEL_C
-STEEL_C_PATH=$(FSTAR_HOME)/examples/steel/arraystructs/my_fstar
-FSTAR_OPTIONS += --include $(LOWPARSE_HOME)/steel_c_array --include $(STEEL_C_PATH)/lib/steel_c --load ExtractSteelC
-MY_FSTAR=$(STEEL_C_PATH)/lib/steel_c/ExtractSteelC.cmxs
+FSTAR_OPTIONS += --include $(STEEL_HOME)/lib/steel/c --include $(LOWPARSE_HOME)/steel_c_array
 else
 FSTAR_OPTIONS += --include $(LOWPARSE_HOME)/steel_array
-MY_FSTAR=
 endif
 
 FSTAR=$(FSTAR_EXE) $(FSTAR_OPTIONS) $(OTHERFLAGS)
@@ -52,7 +49,7 @@ LOWPARSE_FILES=$(wildcard *.fst *.fsti)
 clean:
 	rm -rf *.checked *.source .depend .depend.tmp out *.krml
 
-.depend: $(LOWPARSE_FILES) $(MY_FSTAR)
+.depend: $(LOWPARSE_FILES)
 	$(FSTAR) --dep full $(LOWPARSE_FILES) > $@.tmp
 	mv $@.tmp $@
 

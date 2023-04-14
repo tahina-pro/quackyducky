@@ -12,16 +12,19 @@ RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends jq
 # Dependencies (F*, Karamel and opam packages)
 ENV FSTAR_HOME=$HOME/FStar
 ENV KRML_HOME=$HOME/karamel
-ENV FSTAR_BRANCH=john_ml_steel_c
+ENV FSTAR_BRANCH=taramana_no_steel
 RUN eval $(opam env) && .docker/build/install-deps.sh
-# Compile SteelC extraction plugin
-RUN eval $(opam env) && make -j 24 -C $FSTAR_HOME/examples/steel/arraystructs/my_fstar
 
-# CI proper
 ARG CI_THREADS=24
 
+# Steel
+ENV STEEL_HOME=$HOME/steel
+RUN git clone --branch john_ml_steel_c https://github.com/tahina-pro/steel-draft $STEEL_HOME && \
+     eval $(opam env) && env OTHERFLAGS='--admit_smt_queries true' make -j $CI_THREADS -C $STEEL_HOME
+
+# CI proper
 ENV STEEL_C=1
-RUN eval $(opam env) && make -j $CI_THREADS steel-unit-test
+RUN eval $(opam env) && make -j $CI_THREADS steel-unit-test cbor
 
 WORKDIR $HOME
 ENV EVERPARSE_HOME=$HOME/everparse
