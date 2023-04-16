@@ -17,7 +17,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Identify the base FStar branch and the notification channel
         run: |
-          echo "FSTAR_BRANCH=john_ml_steel_c" >> $GITHUB_ENV
           echo "CI_SLACK_CHANNEL=$(jq -c -r '.NotificationChannel' .docker/build/config.json)" >> $GITHUB_ENV
       - name: Build Everparse and its dependencies
         run: |

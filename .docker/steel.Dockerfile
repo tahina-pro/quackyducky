@@ -19,7 +19,7 @@ ARG CI_THREADS=24
 
 # Steel
 ENV STEEL_HOME=$HOME/steel
-RUN git clone --branch john_ml_steel_c https://github.com/tahina-pro/steel-draft $STEEL_HOME && \
+RUN git clone https://github.com/tahina-pro/steel-draft $STEEL_HOME && \
      eval $(opam env) && env OTHERFLAGS='--admit_smt_queries true' make -j $CI_THREADS -C $STEEL_HOME
 
 # CI proper
