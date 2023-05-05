@@ -28,15 +28,23 @@ lowparse-unit-test: lowparse
 lowparse-bitfields-test: lowparse
 	+$(MAKE) -C tests/bitfields
 
+.PHONY: cbor
+
 ifeq (,$(STEEL_HOME))
+cbor:
 steel-unit-test:
 else
+
+cbor: lowparse
+	+$(MAKE) -C src/cbor
+
 steel-unit-test: lowparse
 	+$(MAKE) -C tests/steel
+
 endif
 
 .PHONY: steel-test
-steel-test: steel-unit-test
+steel-test: steel-unit-test cbor
 
 lowparse-test: lowparse-unit-test lowparse-bitfields-test
 
