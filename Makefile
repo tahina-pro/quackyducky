@@ -35,8 +35,11 @@ steel: lowparse
 steel-unit-test: steel
 	+$(MAKE) -C tests/steel
 
+cbor: lowparse
+	+$(MAKE) -C src/cbor
+
 .PHONY: steel-test
-steel-test: steel-unit-test
+steel-test: steel-unit-test cbor
 
 lowparse-test: lowparse-unit-test lowparse-bitfields-test
 
