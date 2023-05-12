@@ -1,4 +1,5 @@
 TARGETS := unit
+TARGETS += fold
 
 all: $(TARGETS)
 

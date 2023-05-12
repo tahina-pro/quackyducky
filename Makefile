@@ -31,7 +31,12 @@ lowparse-bitfields-test: lowparse
 ifeq (,$(STEEL_HOME))
 steel-unit-test:
 else
-steel-unit-test: lowparse
+
+.PHONY: steel-fold
+steel-fold: lowparse
+	+$(MAKE) -C src/steel_fold
+
+steel-unit-test: steel-fold
 	+$(MAKE) -C tests/steel
 endif
 
