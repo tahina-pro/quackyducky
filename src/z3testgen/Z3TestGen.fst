@@ -1,3 +1,5 @@
+module Z3TestGen
+
 let prelude : string =
 "
 (declare-datatypes (T1 T2) ((Pair (mk-pair (first T1) (second T2)))))
@@ -204,40 +206,6 @@ let mk_get_first_witness (name1: string) (name2: string) : string =
   name1
   name2
 
-let read_lisp_from ch =
-  let rec aux accu =
-    let s = ch () in
-    let accu' = accu ^ s in
-    match Sexplib.Sexp.parse accu' with
-    | Sexplib.Sexp.Done (res, _) -> (accu', res)
-    | _ -> aux accu' (* FIXME: leverage incrementality instead of starting over *)
-  in
-  aux ""
-
-let rec parse_seq_int_expr = function
-  | Sexplib.Sexp.List (Sexplib.Sexp.Atom "seq.++" :: l) ->
-    List.concat_map parse_seq_int_expr l
-  | Sexplib.Sexp.List [Sexplib.Sexp.Atom "seq.unit"; Sexplib.Sexp.Atom n] ->
-    [int_of_string n]
-  | _ -> failwith "parse_seq_int_expr: unrecognized function call"
-
-let parse_witness = function
-  | Sexplib.Sexp.List [Sexplib.Sexp.List [Sexplib.Sexp.Atom "witness"; w]] ->
-    parse_seq_int_expr w
-  | _ -> failwith "parse_witness: unrecognized witness"
-
-type z3 = {
-  from_z3: unit -> string;
-  to_z3: string -> unit;
-}
-
-let read_witness_from (from: unit -> string) =
-  let (letbinding, sexp) = read_lisp_from from in
-  let witness = parse_witness sexp in
-  print_string ";; witness: [";
-  List.iter (fun i -> print_int i; print_string "; ") witness;
-  print_endline "]";
-  (letbinding, witness)
 
 let read_witness (z3: z3) =
   read_witness_from z3.from_z3
@@ -269,48 +237,6 @@ let witnesses_for (z3: z3) name1 name2 extra =
   z3.to_z3 (mk_get_first_witness name1 name2);
   want_other_witnesses z3 name1 extra;
   z3.to_z3 "(pop)\n"
-
-let tee ch s =
-  print_string s;
-  output_string ch s;
-  flush ch
-
-let with_z3 (f: (z3 -> 'a)) : 'a =
-  let (ch_from_z3, ch_to_z3) as ch_z3 = Unix.open_process "z3 -in" in
-  let valid = ref true in
-  let is_from = ref true in
-  let from_z3 () : string =
-    if !valid then begin
-      if not !is_from
-      then begin
-        print_endline ";; From z3";
-        is_from := true
-      end;
-      let s = input_line ch_from_z3 in
-      print_endline s;
-      s
-    end
-    else ""
-  in
-  let to_z3 (s: string) : unit =
-    if !valid then begin
-      if !is_from
-      then begin
-        print_endline ";; To z3";
-        is_from := false
-      end;
-      tee ch_to_z3 s
-    end
-  in
-  let z3 = {
-    from_z3 = from_z3;
-    to_z3 = to_z3;
-  }
-  in
-  let res = f z3 in
-  valid := false;
-  let _ = Unix.close_process ch_z3 in
-  res
 
 let diff_test p1 name1 p2 name2 extra =
   let buf = ref "" in
