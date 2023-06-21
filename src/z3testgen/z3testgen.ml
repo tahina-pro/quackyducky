@@ -203,12 +203,51 @@ let postlude (name1: string) (name2: string) : string =
 let test1 = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 10)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 30)" parse_fail (wrap_parser parse_empty))))
 let test2 = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 12)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 28)" parse_fail (wrap_parser parse_empty))))
 
+let tee ch s =
+  print_string s;
+  output_string ch s;
+  flush ch
+
+let rec compute_balance s balance i =
+  if i >= String.length s
+  then balance
+  else
+    let balance' =
+      match s.[i] with
+      | '(' -> balance + 1
+      | ')' -> balance - 1
+      | _ -> balance
+    in
+    compute_balance s balance' (i + 1)
+
+let rec read_lisp_from accu balance ch =
+  let s = input_line ch in
+  print_endline s;
+  let accu' = accu ^ s in
+  let balance' = compute_balance s balance 0 in
+  if balance' = 0
+  then accu'
+  else read_lisp_from accu' balance' ch
+
 let _ =
   let buf = ref "" in
   let out x = buf := Printf.sprintf "%s%s" !buf x in
   let name1 = (test1 "p" empty_binders out).call in
   let name2 = (test2 "q" empty_binders out).call in
-  Printf.printf "%s%s%s"
-    prelude
-    !buf
-    (postlude name1 name2)
+  let (from_z3, to_z3) as z3 = Unix.open_process "z3 -in" in
+  print_endline ";; To z3";
+  tee to_z3
+    (Printf.sprintf "%s%s%s"
+       prelude
+       !buf
+       (postlude name1 name2)
+    );
+  print_endline ";; From z3";
+  let status = input_line from_z3 in
+  print_endline status;
+  if status = "sat" then begin
+    let _ = read_lisp_from "" 0 from_z3 in
+    ()
+  end;
+  let _ = Unix.close_process z3 in
+  ()

@@ -1,4 +1,7 @@
 (executable
   (name z3testgen)
+  (libraries
+    unix
+  )
   (flags (:standard -w -27-32-33-39-50))
 )
