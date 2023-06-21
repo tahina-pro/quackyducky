@@ -181,8 +181,7 @@ let parse_dtuple2 (tag: reading parser) (new_binder: string) (payload: not_readi
     out (mk_parse_dtuple2 name binders.binders body_tag.call new_binder body_payload.call);
     { call = mk_function_call name binders }
 
-let postlude (name1: string) (name2: string) : string =
-  Printf.sprintf
+let interlude =
 "
 (declare-const witness (Seq Int))
 (assert (forall ((j Int))
@@ -193,15 +192,17 @@ let postlude (name1: string) (name2: string) : string =
     true
   )
 ))
+"
+
+let mk_get_first_witness (name1: string) (name2: string) : string =
+  Printf.sprintf
+"
+(push)
 (assert (and (= (seq.len (%s witness)) 1) (= (seq.len (%s witness)) 0)))
 (check-sat)
-(get-value (witness))
 "
   name1
   name2
-
-let test1 = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 10)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 30)" parse_fail (wrap_parser parse_empty))))
-let test2 = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 12)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 28)" parse_fail (wrap_parser parse_empty))))
 
 let tee ch s =
   print_string s;
@@ -233,7 +234,6 @@ let mk_want_another_witness letbinding p =
   Printf.sprintf
 "(assert (not (= (seq.extract witness 0 (seq.nth (%s witness) 0)) (let %s (seq.extract witness 0 (seq.nth (%s witness) 0))))))
  (check-sat)
- (get-value (witness))
 "
   p
   letbinding
@@ -244,6 +244,7 @@ let rec want_other_witnesses ((from_z3, to_z3) as z3) p i =
   let status = input_line from_z3 in
   print_endline status;
   if status = "sat" then begin
+    tee to_z3 "(get-value (witness))\n";
     let letbinding = read_lisp_from "" 0 from_z3 in
     if i <= 0
     then ()
@@ -254,19 +255,30 @@ let rec want_other_witnesses ((from_z3, to_z3) as z3) p i =
     end
   end
 
-let _ =
+let witnesses_for ((from_z3, to_z3) as z3) name1 name2 extra =
+  Printf.printf ";; Witnesses that work with %s but not with %s\n" name1 name2;
+  print_endline ";; To z3";
+  tee to_z3 (mk_get_first_witness name1 name2);
+  want_other_witnesses z3 name1 extra;
+  print_endline ";; To z3";
+  tee to_z3 "(pop)\n"
+
+let dialogue p1 name1 p2 name2 extra =
   let buf = ref "" in
   let out x = buf := Printf.sprintf "%s%s" !buf x in
-  let name1 = (test1 "p" empty_binders out).call in
-  let name2 = (test2 "q" empty_binders out).call in
+  let name1 = (p1 name1 empty_binders out).call in
+  let name2 = (p2 name2 empty_binders out).call in
   let (from_z3, to_z3) as z3 = Unix.open_process "z3 -in" in
   print_endline ";; To z3";
-  tee to_z3
-    (Printf.sprintf "%s%s%s"
-       prelude
-       !buf
-       (postlude name1 name2)
-    );
-  want_other_witnesses z3 name1 5;
+  tee to_z3 prelude;
+  tee to_z3 !buf;
+  tee to_z3 interlude;
+  witnesses_for z3 name1 name2 extra;
+  witnesses_for z3 name2 name1 extra;
   let _ = Unix.close_process z3 in
   ()
+
+let _ =
+  let test1 = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 12)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 28)" parse_fail (wrap_parser parse_empty)))) in
+  let test2 = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 10)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 30)" parse_fail (wrap_parser parse_empty)))) in
+  dialogue test1 "test1" test2 "test2" 5
