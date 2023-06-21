@@ -229,6 +229,31 @@ let rec read_lisp_from accu balance ch =
   then accu'
   else read_lisp_from accu' balance' ch
 
+let mk_want_another_witness letbinding p =
+  Printf.sprintf
+"(assert (not (= (seq.extract witness 0 (seq.nth (%s witness) 0)) (let %s (seq.extract witness 0 (seq.nth (%s witness) 0))))))
+ (check-sat)
+ (get-value (witness))
+"
+  p
+  letbinding
+  p
+
+let rec want_other_witnesses ((from_z3, to_z3) as z3) p i =
+  print_endline ";; From z3";
+  let status = input_line from_z3 in
+  print_endline status;
+  if status = "sat" then begin
+    let letbinding = read_lisp_from "" 0 from_z3 in
+    if i <= 0
+    then ()
+    else begin
+      print_endline ";; To z3";
+      tee to_z3 (mk_want_another_witness letbinding p);
+      want_other_witnesses z3 p (i - 1)
+    end
+  end
+
 let _ =
   let buf = ref "" in
   let out x = buf := Printf.sprintf "%s%s" !buf x in
@@ -242,12 +267,6 @@ let _ =
        !buf
        (postlude name1 name2)
     );
-  print_endline ";; From z3";
-  let status = input_line from_z3 in
-  print_endline status;
-  if status = "sat" then begin
-    let _ = read_lisp_from "" 0 from_z3 in
-    ()
-  end;
+  want_other_witnesses z3 name1 5;
   let _ = Unix.close_process z3 in
   ()
