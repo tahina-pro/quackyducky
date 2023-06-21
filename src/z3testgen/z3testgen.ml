@@ -204,21 +204,43 @@ let mk_get_first_witness (name1: string) (name2: string) : string =
   name1
   name2
 
-let tee ch s =
-  print_string s;
-  output_string ch s;
-  flush ch
-
 let read_lisp_from ch =
   let rec aux accu =
-    let s = input_line ch in
-    print_endline s;
+    let s = ch () in
     let accu' = accu ^ s in
     match Sexplib.Sexp.parse accu' with
     | Sexplib.Sexp.Done (res, _) -> (accu', res)
     | _ -> aux accu' (* FIXME: leverage incrementality instead of starting over *)
   in
   aux ""
+
+let rec parse_seq_int_expr = function
+  | Sexplib.Sexp.List (Sexplib.Sexp.Atom "seq.++" :: l) ->
+    List.concat_map parse_seq_int_expr l
+  | Sexplib.Sexp.List [Sexplib.Sexp.Atom "seq.unit"; Sexplib.Sexp.Atom n] ->
+    [int_of_string n]
+  | _ -> failwith "parse_seq_int_expr: unrecognized function call"
+
+let parse_witness = function
+  | Sexplib.Sexp.List [Sexplib.Sexp.List [Sexplib.Sexp.Atom "witness"; w]] ->
+    parse_seq_int_expr w
+  | _ -> failwith "parse_witness: unrecognized witness"
+
+type z3 = {
+  from_z3: unit -> string;
+  to_z3: string -> unit;
+}
+
+let read_witness_from (from: unit -> string) =
+  let (letbinding, sexp) = read_lisp_from from in
+  let witness = parse_witness sexp in
+  print_string ";; witness: [";
+  List.iter (fun i -> print_int i; print_string "; ") witness;
+  print_endline "]";
+  (letbinding, witness)
+
+let read_witness (z3: z3) =
+  read_witness_from z3.from_z3
 
 let mk_want_another_witness letbinding p =
   Printf.sprintf
@@ -229,48 +251,81 @@ let mk_want_another_witness letbinding p =
   letbinding
   p
 
-let rec want_other_witnesses ((from_z3, to_z3) as z3) p i =
-  print_endline ";; From z3";
-  let status = input_line from_z3 in
-  print_endline status;
+let rec want_other_witnesses (z3: z3) p i =
+  let status = z3.from_z3 () in
   if status = "sat" then begin
-    print_endline ";; To z3";
-    tee to_z3 "(get-value (witness))\n";
-    print_endline ";; From z3";
-    let (letbinding, _) = read_lisp_from from_z3 in
+    z3.to_z3 "(get-value (witness))\n";
+    let (letbinding, _) = read_witness z3 in
     if i <= 0
     then ()
     else begin
-      print_endline ";; To z3";
-      tee to_z3 (mk_want_another_witness letbinding p);
+      z3.to_z3 (mk_want_another_witness letbinding p);
       want_other_witnesses z3 p (i - 1)
     end
   end
 
-let witnesses_for ((from_z3, to_z3) as z3) name1 name2 extra =
+let witnesses_for (z3: z3) name1 name2 extra =
   Printf.printf ";; Witnesses that work with %s but not with %s\n" name1 name2;
-  print_endline ";; To z3";
-  tee to_z3 (mk_get_first_witness name1 name2);
+  z3.to_z3 (mk_get_first_witness name1 name2);
   want_other_witnesses z3 name1 extra;
-  print_endline ";; To z3";
-  tee to_z3 "(pop)\n"
+  z3.to_z3 "(pop)\n"
 
-let dialogue p1 name1 p2 name2 extra =
+let tee ch s =
+  print_string s;
+  output_string ch s;
+  flush ch
+
+let with_z3 (f: (z3 -> 'a)) : 'a =
+  let (ch_from_z3, ch_to_z3) as ch_z3 = Unix.open_process "z3 -in" in
+  let valid = ref true in
+  let is_from = ref true in
+  let from_z3 () : string =
+    if !valid then begin
+      if not !is_from
+      then begin
+        print_endline ";; From z3";
+        is_from := true
+      end;
+      let s = input_line ch_from_z3 in
+      print_endline s;
+      s
+    end
+    else ""
+  in
+  let to_z3 (s: string) : unit =
+    if !valid then begin
+      if !is_from
+      then begin
+        print_endline ";; To z3";
+        is_from := false
+      end;
+      tee ch_to_z3 s
+    end
+  in
+  let z3 = {
+    from_z3 = from_z3;
+    to_z3 = to_z3;
+  }
+  in
+  let res = f z3 in
+  valid := false;
+  let _ = Unix.close_process ch_z3 in
+  res
+
+let diff_test p1 name1 p2 name2 extra =
   let buf = ref "" in
   let out x = buf := Printf.sprintf "%s%s" !buf x in
   let name1 = (p1 name1 empty_binders out).call in
   let name2 = (p2 name2 empty_binders out).call in
-  let (from_z3, to_z3) as z3 = Unix.open_process "z3 -in" in
-  print_endline ";; To z3";
-  tee to_z3 prelude;
-  tee to_z3 !buf;
-  tee to_z3 interlude;
-  witnesses_for z3 name1 name2 extra;
-  witnesses_for z3 name2 name1 extra;
-  let _ = Unix.close_process z3 in
-  ()
+  with_z3 (fun z3 ->
+    z3.to_z3 prelude;
+    z3.to_z3 !buf;
+    z3.to_z3 interlude;
+    witnesses_for z3 name1 name2 extra;
+    witnesses_for z3 name2 name1 extra
+  )
 
 let _ =
   let test1 = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 12)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 28)" parse_fail (wrap_parser parse_empty)))) in
-  let test2 = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 10)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 30)" parse_fail (wrap_parser parse_empty)))) in
-  dialogue test1 "test1" test2 "test2" 5
+  let test2 = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 10)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 30)" parse_fail (wrap_parser parse_u8)))) in
+  diff_test test1 "test1" test2 "test2" 5
