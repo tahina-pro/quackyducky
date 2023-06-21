@@ -209,26 +209,16 @@ let tee ch s =
   output_string ch s;
   flush ch
 
-let rec compute_balance s balance i =
-  if i >= String.length s
-  then balance
-  else
-    let balance' =
-      match s.[i] with
-      | '(' -> balance + 1
-      | ')' -> balance - 1
-      | _ -> balance
-    in
-    compute_balance s balance' (i + 1)
-
-let rec read_lisp_from accu balance ch =
-  let s = input_line ch in
-  print_endline s;
-  let accu' = accu ^ s in
-  let balance' = compute_balance s balance 0 in
-  if balance' = 0
-  then accu'
-  else read_lisp_from accu' balance' ch
+let read_lisp_from ch =
+  let rec aux accu =
+    let s = input_line ch in
+    print_endline s;
+    let accu' = accu ^ s in
+    match Sexplib.Sexp.parse accu' with
+    | Sexplib.Sexp.Done (res, _) -> (accu', res)
+    | _ -> aux accu' (* FIXME: leverage incrementality instead of starting over *)
+  in
+  aux ""
 
 let mk_want_another_witness letbinding p =
   Printf.sprintf
@@ -244,8 +234,10 @@ let rec want_other_witnesses ((from_z3, to_z3) as z3) p i =
   let status = input_line from_z3 in
   print_endline status;
   if status = "sat" then begin
+    print_endline ";; To z3";
     tee to_z3 "(get-value (witness))\n";
-    let letbinding = read_lisp_from "" 0 from_z3 in
+    print_endline ";; From z3";
+    let (letbinding, _) = read_lisp_from from_z3 in
     if i <= 0
     then ()
     else begin
