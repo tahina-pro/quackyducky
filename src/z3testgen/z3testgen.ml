@@ -181,24 +181,34 @@ let parse_dtuple2 (tag: reading parser) (new_binder: string) (payload: not_readi
     out (mk_parse_dtuple2 name binders.binders body_tag.call new_binder body_payload.call);
     { call = mk_function_call name binders }
 
-let postlude (name: string) =
+let postlude (name1: string) (name2: string) : string =
   Printf.sprintf
 "
 (declare-const witness (Seq Int))
-(assert (forall ((x Int)) (if (and (<= 0 x) (< x (seq.len witness))) (and (<= 0 (seq.nth witness x)) (< (seq.nth witness x) 256)) true)))
-(assert (= (seq.len (%s witness)) 1))
+(assert (forall ((j Int))
+  (if (and (<= 0 j) (< j (seq.len witness)))
+    (let ((witnessj (seq.nth witness j)))
+      (and (<= 0 witnessj) (< witnessj 256))
+    )
+    true
+  )
+))
+(assert (and (= (seq.len (%s witness)) 1) (= (seq.len (%s witness)) 0)))
 (check-sat)
-(get-model)
+(get-value (witness))
 "
-  name
+  name1
+  name2
 
-let test = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 10)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 30)" parse_fail (wrap_parser parse_empty))))
+let test1 = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 10)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 30)" parse_fail (wrap_parser parse_empty))))
+let test2 = parse_dtuple2 parse_u8 "x" (parse_ifthenelse "(< x 12)" parse_fail (parse_dtuple2 parse_u8 "y" (parse_ifthenelse "(> (+ x y) 28)" parse_fail (wrap_parser parse_empty))))
 
 let _ =
   let buf = ref "" in
   let out x = buf := Printf.sprintf "%s%s" !buf x in
-  let name = (test "p" empty_binders out).call in
+  let name1 = (test1 "p" empty_binders out).call in
+  let name2 = (test2 "q" empty_binders out).call in
   Printf.printf "%s%s%s"
     prelude
     !buf
-    (postlude name)
+    (postlude name1 name2)
