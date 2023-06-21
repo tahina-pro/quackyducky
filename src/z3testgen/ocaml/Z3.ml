@@ -1,3 +1,5 @@
+open Z3_Base
+
 let tee ch s =
   print_string s;
   output_string ch s;

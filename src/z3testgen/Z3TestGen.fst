@@ -1,4 +1,6 @@
 module Z3TestGen
+module Printf = FStar.Printf
+open FStar.All
 
 let prelude : string =
 "
@@ -122,17 +124,17 @@ let mk_parse_dtuple2
   tmp_payload
 
 type binders = {
-  binders: string;
+  bind: string;
   args: string;
 }
 
 let empty_binders : binders = {
-  binders = "";
+  bind = "";
   args = "";
 }
 
 let push_binder (name: string) (typ: string) (b: binders) : binders = {
-  binders = Printf.sprintf "(%s %s) %s" name typ b.binders;
+  bind = Printf.sprintf "(%s %s) %s" name typ b.bind;
   args = Printf.sprintf " %s%s" name b.args;
 }
 
@@ -142,45 +144,45 @@ let mk_function_call (name: string) (b: binders) =
 type reading = { call: string }
 type not_reading = { call: string }
 
-type 'a parser =
+type parser (a: Type) =
   (* name *) string ->
   (* binders *) binders ->
-  (* out *) (string -> unit) ->
-  'a
+  (* out *) (string -> ML unit) ->
+  ML a
 
-let parse_u8 : reading parser =
+let parse_u8 : parser reading =
   fun _ _ _ -> { call = "parse-u8" }
 
-let parse_empty : reading parser =
+let parse_empty : parser reading =
   fun _ _ _ -> { call = "parse-empty" }
 
-let parse_fail : not_reading parser =
+let parse_fail : parser not_reading =
   fun _ _ _ -> { call = "parse-fail" }
 
-let wrap_parser (p: reading parser) : not_reading parser =
+let wrap_parser (p: parser reading) : parser not_reading =
   fun name binders out ->
     let name' = Printf.sprintf "%s-wrapped" name in
     let body = p name' binders out in
-    out (mk_wrap_parser name binders.binders body.call);
+    out (mk_wrap_parser name binders.bind body.call);
     { call = mk_function_call name binders }
 
-let parse_ifthenelse (cond: string) (pthen: not_reading parser) (pelse: not_reading parser) =
+let parse_ifthenelse (cond: string) (pthen: parser not_reading) (pelse: parser not_reading) =
   fun name binders out ->
     let name_then = Printf.sprintf "%s-then" name in
     let body_then = pthen name_then binders out in
     let name_else = Printf.sprintf "%s-else" name in
     let body_else = pelse name_else binders out in
-    out (mk_parse_ifthenelse name binders.binders cond body_then.call body_else.call);
+    out (mk_parse_ifthenelse name binders.bind cond body_then.call body_else.call);
     { call = mk_function_call name binders }
 
-let parse_dtuple2 (tag: reading parser) (new_binder: string) (payload: not_reading parser) : not_reading parser =
+let parse_dtuple2 (tag: parser reading) (new_binder: string) (payload: parser not_reading) : parser not_reading =
   fun name binders out ->
     let name_tag = Printf.sprintf "%s-tag" name in
     let body_tag = tag name_tag binders out in
     let binders' = push_binder new_binder "Int" binders in (* TODO: support more types *)
     let name_payload = Printf.sprintf "%s-payload" name in
     let body_payload = payload name_payload binders' out in
-    out (mk_parse_dtuple2 name binders.binders body_tag.call new_binder body_payload.call);
+    out (mk_parse_dtuple2 name binders.bind body_tag.call new_binder body_payload.call);
     { call = mk_function_call name binders }
 
 let interlude =
@@ -207,8 +209,8 @@ let mk_get_first_witness (name1: string) (name2: string) : string =
   name2
 
 
-let read_witness (z3: z3) =
-  read_witness_from z3.from_z3
+let read_witness (z3: Z3.z3) =
+  Lisp.read_witness_from z3.from_z3
 
 let mk_want_another_witness letbinding p =
   Printf.sprintf
@@ -219,7 +221,7 @@ let mk_want_another_witness letbinding p =
   letbinding
   p
 
-let rec want_other_witnesses (z3: z3) p i =
+let rec want_other_witnesses (z3: Z3.z3) p i : ML unit =
   let status = z3.from_z3 () in
   if status = "sat" then begin
     z3.to_z3 "(get-value (witness))\n";
@@ -232,18 +234,18 @@ let rec want_other_witnesses (z3: z3) p i =
     end
   end
 
-let witnesses_for (z3: z3) name1 name2 extra =
-  Printf.printf ";; Witnesses that work with %s but not with %s\n" name1 name2;
+let witnesses_for (z3: Z3.z3) name1 name2 extra =
+  FStar.IO.print_string (Printf.sprintf ";; Witnesses that work with %s but not with %s\n" name1 name2);
   z3.to_z3 (mk_get_first_witness name1 name2);
   want_other_witnesses z3 name1 extra;
   z3.to_z3 "(pop)\n"
 
-let diff_test p1 name1 p2 name2 extra =
-  let buf = ref "" in
-  let out x = buf := Printf.sprintf "%s%s" !buf x in
+let diff_test (p1: parser not_reading) name1 (p2: parser not_reading) name2 extra =
+  let buf : ref string = alloc "" in
+  let out x : ML unit = buf := Printf.sprintf "%s%s" !buf x in
   let name1 = (p1 name1 empty_binders out).call in
   let name2 = (p2 name2 empty_binders out).call in
-  with_z3 (fun z3 ->
+  Z3.with_z3 (fun z3 ->
     z3.to_z3 prelude;
     z3.to_z3 !buf;
     z3.to_z3 interlude;

@@ -1,9 +1,6 @@
 module Z3
-
-type z3 = {
-  from_z3: unit -> ML string;
-  to_z3: string -> ML unit;
-}
+include Z3.Base
+open FStar.All
 
 val with_z3
   (#a: Type)

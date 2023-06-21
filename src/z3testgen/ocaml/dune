@@ -1,8 +1,11 @@
+(include_subdirs unqualified)
 (executable
-  (name z3testgen)
+  (name Z3TestGen)
   (libraries
+    fstar.lib
     sexplib
     unix
   )
   (flags (:standard -w -27-32-33-39-50))
+  (modes (native exe))
 )
