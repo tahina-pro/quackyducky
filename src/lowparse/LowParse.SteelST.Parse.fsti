@@ -4,6 +4,9 @@ module AP = LowParse.SteelST.ArrayPtr
 
 open Steel.ST.GenElim
 
+inline_for_extraction
+let byte_array : Type0 = AP.t byte
+
 [@@ __reduce__]
 let aparse0
   (#k: parser_kind)

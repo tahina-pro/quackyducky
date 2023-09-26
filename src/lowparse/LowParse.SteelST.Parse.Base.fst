@@ -4,9 +4,6 @@ include LowParse.Spec.Base
 
 (* For now, we only support parsers with ParserStrong or ParserConsumesAll subkind. *)
 
-inline_for_extraction
-let byte_array : Type0 = AP.t byte
-
 let array_prop (k: parser_kind) (a: AP.array byte) : Tot prop =
   let l = AP.length a in
   k.parser_kind_low <= l /\
