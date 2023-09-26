@@ -1,0 +1,13 @@
+{
+  "fstar_exe": "fstar.exe",
+  "options": [
+    "--load_cmxs",
+    "steel"
+  ],
+  "include_dirs": [
+    "../../../steel/lib/steel",
+    "../../../steel/lib/steel/pulse",
+    "../../../steel/share/steel/examples/pulse/lib",
+    "../../../steel/share/steel/examples/pulse/lib/_output/cache"
+  ]
+}
