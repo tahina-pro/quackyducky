@@ -31,12 +31,14 @@ ALREADY_CACHED = --already_cached *,-LowParse
 FSTAR_OPTIONS += --use_hints --cache_checked_modules $(addprefix --include , $(INCLUDE_PATHS)) $(INCLUDE_KRML) $(ALREADY_CACHED)
 ifneq (,$(STEEL_HOME))
 FSTAR_OPTIONS += --include $(STEEL_HOME)/lib/steel --include $(STEEL_HOME)/lib/steel/c --load_cmxs steel
+FSTAR_OPTIONS += --include $(STEEL_HOME)/lib/steel/pulse --include $(STEEL_HOME)/share/steel/examples/pulse/lib --include $(STEEL_HOME)/share/steel/examples/pulse/lib/_output/cache
 endif
 
 LOWPARSE_FILES := $(wildcard LowParse.*.fst) $(wildcard LowParse.*.fsti)
 
 ifeq (,$(STEEL_HOME))
 LOWPARSE_FILES := $(filter-out LowParse.Steel%,$(LOWPARSE_FILES))
+LOWPARSE_FILES := $(filter-out LowParse.Pulse.%,$(LOWPARSE_FILES))
 endif
 
 clean:
@@ -63,6 +65,10 @@ $(STEEL_FUNCTOR_VARIANTS): %: $(STEEL_FUNCTOR_FSTI_CHECKEDS) $(addprefix %/,$(ST
 	+$(MAKE) -C $@
 
 steel: $(STEEL_FUNCTOR_VARIANTS) $(filter LowParse.Steel%,$(ALL_CHECKED_FILES))
+
+.PHONY: pulse
+
+pulse: $(filter LowParse.Pulse.%,$(ALL_CHECKED_FILES))
 
 endif
 
