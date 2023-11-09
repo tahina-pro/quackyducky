@@ -156,7 +156,7 @@ make_everparse() {
     fi
 
     # Rebuild EverParse
-    $MAKE -C "$EVERPARSE_HOME" "$@"
+    $MAKE -C "$EVERPARSE_HOME" "$@" all cbor
 
     # Copy dependencies and Z3
     mkdir -p everparse/bin
@@ -225,6 +225,11 @@ make_everparse() {
     $cp -r $EVERPARSE_HOME/bin/3d.exe everparse/bin/3d.exe
     mkdir -p everparse/src/3d
     $cp -r $EVERPARSE_HOME/src/lowparse everparse/src/
+    $cp $EVERPARSE_HOME/src/cbor/impl/out/CBOR.o everparse/lib/
+    $cp $EVERPARSE_HOME/src/cbor/impl/out/CBOR.h everparse/include/
+    mkdir -p everparse/src/cbor
+    $cp $EVERPARSE_HOME/src/cbor/*.fst $EVERPARSE_HOME/src/cbor/*.fsti $EVERPARSE_HOME/src/cbor/*.checked everparse/src/cbor/
+    $cp $EVERPARSE_HOME/src/cbor/dist/*.fst $EVERPARSE_HOME/src/cbor/dist/*.checked everparse/src/cbor/
     if $is_windows ; then
         $cp -r $EVERPARSE_HOME/src/package/everparse.cmd everparse/
     else
