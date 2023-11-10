@@ -228,9 +228,9 @@ make_everparse() {
     $cp $EVERPARSE_HOME/src/lowparse/*.fst $EVERPARSE_HOME/src/lowparse/*.fsti $EVERPARSE_HOME/src/lowparse/*.checked $EVERPARSE_HOME/src/lowparse/*.c $EVERPARSE_HOME/src/lowparse/*.h everparse/src/lowparse/
     $cp $EVERPARSE_HOME/src/cbor/impl/out/CBOR.o everparse/lib/
     $cp $EVERPARSE_HOME/src/cbor/impl/out/CBOR.h everparse/include/
-    mkdir -p everparse/src/cbor
+    mkdir -p everparse/src/cbor/dist
     $cp $EVERPARSE_HOME/src/cbor/*.fst $EVERPARSE_HOME/src/cbor/*.fsti $EVERPARSE_HOME/src/cbor/*.checked everparse/src/cbor/
-    $cp $EVERPARSE_HOME/src/cbor/dist/*.fst $EVERPARSE_HOME/src/cbor/dist/*.checked everparse/src/cbor/
+    $cp $EVERPARSE_HOME/src/cbor/dist/*.fst $EVERPARSE_HOME/src/cbor/dist/*.checked everparse/src/cbor/dist/
     if $is_windows ; then
         $cp -r $EVERPARSE_HOME/src/package/everparse.cmd everparse/
     else
