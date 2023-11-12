@@ -126,6 +126,12 @@ make_everparse() {
     else
         export KRML_HOME=$(fixpath "$KRML_HOME")
     fi
+    if [[ -z "$STEEL_HOME" ]] ; then
+        { [[ -d steel ]] || git clone https://github.com/FStarLang/steel ; }
+        export STEEL_HOME=$(fixpath $PWD/steel)
+    else
+        export STEEL_HOME=$(fixpath "$STEEL_HOME")
+    fi
 
     if fstar_commit_id=$(print_component_commit_id "$FSTAR_HOME") ; then
         fstar_commit_date_iso=$(print_component_commit_date_iso "$FSTAR_HOME")
@@ -147,9 +153,12 @@ make_everparse() {
         fstar_commit_id=$("$FSTAR_HOME/bin/fstar.exe" --version | grep '^commit=' | sed 's!^.*=!!')
         fstar_commit_date_hr=$("$FSTAR_HOME/bin/fstar.exe" --version | grep '^date=' | sed 's!^.*=!!')
     fi
+    {
     $MAKE -C "$KRML_HOME" "$@" minimal
     $MAKE -C "$KRML_HOME/krmllib" "$@" verify-all
-
+    } &
+    $MAKE -C "$STEEL_HOME" "$@" &
+    wait
     # Install ocaml-sha if not found
     if ! ocamlfind query sha ; then
         opam install --yes sha
@@ -219,6 +228,9 @@ make_everparse() {
     $cp -r $KRML_HOME/krmllib everparse/
     $cp -r $KRML_HOME/include everparse/
     $cp -r $KRML_HOME/misc everparse/
+
+    # Copy Steel
+    PREFIX="$everparse_package_dir" $MAKE -C $STEEL_HOME install
 
     # Copy EverParse
     $cp $EVERPARSE_HOME/bin/qd.exe everparse/bin/qd.exe
