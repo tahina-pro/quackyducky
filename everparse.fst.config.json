@@ -1,0 +1,13 @@
+{
+  "fstar_exe": "fstar.exe",
+  "options": [
+    "--load_cmxs",
+    "steel"
+  ],
+  "include_dirs": [
+    "${STEEL_HOME}/lib/steel",
+    "${STEEL_HOME}/lib/steel/pulse",
+    "${STEEL_HOME}/share/steel/examples/pulse/lib",
+    "src/lowparse"
+  ]
+}
