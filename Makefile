@@ -81,9 +81,13 @@ everparse:
 lowparse-fstar-test:
 	+$(MAKE) -C src/lowparse fstar-test
 
+.PHONY: cbor
+cbor: pulse
+	+$(MAKE) -C src/cbor
+
 .PHONY: pulse
 pulse: lowparse
 	+$(MAKE) -C src/lowparse/pulse
 
 .PHONY: pulse-test
-pulse-test: pulse
+pulse-test: pulse cbor
