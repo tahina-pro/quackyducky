@@ -44,7 +44,7 @@ quackyducky-sample0-test: quackyducky lowparse
 
 quackyducky-test: quackyducky-unit-test quackyducky-sample-test quackyducky-sample0-test quackyducky-sample-low-test
 
-test: all lowparse-test quackyducky-test 3d-test
+test: all lowparse-test quackyducky-test 3d-test pulse-test
 
 ci: test
 
@@ -80,3 +80,10 @@ everparse:
 
 lowparse-fstar-test:
 	+$(MAKE) -C src/lowparse fstar-test
+
+.PHONY: pulse
+pulse: lowparse
+	+$(MAKE) -C src/lowparse/pulse
+
+.PHONY: pulse-test
+pulse-test: pulse
