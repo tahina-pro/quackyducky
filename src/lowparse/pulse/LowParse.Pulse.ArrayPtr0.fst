@@ -1,4 +1,4 @@
-module LowParse.Pulse.ArrayPtr
+module LowParse.Pulse.ArrayPtr0
 open Pulse.Lib.Pervasives
 
 module SZ = FStar.SizeT
@@ -46,10 +46,11 @@ let merge_into
   instance0.merge x1 x2 == y
 
 class array_ptr_step1
-    (#array: Type0 -> Type0)
-    (instance0: array_ptr_step0 array)
+    (array: Type0 -> Type0)
     (v: Type0 -> Type0)
 = {
+    [@@@FStar.Tactics.Typeclasses.tcinstance]
+    instance0: array_ptr_step0 array;
     array_of: (#elt: Type0) -> v elt -> GTot (array elt);
     contents_of: (#elt: Type0) -> (x: v elt) -> GTot (Seq.lseq elt (SZ.v (len (array_of x))));
     array_contents_inj: (#elt: Type0) -> (v1: v elt) -> (v2: v elt) -> Lemma
@@ -95,9 +96,8 @@ unfold
 let gsplit_post
     (#t: Type0 -> Type0)
     (#array: Type0 -> Type0)
-    {| instance0: array_ptr_step0 array |}
     (#v: Type0 -> Type0)
-    {| instance1: array_ptr_step1 instance0 v |}
+    {| instance1: array_ptr_step1 array v |}
     (#elt:Type)
     (x: t elt)
     (i:SZ.t)
@@ -107,13 +107,13 @@ let gsplit_post
     (vr: v elt)
 : Tot prop
 =
-    SZ.v i <= length (instance1.array_of value) /\
-    merge_into (instance1.array_of vl) (instance1.array_of vr) (instance1.array_of value) /\
-    instance1.contents_of vl == Seq.slice (instance1.contents_of value) 0 (SZ.v i) /\
-    length (instance1.array_of vl) == SZ.v i /\
-    length (instance1.array_of vr) == length (instance1.array_of value) - SZ.v i /\
-    instance1.contents_of vr == Seq.slice (instance1.contents_of value) (SZ.v i) (length (instance1.array_of value)) /\
-    instance1.contents_of value == instance1.contents_of vl `Seq.append` instance1.contents_of vr /\
+    SZ.v i <= length (array_of value) /\
+    merge_into (array_of vl) (array_of vr) (array_of value) /\
+    contents_of vl == Seq.slice (contents_of value) 0 (SZ.v i) /\
+    length (array_of vl) == SZ.v i /\
+    length (array_of vr) == length (array_of value) - SZ.v i /\
+    contents_of vr == Seq.slice (contents_of value) (SZ.v i) (length (array_of value)) /\
+    contents_of value == contents_of vl `Seq.append` contents_of vr /\
     (SZ.v i == 0 ==> Ghost.reveal res == x)
 
 let join_t
