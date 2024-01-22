@@ -1,11 +1,16 @@
 {
     "fstar_exe": "fstar.exe",
     "options": [
+      "--load_cmxs",
+      "steel",
       "--max_fuel", "0",
       "--max_ifuel", "2",
       "--initial_ifuel", "2"
     ],
     "include_dirs": [
+      "${STEEL_HOME}/lib/steel",
+      "${STEEL_HOME}/lib/steel/pulse",
+      "${STEEL_HOME}/share/steel/examples/pulse/lib",
       "./src/lowparse", 
       "${KRML_HOME}/krmllib",
       "${KRML_HOME}/krmllib/obj",
