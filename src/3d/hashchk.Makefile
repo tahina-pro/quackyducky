@@ -33,3 +33,12 @@ hashchk.depend: $(wildcard *.fst *.fsti) Version.fst
 include hashchk.depend
 
 extract-hashchk: $(ALL_FS_FILES)
+
+.PHONY: fstarlib
+
+fstarlib:
+	+$(MAKE) -C $(FSTAR_HOME)/ulib -f Makefile.extract.fsharp all-fs
+	rm -rf hashchk/fstarlib
+	mkdir -p hashchk/fstarlib
+	cp $(FSTAR_HOME)/ulib/fs/*.fs hashchk/fstarlib
+	cp $(FSTAR_HOME)/ulib/fs/extracted/*.fs hashchk/fstarlib
