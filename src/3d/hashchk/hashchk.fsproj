@@ -26,6 +26,7 @@
     <Compile Include="fstarlib\FStar_CommonST.fs" />
     <Compile Include="FStar_ST.fs" />
     <Compile Include="OS.fs" />
+    <Compile Include="fstarc\FStar_Options.fs" />
     <Compile Include="3d\Options.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

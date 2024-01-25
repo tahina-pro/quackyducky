@@ -51,3 +51,17 @@ fstarlib:
 	rm -rf hashchk/fstarlib
 	mkdir -p hashchk/fstarlib
 	cp $(addprefix $(FSTAR_HOME)/ulib/fs/,$(FSTARLIB_FILES)) hashchk/fstarlib/
+
+FSTARC_FILES= \
+  FStar_Compiler_Util.fs \
+  FStar_Options.fs
+
+
+FSTARC_OUTPUT_DIR=$(realpath hashchk)/fstarc
+
+.PHONY: fstarc
+
+fstarc:
+	rm -rf $(FSTARC_OUTPUT_DIR)
+	mkdir -p $(FSTARC_OUTPUT_DIR)
+	+$(MAKE) EVERPARSE_HASHCHK_OUTPUT_DIRECTORY=$(FSTARC_OUTPUT_DIR) -C $(FSTAR_HOME)/src -f $(CURDIR)/hashchk.fstarc.Makefile $(addprefix $(FSTARC_OUTPUT_DIR)/,$(FSTARC_FILES))
