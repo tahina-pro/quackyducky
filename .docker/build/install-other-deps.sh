@@ -26,7 +26,7 @@ fi
 # Install Steel and its dependencies
 if [[ -n "$STEEL_HOME" ]] ; then
     git clone --branch $STEEL_BRANCH https://github.com/FStarLang/steel "$STEEL_HOME"
-    OTHERFLAGS='--admit_smt_queries true' make -j 24 -C "$STEEL_HOME"
+    make -j 24 -C "$STEEL_HOME"
 fi
 
 opam install hex re ctypes sha sexplib
