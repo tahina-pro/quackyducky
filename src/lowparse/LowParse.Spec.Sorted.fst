@@ -437,6 +437,11 @@ let rec seq_to_list_append
   then begin
     assert ((s1 `Seq.append` s2) `Seq.equal` s2)
   end else begin
-    assert (Seq.slice (s1 `Seq.append` s2) 1 (Seq.length (s1 `Seq.append` s2)) `Seq.equal` (Seq.slice s1 1 (Seq.length s1) `Seq.append` s2));
-    seq_to_list_append (Seq.slice s1 1 (Seq.length s1)) s2
+    let h = Seq.head s1 in
+    let t = Seq.tail s1 in
+    assert (s1 == Seq.cons h t);
+    assert (s1 `Seq.append` s2 `Seq.equal` Seq.cons h (t `Seq.append` s2));
+    Seq.lemma_seq_to_list_cons h t;
+    Seq.lemma_seq_to_list_cons h (t `Seq.append` s2);
+    seq_to_list_append t s2
   end

@@ -51,6 +51,11 @@ let big_endian_lex_compare_eq
     E.n_to_be_inj n x y
   end else ()
 
+let seq_to_list_singleton (#t: Type) (x: t) : Lemma
+  (Seq.seq_to_list (Seq.create 1 x) == [x])
+  [SMTPat (Seq.seq_to_list (Seq.create 1 x))]
+= assert (Seq.create 1 x `Seq.equal` Seq.cons x Seq.empty)
+
 let rec big_endian_lex_compare_aux
   (n: nat)
   (compare: (U8.t -> U8.t -> int))

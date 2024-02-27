@@ -135,8 +135,10 @@ let rec seq_all_bytes_to_nlist_byte
     I.parse_u8_spec' (AP.contents_of vl);
     parser_kind_prop_equiv I.parse_u8_kind I.parse_u8;
     noop ();
-    let _ = intro_aparse I.parse_u8 a in
-    let _ = intro_seq_all_bytes a' in
+    let vc = intro_aparse I.parse_u8 a in
+    let vr = intro_seq_all_bytes a' in
+    noop ();
+    assert (va.contents `Seq.equal` (vc.contents `Seq.cons` vr.contents));
     let _ = seq_all_bytes_to_nlist_byte n' a' in
     NL.intro_nlist_cons n I.parse_u8 n' a a'
   end
