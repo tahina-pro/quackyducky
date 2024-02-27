@@ -84,7 +84,8 @@ let list_iterator_parser_kind
     (fun _ ->
       k.parser_kind_subkind == Some ParserStrong
     )
-= let _ = list_iterator_strong_of_list_iterator _ _ _ _ in
+= noop ();
+  let _ = list_iterator_strong_of_list_iterator _ _ _ _ in
   list_iterator_strong_facts _ _ _ _ _;
   list_iterator_of_list_iterator_strong _ _ _ _ _
 
