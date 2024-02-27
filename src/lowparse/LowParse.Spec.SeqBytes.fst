@@ -209,6 +209,14 @@ let bytes_lex_compare_append
   S.seq_to_list_append l2 l2';
   S.lex_compare_append byte_compare (Seq.seq_to_list l1) (Seq.seq_to_list l2) (Seq.seq_to_list l1') (Seq.seq_to_list l2')
 
+let seq_to_list_length_one (#t: Type) (s: Seq.seq t) : Lemma
+  (requires (Seq.length s == 1))
+  (ensures (
+    Seq.length s == 1 /\
+    Seq.seq_to_list s == [Seq.index s 0]
+  ))
+= assert (s `Seq.equal` (Seq.index s 0 `Seq.cons` Seq.empty))
+
 #push-options "--z3rlimit 16"
 #restart-solver
 
@@ -229,14 +237,20 @@ let rec bytes_lex_order_prefix_or_append
     Seq.lemma_split l2 1;
     let h1 = Seq.slice l1 0 1 in
     let t1 = Seq.slice l1 1 (Seq.length l1) in
+    let x1 = Seq.index h1 0 in
+    assert (l1 == Seq.cons x1 t1);
     Seq.append_assoc h1 t1 suff1;
     let h2 = Seq.slice l2 0 1 in
     let t2 = Seq.slice l2 1 (Seq.length l2) in
+    let x2 = Seq.index h2 0 in
+    assert (l2 == Seq.cons x2 t2);
     Seq.append_assoc h2 t2 suff2;
     if Seq.index l1 0 `FStar.UInt8.lt` Seq.index l2 0
-    then
+    then begin
+      seq_to_list_length_one h1;
+      seq_to_list_length_one h2;
       bytes_lex_compare_append h1 h2 (t1 `Seq.append` suff1) (t2 `Seq.append` suff2)
-    else begin
+    end else begin
       assert (Seq.index l1 0 = Seq.index l2 0);
       S.seq_to_list_append l1 suff1;
       S.seq_to_list_append l2 suff2;
