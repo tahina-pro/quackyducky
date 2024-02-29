@@ -290,8 +290,18 @@ let array_group3_concat_equiv
 let array_group3_concat_unique
   #b (a1 a3: array_group3 b)
 : Tot prop
-= forall (l1 l2: (l: list Cbor.raw_data_item { opt_precedes_list l b })) .
-    Some? (a3 l2) ==> (a1 l1 == Some (l1, []) <==> a1 (l1 `List.Tot.append` l2) == Some (l1, l2))
+= (forall (l: (l: list Cbor.raw_data_item { opt_precedes_list l b })) (l' rem: list Cbor.raw_data_item) .
+    array_group3_concat a1 a3 l == Some (l', rem) <==> (
+      (exists (l1 l2 l3: list Cbor.raw_data_item) .
+        l == l1 `List.Tot.append` l2 /\
+        a1 l1 == Some (l1, []) /\
+        a3 l2 == Some (l3, rem) /\
+        l' == l1 `List.Tot.append` l3
+  ))) /\
+  (forall (l1 l2: (l: list Cbor.raw_data_item { opt_precedes_list l b })) .
+    (a1 l1 == Some (l1, []) /\ Some? (a3 l2)) ==>
+    a1 (l1 `List.Tot.append` l2) == Some (l1, l2)
+  )
 
 let array_group3_concat_unique_prop_intro
   #b (a1 a3: array_group3 b)
@@ -343,6 +353,63 @@ let array_group3_concat_unique_prop_elim
   let Some (l1, l2) = a1 l in
   let Some (l3, _) = a3 l2 in
   List.Tot.append_l_nil l3
+
+let array_group3_concat_unique_intro
+  #b (a1 a3: array_group3 b)
+: Lemma
+  (requires (
+    forall (l1 l2: (l: list Cbor.raw_data_item { opt_precedes_list l b })) .
+      Some? (a3 l2) ==> (a1 l1 == Some (l1, []) <==> a1 (l1 `List.Tot.append` l2) == Some (l1, l2))
+  ))
+  (ensures (
+    array_group3_concat_unique a1 a3
+  ))
+= ()
+
+let array_group3_concat_unique_elim1
+  #b (a1 a3: array_group3 b)
+: Lemma
+  (requires (
+    array_group3_concat_unique a1 a3
+  ))
+  (ensures (
+    forall (l1 l2: (l: list Cbor.raw_data_item { opt_precedes_list l b })) .
+      Some? (a3 l2) ==> (a1 l1 == Some (l1, []) ==> a1 (l1 `List.Tot.append` l2) == Some (l1, l2))
+  ))
+= ()
+
+let indefinite_description_ghost3
+  #t1 #t2 #t3
+  (p: t1 -> t2 -> t3 -> prop)
+: Ghost (t1 & t2 & t3)
+    (requires (exists x1 x2 x3 . p x1 x2 x3))
+    (ensures (fun (x1, x2, x3) -> p x1 x2 x3))
+= let x1 = FStar.IndefiniteDescription.indefinite_description_ghost t1 (fun x1 -> exists x2 x3 . p x1 x2 x3) in
+  let x2 = FStar.IndefiniteDescription.indefinite_description_ghost t2 (fun x2 -> exists x3 . p x1 x2 x3) in
+  let x3 = FStar.IndefiniteDescription.indefinite_description_ghost t3 (fun x3 -> p x1 x2 x3) in
+  (x1, x2, x3)
+
+let array_group3_concat_unique_elim2
+  #b (a1 a3: array_group3 b)
+: Lemma
+  (requires (array_group3_concat_unique a1 a3))
+  (ensures (
+    forall (l1 l2: (l: list Cbor.raw_data_item { opt_precedes_list l b })) .
+      Some? (a3 l2) ==> (a1 (l1 `List.Tot.append` l2) == Some (l1, l2) ==> a1 l1 == Some (l1, []))
+  ))
+= let prf
+      (l1 l2: (l: list Cbor.raw_data_item { opt_precedes_list l b }))
+  : Lemma
+    ((Some? (a3 l2) /\ a1 (l1 `List.Tot.append` l2) == Some (l1, l2)) ==> a1 l1 == Some (l1, []))
+  = if FStar.StrongExcludedMiddle.strong_excluded_middle (Some? (a3 l2) /\ a1 (l1 `List.Tot.append` l2) == Some ((l1 <: list _), (l2 <: list _)))
+    then begin
+      let Some (l3, rem) = a3 l2 in
+      let l' = l1 `List.Tot.append` l3 in
+      let l = l1 `List.Tot.append` l2 in
+      array_group3_concat_unique_prop_elim_gen a1 a3 l l' rem
+    end
+  in
+  Classical.forall_intro_2 prf
 
 let array_group3_strong_prefix
   #b (a1: array_group3 b)
