@@ -1021,7 +1021,7 @@ and print_exprs (es:list expr) : Tot (list string) =
   | [] -> []
   | hd::tl -> print_expr hd :: print_exprs tl
 
-let rec print_out_expr o : ML string =
+let rec print_out_expr o : string =
   match o.out_expr_node.v with
   | OE_id i -> ident_to_string i
   | OE_star o -> Printf.sprintf "*(%s)" (print_out_expr o)
@@ -1029,12 +1029,12 @@ let rec print_out_expr o : ML string =
   | OE_deref o i -> Printf.sprintf "(%s)->(%s)" (print_out_expr o) (ident_to_string i)
   | OE_dot o i -> Printf.sprintf "(%s).(%s)" (print_out_expr o) (ident_to_string i)
 
-let print_typ_param p : ML string =
+let print_typ_param p : string =
   match p with
   | Inl e -> print_expr e
   | Inr o -> print_out_expr o
 
-let rec print_typ t : ML string =
+let rec print_typ t : string =
   match t.v with
   | Type_app i _k ps ->
     begin
@@ -1043,7 +1043,7 @@ let rec print_typ t : ML string =
     | _ ->
       Printf.sprintf "%s(%s)"
         (ident_to_string i)
-        (String.concat ", " (List.map print_typ_param ps))
+        (String.concat ", " (List.Tot.map print_typ_param ps))
     end
   | Pointer t ->
      Printf.sprintf "(pointer %s)"
@@ -1091,6 +1091,47 @@ let print_bitfield (bf:option field_bitwidth_t) =
      (print_typ a.bitfield_type)
      a.bitfield_from a.bitfield_to
 
+let rec print_action (a:action) : string =
+  let print_atomic_action (a:atomic_action)
+    : string
+    = match a with
+      | Action_return e ->
+        Printf.sprintf "(action_return %s)" (print_expr  e)
+      | Action_abort -> "(action_abort())"
+      | Action_field_pos_64 -> "(action_field_pos_64())"
+      | Action_field_pos_32 -> "(action_field_pos_32 EverParse3d.Actions.BackendFlagValue.backend_flag_value)"
+      | Action_field_ptr -> "(action_field_ptr EverParse3d.Actions.BackendFlagValue.backend_flag_value)"
+      | Action_field_ptr_after sz write_to ->
+        Printf.sprintf "(action_field_ptr_after EverParse3d.Actions.BackendFlagValue.backend_flag_value %s %s)" (print_expr  sz) (print_out_expr write_to)
+      | Action_deref i ->
+        Printf.sprintf "(action_deref %s)" (print_ident i)
+      | Action_assignment lhs rhs ->
+        Printf.sprintf "(action_assignment %s %s)" (print_out_expr lhs) (print_expr  rhs)
+      | Action_call f args ->
+        Printf.sprintf "(mk_extern_action (%s %s))" (print_ident f) (String.concat " " (List.Tot.map (print_expr ) args))
+  in
+  match a.v with
+  | Atomic_action a ->
+    print_atomic_action a
+  | Action_seq hd tl ->
+    Printf.sprintf "(action_seq %s %s)"
+                    (print_atomic_action hd)
+                    (print_action  tl)
+  | Action_ite hd then_ else_ ->
+    Printf.sprintf "(action_ite %s (fun _ -> %s) (fun _ -> %s))"
+      (print_expr  hd)
+      (print_action  then_)
+      (match else_ with None -> "" | Some else_ -> print_action else_)
+  | Action_let i a k ->
+    Printf.sprintf "(action_bind \"%s\" %s (fun %s -> %s))"
+                   (print_ident i)
+                   (print_atomic_action a)
+                   (print_ident i)
+                   (print_action  k)
+  | Action_act a -> 
+    Printf.sprintf "(action_act %s)" 
+      (print_action a)
+
 let rec print_field (f:field) : ML string =
   let field = 
     match f.v with
@@ -1122,13 +1163,14 @@ and print_atomic_field (f:atomic_field) : ML string =
     | FieldConsumeAll -> Printf.sprintf "[:consume-all]"
   in
   let sf = f.v in
-    Printf.sprintf "%s%s %s%s%s%s%s;"
+    Printf.sprintf "%s%s %s%s%s%s%s%s;"
       (if sf.field_dependence then "dependent " else "")
       (print_typ sf.field_type)
       (print_ident sf.field_ident)
       (print_bitfield sf.field_bitwidth)
       (print_array sf.field_array_opt)
       (print_opt sf.field_constraint (fun e -> Printf.sprintf "{%s}" (print_expr e)))
+      (print_opt sf.field_action (fun (e, _) -> Printf.sprintf "{:act %s}" (print_action e)))
       (print_opt sf.field_probe
         (fun p -> Printf.sprintf "probe %s (length=%s, destination=%s)"
           (print_opt p.probe_fn print_ident)

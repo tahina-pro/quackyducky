@@ -64,7 +64,7 @@ let group_bit_fields (rewrite_composite_field: field -> ML field)
 let subst' = list (ident & expr)
 
 let coalesce_grouped_bit_field env (f:bitfield_group)
-  : ML (field & subst')
+  : ML (list field & subst')
   = let id, typ, fields = f in
     let size = B.size_of_integral_typ env typ typ.range in
     let bitsize = 8 * size in
@@ -77,32 +77,17 @@ let coalesce_grouped_bit_field env (f:bitfield_group)
       | Some (Inr bf) -> bf.v
       | _ -> failwith "Must have elaborated bitfield"
     in
-    let field_dependence, field_constraint, field_action, subst =
+    let field_dependence, rev_bitfields, subst =
       List.fold_left
-        (fun (acc:(bool & _ & option (action & bool) & _)) f ->
-          let (dep, acc_constraint, acc_action, subst) = acc in
+        (fun (acc:(bool & list field & _)) f ->
+          let (dep, acc_fields, subst) = acc in
           let f = f.v in
-          let acc_action, acc_dep = 
-            match acc_action, f.field_action with
-            | None, None
-            | Some _, None -> acc_action, false
-            | None, Some (_, d) -> f.field_action, d
-            | Some (acc, dep_0), Some (fa, dep_1) ->
-              if Action_act? acc.v 
-              && Action_act? fa.v
-              then
-                Some (Ast.sequence_non_failing_actions acc fa, dep_0 || dep_1),
-                dep_0 || dep_1
-              else
-                failwith "Multiple, potentially failing actions are not supported on bitfields"
+          let dep = 
+            match f.field_action with
+            | None -> dep
+            | Some (_, dep_1) -> dep || dep_1
           in
-          let dep = dep || acc_dep || f.field_dependence in
-          let acc_constraint =
-            match f.field_constraint, acc_constraint with
-            | None, _ -> acc_constraint
-            | Some _, None -> f.field_constraint
-            | Some c, Some acc -> Some (mk_e (App And [acc; c]))
-          in
+          let dep = dep || f.field_dependence in
           let bf_exp =
             App
               (BitFieldOf bitsize order)
@@ -111,8 +96,19 @@ let coalesce_grouped_bit_field env (f:bitfield_group)
               mk_e (Constant (Int UInt32 (bitfield_attrs f).bitfield_to))]
           in
           let subst = (f.field_ident, mk_e bf_exp) :: subst in
-          dep, acc_constraint, acc_action, subst)
-       (false, None, None, [])
+          (* bitfield member will be substituted later, in rewrite_field *)
+          let struct_f = {
+            f with
+            field_type = tunit;
+            field_array_opt = FieldScalar;
+            field_bitwidth = None;
+          }
+          in
+          let af = with_range struct_f f.field_ident.range in
+          let f' = with_range (AtomicField af) f.field_ident.range in
+          (dep, f' :: acc_fields, subst)
+       )
+       (false, [], [])
        fields
     in
     let struct_field = {
@@ -120,13 +116,13 @@ let coalesce_grouped_bit_field env (f:bitfield_group)
       field_ident = field_id;
       field_type = typ;
       field_array_opt = FieldScalar;
-      field_constraint = field_constraint;
+      field_constraint = None;
       field_bitwidth = None;
-      field_action = field_action;
+      field_action = None;
       field_probe = None
     } in
-    let af = with_dummy_range struct_field in
-    with_dummy_range (AtomicField af),
+    let af = with_range struct_field field_id.range in
+    with_range (AtomicField af) field_id.range :: List.Tot.rev rev_bitfields,
     subst
   
 let rec rewrite_field (env:B.global_env) (f:field) 
@@ -143,7 +139,7 @@ let rec rewrite_field (env:B.global_env) (f:field)
                | Inl f -> (f::fields, subst)
                | Inr gf ->
                  let f, subst' = coalesce_grouped_bit_field (B.mk_env env) gf in
-                 f::fields, subst'@subst)
+                 f@fields, subst'@subst)
             gfs
             ([], [])
       in
@@ -180,11 +176,13 @@ let eliminate_one_decl (env:B.global_env) (d:decl) : ML decl =
       | [{v=AtomicField af; range; comments}] -> //just one field, it need no longer be dependent
         let af' = { af.v with field_dependence = false } in
         let af' = { af with v = af' } in
-        [{v=AtomicField af; range; comments}]
+        [{v=AtomicField af'; range; comments}]
       | _ -> fields
     in
     decl_with_v d (Record names params where fields)
   | _ -> d
 
 let eliminate_decls (env:B.global_env) (ds:list decl) : ML (list decl) =
-  List.map (eliminate_one_decl env) ds
+  let res = List.map (eliminate_one_decl env) ds in
+  FStar.IO.print_string (Printf.sprintf "after BitFields.eliminate_decls: \n%s\n" (print_decls res));
+  res

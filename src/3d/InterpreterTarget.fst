@@ -577,7 +577,9 @@ let check_validity_of_typ_indexes (td:T.type_decl) indexes =
 
 let translate_decls (en:env) (ds:T.decls)
   : ML (list decl)
-  = List.map
+  =
+    FStar.IO.print_string (Printf.sprintf "Before InterpreterTarget.translate_decls: \n%s\n" (T.print_decls_for_debug "" ds));
+    List.map
         (fun d ->
           match d with
           | (T.Type_decl td, attrs) ->

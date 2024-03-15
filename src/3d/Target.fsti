@@ -287,6 +287,7 @@ val print_kind (mname:string) (k:parser_kind) : Tot string
 val print_action (mname:string) (a:action) : ML string
 val print_definition (mname:string) (d:decl { Definition? (fst d)} ) : ML string
 val print_assumption (mname:string) (d:decl { Assumption? (fst d) } ) : ML string
+val print_decls_for_debug (mname: string) (ds: decls) : ML string
 val wrapper_name (modul: string) (fn: string) : ML string
 val validator_name (modul: string) (fn: string) : ML string
 type produce_everparse_error = | ProduceEverParseError

@@ -669,6 +669,14 @@ let print_decl_for_types (mname:string) (d:decl) : ML string =
   
   | Extern_probe _ -> ""
 
+let print_decls_for_debug (mname: string) (ds: decls) : ML string =
+  List.fold_left
+    (fun s d ->
+      Printf.sprintf "%s%s\n" s (print_decl_for_types mname d)
+    )
+    ""
+    ds
+
 /// Print a decl for M.fst
 ///
 /// No need to print Definition(s), they are `include`d from M.Types.fst
