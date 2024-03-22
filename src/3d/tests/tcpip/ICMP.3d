@@ -120,8 +120,7 @@ typedef struct _REDIRECT_MESSAGE
 } REDIRECT_MESSAGE;
 
 
-typedef struct _ECHO_OR_ECHO_REPLY_MESSAGE(UINT32 len)
-where (len >= sizeof (this))
+typedef struct _ECHO_OR_ECHO_REPLY_MESSAGE
 {
     UINT8                     Code
     {
@@ -130,7 +129,7 @@ where (len >= sizeof (this))
     UINT16BE                  Checksum;
     UINT16BE                  Identifier;
     UINT16BE                  SequenceNumber;
-    UINT8                     Data[:byte-size len - sizeof (this)];  //TODO: get an opinion on this
+    UINT8                     Data[:consume-all];  //TODO: get an opinion on this
 } ECHO_OR_ECHO_REPLY_MESSAGE;
 
 
@@ -161,7 +160,7 @@ typedef struct _INFORMATION_REQUEST_OR_INFORMATION_REPLY_MESSAGE
 } INFORMATION_REQUEST_OR_INFORMATION_REPLY_MESSAGE;
     
 
-casetype _ICMP_DATAGRAM_PAYLOAD(UINT8 Type, UINT32 len)
+casetype _ICMP_DATAGRAM_PAYLOAD(UINT8 Type)
 {
     switch(Type)
     {
@@ -176,9 +175,9 @@ casetype _ICMP_DATAGRAM_PAYLOAD(UINT8 Type, UINT32 len)
         case REDIRECT_TYPE:
             REDIRECT_MESSAGE                                        RedirectMessage;
         case ECHO_TYPE:
-            ECHO_OR_ECHO_REPLY_MESSAGE(len)                         EchoMessage;
+            ECHO_OR_ECHO_REPLY_MESSAGE                         EchoMessage;
         case ECHO_REPLY_TYPE:
-            ECHO_OR_ECHO_REPLY_MESSAGE(len)                         EchoReplyMessage;
+            ECHO_OR_ECHO_REPLY_MESSAGE                         EchoReplyMessage;
         case TIMESTAMP_TYPE:
             TIMESTAMP_OR_TIMESTAMP_REPLY_MESSAGE                    TimestampMessage;
         case TIMESTAMP_REPLY_TYPE:
@@ -192,9 +191,9 @@ casetype _ICMP_DATAGRAM_PAYLOAD(UINT8 Type, UINT32 len)
 
 
 export
-typedef struct _ICMP_DATAGRAM(UINT32 Len)
+typedef struct _ICMP_DATAGRAM
 {
     UINT8                               Type;
 
-    ICMP_DATAGRAM_PAYLOAD(Type, Len)    Payload;
+    ICMP_DATAGRAM_PAYLOAD(Type)    Payload;
 } ICMP_DATAGRAM;
