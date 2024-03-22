@@ -87,40 +87,27 @@ typedef struct _TCP_OPTIONS_RECEIVED
   UINT16        MSS_CLAMP;
 } TCP_OPTIONS_RECEIVED;
 
-typedef struct _WINDOW_SCALE_PAYLOAD(Bool WindowScaleAllowed,
-                                     mutable TCP_OPTIONS_RECEIVED *OptRx)
+typedef struct _WINDOW_SCALE_PAYLOAD(Bool WindowScaleAllowed)
 where WindowScaleAllowed
 {
   UINT8 Length
   {
     Length == 3
   };
-  UINT8 WindowScale
-  {:act
-    OptRx->WSCALE_OK = 1;
-    if((WindowScale <= TCP_MAX_WSCALE)){
-      OptRx->SND_WSCALE = WindowScale;
-    } else {
-      OptRx->SND_WSCALE = TCP_MAX_WSCALE;
-    }};
+  UINT8 WindowScale;
 } WINDOW_SCALE_PAYLOAD;
 
-typedef struct _MAX_SEG_SIZE_PAYLOAD(Bool MaxSegSizeAllowed,
-                                     mutable TCP_OPTIONS_RECEIVED *OptRx)
+typedef struct _MAX_SEG_SIZE_PAYLOAD(Bool MaxSegSizeAllowed)
 where MaxSegSizeAllowed
 {
   UINT8 Length
   {
     Length == 4
   };
-  UINT16BE MaxSegSize
-  {:act
-    OptRx->MSS_CLAMP = MaxSegSize;
-  };
+  UINT16BE MaxSegSize;
 } MAX_SEG_SIZE_PAYLOAD;
 
-typedef struct _TIMESTAMP_PAYLOAD(Bool TimeStampAllowed,
-                                  mutable TCP_OPTIONS_RECEIVED *OptRx)
+typedef struct _TIMESTAMP_PAYLOAD(Bool TimeStampAllowed)
 where TimeStampAllowed
 {
   UINT8        Length
@@ -128,30 +115,20 @@ where TimeStampAllowed
     Length == 10
   };
   UINT32BE     Tsval;
-  UINT32BE     Tsecr
-  {:act
-    OptRx->SAW_TSTAMP = 1;
-    OptRx->RCV_TSVAL = Tsval;
-    OptRx->RCV_TSECR = Tsecr;
-  };
+  UINT32BE     Tsecr;
 } TIMESTAMP_PAYLOAD;
 
-typedef struct _SackPerm_PAYLOAD(Bool SackPermAllowed,
-                                 mutable TCP_OPTIONS_RECEIVED *OptRx)
+typedef struct _SackPerm_PAYLOAD(Bool SackPermAllowed)
 where SackPermAllowed
 {
   UINT8        Length
   {
     Length == 2
   };
-  unit         Noop
-  {:act
-    OptRx->SACK_OK = TCP_SACK_SEEN;
-    OptRx->DSACK = 0;
-    OptRx->NUM_SACKS = 0;};
+  unit         Noop;
 } SackPermPayload;
 
-typedef struct _SELECTIVE_ACK_PAYLOAD(mutable PUINT8 *SackPayload)
+typedef struct _SELECTIVE_ACK_PAYLOAD
 {
   UINT8 Length
   {
@@ -160,19 +137,14 @@ typedef struct _SELECTIVE_ACK_PAYLOAD(mutable PUINT8 *SackPayload)
     Length == 26 ||
     Length == 34
   };
-  UINT8 SelectiveAck[:byte-size (Length - 2)]
-  {:act
-    var x = field_ptr;
-    *SackPayload = x;};
+  UINT8 SelectiveAck[:byte-size (Length - 2)];
 } SELECTIVE_ACK_PAYLOAD;
 
 casetype _OPTION_PAYLOAD(UINT8 OptionKind,
                          Bool WindowScaleAllowed,
                          Bool MaxSegSizeAllowed,
                          Bool TimeStampAllowed,
-                         Bool SackPermAllowed,
-                         mutable PUINT8 *SackPayload,
-                         mutable TCP_OPTIONS_RECEIVED *OptRx)
+                         Bool SackPermAllowed)
 {
   switch(OptionKind)
   {
@@ -183,28 +155,26 @@ casetype _OPTION_PAYLOAD(UINT8 OptionKind,
        unit Noop;
 
      case OPTION_KIND_MAX_SEG_SIZE:
-       MAX_SEG_SIZE_PAYLOAD(MaxSegSizeAllowed, OptRx) MaxSegSizePayload;
+       MAX_SEG_SIZE_PAYLOAD(MaxSegSizeAllowed) MaxSegSizePayload;
 
      case OPTION_KIND_WINDOW_SCALE:
-       WINDOW_SCALE_PAYLOAD(WindowScaleAllowed, OptRx) WindowScalePayload;
+       WINDOW_SCALE_PAYLOAD(WindowScaleAllowed) WindowScalePayload;
 
      case OPTION_KIND_SACK_PERMITTED:
-       SackPermPayload(SackPermAllowed, OptRx) SackPermittedPayload;
+       SackPermPayload(SackPermAllowed) SackPermittedPayload;
 
      case OPTION_KIND_SACK:
-       SELECTIVE_ACK_PAYLOAD(SackPayload) SelectiveAckPayload;
+       SELECTIVE_ACK_PAYLOAD SelectiveAckPayload;
 
      case OPTION_KIND_TIMESTAMP:
-       TIMESTAMP_PAYLOAD(TimeStampAllowed, OptRx) TimestampPayload;
+       TIMESTAMP_PAYLOAD(TimeStampAllowed) TimestampPayload;
   } 
 } OPTION_PAYLOAD;
 
 typedef struct _OPTION(Bool WindowScaleAllowed,
                        Bool MaxSegSizeAllowed,
                        Bool TimeStampAllowed,
-                       Bool SackPermAllowed,
-                       mutable PUINT8 *SackPayload,
-                       mutable TCP_OPTIONS_RECEIVED *OptRx)
+                       Bool SackPermAllowed)
 
 {
    UINT8 OptionKind;
@@ -212,9 +182,7 @@ typedef struct _OPTION(Bool WindowScaleAllowed,
                   WindowScaleAllowed,
                   MaxSegSizeAllowed,
                   TimeStampAllowed,
-                  SackPermAllowed,
-                  SackPayload,
-                  OptRx)                  OptionPayload;
+                  SackPermAllowed)                  OptionPayload;
 } OPTION;
 
 /*++
@@ -231,9 +199,7 @@ typedef struct _OPTION(Bool WindowScaleAllowed,
   --*/
 entrypoint
 typedef struct _TCP_HEADER(UINT32 SegmentLength,
-                           Bool Estab,
-                           mutable PUINT8 *SackPayload,
-                           mutable TCP_OPTIONS_RECEIVED *OptRx)
+                           Bool Estab)
 {
   PORT            SourcePort;
   PORT            DestinationPort;
@@ -274,8 +240,6 @@ typedef struct _TCP_HEADER(UINT32 SegmentLength,
   OPTION(SYN==1,
          Estab,
          Estab,
-         SYN==1&&(!Estab),
-         SackPayload,
-         OptRx)        Options[:byte-size (DataOffset * 4) - sizeof(this)];
+         SYN==1&&(!Estab))        Options[:byte-size (DataOffset * 4) - sizeof(this)];
   UINT8                Data[SegmentLength - (DataOffset * 4)];
 } TCP_HEADER;
