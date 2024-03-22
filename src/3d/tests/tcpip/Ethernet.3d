@@ -50,19 +50,10 @@ typedef struct _MAC_ADDRESS
   In case the 802.1Q tag is set, then what follows it is this
   type, a pair of a VlanTag and an EtherType, both two octets.
   --*/
-typedef struct _VLAN_ETHTYPE(mutable UINT16* VlanTagOut,
-                             mutable UINT16* EthTypeOut)
+typedef struct _VLAN_ETHTYPE
 {
-  UINT16BE VlanTag
-  {:on-success
-      *VlanTagOut = VlanTag;
-       return true; 
-  };
-  UINT16BE EthType
-  {:on-success
-      *EthTypeOut = EthType;
-       return true;
-  };
+  UINT16BE VlanTag;
+  UINT16BE EthType;
 } VLAN_ETHTYPE;
 
 /*++
@@ -72,26 +63,15 @@ typedef struct _VLAN_ETHTYPE(mutable UINT16* VlanTagOut,
   Otherwise, we have reached the end of the header and can set the
   EthTypeOut to the EthTypeOrDot1Q value.
   --*/
-casetype _VLAN_ETHTYPE_OR_EMPTY (UINT16 EthTypeOrDot1Q,
-                                 mutable Bool* Dot1QOut,
-                                 mutable UINT16* VlanTagOut,
-                                 mutable UINT16* EthTypeOut)
+casetype _VLAN_ETHTYPE_OR_EMPTY (UINT16 EthTypeOrDot1Q)
 {
   switch(EthTypeOrDot1Q)
   {
      case DOT1Q_TYPE:
-       VLAN_ETHTYPE(VlanTagOut, EthTypeOut) VlanEthType
-         {:on-success
-             *Dot1QOut = true;
-              return true;
-         };
+       VLAN_ETHTYPE VlanEthType;
 
      default:
-       unit Empty
-       {:on-success
-           *EthTypeOut = EthTypeOrDot1Q;
-            return true;         
-       };
+       unit Empty;
   }
 } VLAN_ETHTYPE_OR_EMPTY;
 
@@ -122,22 +102,11 @@ casetype _VLAN_ETHTYPE_OR_EMPTY (UINT16 EthTypeOrDot1Q,
       pointer to continue to process the next level headers.
  --*/
 entrypoint
-typedef struct _ETHERNET_FRAME(mutable Bool* Dot1QOut,
-                               mutable UINT16* VlanTagOut,
-                               mutable UINT16* EthTypeOut,
-                               mutable PUINT8* EndOfHeaderOut)
+typedef struct _ETHERNET_FRAME
 {
   MAC_ADDRESS Destination;
   MAC_ADDRESS Source;
   UINT16BE EthTypeOrDot1Q;
-  VLAN_ETHTYPE_OR_EMPTY(EthTypeOrDot1Q,
-                        Dot1QOut,
-                        VlanTagOut,
-                        EthTypeOut) VlanEthType;
-  unit EndOfHeader
-    {:on-success
-        var ptr = field_ptr;
-        *EndOfHeaderOut = ptr;
-        return true;
-    };
+  VLAN_ETHTYPE_OR_EMPTY(EthTypeOrDot1Q) VlanEthType;
+  unit EndOfHeader;
 } ETHERNET_FRAME;
