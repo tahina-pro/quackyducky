@@ -1,0 +1,31 @@
+entrypoint
+typedef struct _message {
+  UINT8 first { first > 42 };
+  UINT8 second;
+} message;
+
+/*
+entrypoint
+typedef struct _test2 {
+  UINT8 first { first >= 43 };
+  UINT8 second;
+} test2;
+
+entrypoint
+typedef struct _test3 {
+  UINT8 first { first > 18 };
+  UINT8 second;
+} test3;
+
+entrypoint
+typedef struct _test4 {
+  UINT8 first { first > 1729 };
+  UINT8 second;
+} test4;
+
+entrypoint
+typedef struct _test5 {
+  UINT8 first { first < 18 };
+  UINT8 second;
+} test5;
+*/
