@@ -9,43 +9,28 @@ void TestEverParseError(char *StructName, char *FieldName, char *Reason) {
   printf("Validation failed in Test, struct %s, field %s. Reason: %s\n", StructName, FieldName, Reason);
 }
 
-// defining iterator operations declared in Test.3d
-#define CHECK_OUT(p) \
-  if (p == NULL) \
-    return; \
-  if (p->countRemaining == 0) \
-    return;
+// Example
 
-void SetCurrentf1 (OUT* p, uint32_t f1) {
-  CHECK_OUT(p);
-  p->current->f1 = f1;
-}
-
-void SetCurrentf2 (OUT* p, uint32_t f2) {
-  CHECK_OUT(p);
-  p->current->f2 = f2;
-}
-
-void Advance (OUT* p) {
-  CHECK_OUT(p);
-  p->current++;
-  p->countRemaining--;
-}
-
-#define testSize 18
+#define testSize 42 // total input byte size
+#define inSize 32 // input pair array byte size
+#define outCount 3 // output pair array element count 
 
 int main(void) {
-  uint8_t *test = calloc(testSize, sizeof(uint8_t));
-  OUT_PAIR array[testSize]; // output only, no need to initialize
+  uint8_t test[testSize];
+  OUT_PAIR array[outCount]; // output only, no need to initialize
   OUT out = {
     .current = array,
-    .countRemaining = testSize
+    .remainingCount = outCount
   };
-  if (test != NULL) {
-    if (TestCheckContainer(&out, test, testSize)) {
+  * (uint32_t*) test = 0;
+  test[0] = inSize;
+  if (TestCheckContainer(&out, test, testSize)) {
+    if (out.current != NULL)
       printf("Validation succeeded\n");
-    }
+    else
+      printf("Validation succeeded, but there was an attempt to write past the end of the array\n");
+  } else {
+    printf("Validation failed\n");
   }
-  free(test);
   return 0;
 }
