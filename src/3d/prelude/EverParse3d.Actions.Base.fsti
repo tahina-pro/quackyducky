@@ -255,6 +255,7 @@ val validate_pair
        (#[@@@erasable] disj1:disjointness_pre)
        (#[@@@erasable] l1:eloc)
        (#allow_reading1:bool)
+       (k1_is_compile_time_constant_size: bool)
        (v1:validate_with_action_t p1 inv1 disj1 l1 allow_reading1)
        (#nz2:_)
        (#wk2: _)
@@ -265,13 +266,14 @@ val validate_pair
        (#[@@@erasable] disj2:disjointness_pre)
        (#[@@@erasable] l2:eloc)
        (#allow_reading2:bool)
+       (k2_is_compile_time_constant_size: bool)
        (v2:validate_with_action_t p2 inv2 disj2 l2 allow_reading2)
   : validate_with_action_t
       (p1 `parse_pair` p2)
       (conj_inv inv1 inv2)
       (conj_disjointness disj1 disj2)
       (l1 `eloc_union` l2)
-      false
+      (allow_reading1 && allow_reading2)
 
 inline_for_extraction noextract
 val validate_dep_pair

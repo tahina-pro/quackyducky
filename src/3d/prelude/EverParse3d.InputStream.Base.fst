@@ -65,15 +65,17 @@ class input_stream_inst (t: Type) : Type = {
     (x: t) ->
     (len: tlen x) ->
     (pos: LPE.pos_t) ->
+    (unread_bytes: U64.t) ->
     (n: U64.t) ->
     HST.Stack bool
     (requires (fun h ->
       live x h /\
-      U64.v pos == Seq.length (get_read x h)
+      U64.v pos == Seq.length (get_read x h) /\
+      U64.v unread_bytes <= Seq.length (get_remaining x h)
     ))
     (ensures (fun h res h' ->
       B.modifies B.loc_none h h' /\
-      (res == true <==> Seq.length (get_remaining x h) >= U64.v n)
+      (res == true <==> Seq.length (get_remaining x h) - U64.v unread_bytes >= U64.v n)
     ));
   
   read:
