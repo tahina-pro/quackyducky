@@ -1,6 +1,5 @@
-module CBOR.Pulse.Raw.Type
-include CBOR.Pulse.Raw.Util
-open CBOR.Spec.Raw.Base
+module CBOR.Pulse.Type
+include CBOR.Spec.RawInt
 open Pulse.Lib.Pervasives
 open Pulse.Lib.Slice
 
@@ -84,8 +83,27 @@ and cbor_raw =
 | CBOR_Case_Serialized_Array: v: cbor_serialized -> cbor_raw
 | CBOR_Case_Serialized_Map: v: cbor_serialized -> cbor_raw
 
+noeq
+type cbor_raw_serialized_iterator = {
+  s: slice U8.t;
+  len: Ghost.erased nat;
+}
+
+noeq
+type cbor_raw_slice_iterator (elt: Type0) = {
+  s: Pulse.Lib.Slice.slice elt;
+  slice_perm: perm;
+  payload_perm: perm;
+}
+
+[@@no_auto_projectors]
+noeq
+type cbor_raw_iterator (elt: Type0) =
+| CBOR_Raw_Iterator_Slice of cbor_raw_slice_iterator elt
+| CBOR_Raw_Iterator_Serialized of cbor_raw_serialized_iterator
+
 let cbor_array_iterator
-= CBOR.Pulse.Raw.Iterator.cbor_raw_iterator cbor_raw
+= cbor_raw_iterator cbor_raw
 
 let cbor_map_iterator
-= CBOR.Pulse.Raw.Iterator.cbor_raw_iterator cbor_map_entry
+= cbor_raw_iterator cbor_map_entry

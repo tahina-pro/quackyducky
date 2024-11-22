@@ -1,5 +1,5 @@
 module CBOR.Pulse.Raw.Format.Match
-include CBOR.Pulse.Raw.Type
+include CBOR.Pulse.Type
 open CBOR.Spec.Raw.Base
 open Pulse.Lib.Pervasives
 open Pulse.Lib.Slice

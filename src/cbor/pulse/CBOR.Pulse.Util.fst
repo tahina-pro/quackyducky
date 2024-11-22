@@ -1,4 +1,4 @@
-module CBOR.Pulse.Raw.Util
+module CBOR.Pulse.Util
 open Pulse.Lib.Pervasives
 
 // FIXME: this file is VERY brittle

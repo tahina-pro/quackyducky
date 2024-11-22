@@ -1,6 +1,6 @@
 module CBOR.Pulse.Raw.Iterator
-include CBOR.Pulse.Raw.Iterator.Base
-open CBOR.Pulse.Raw.Util
+include CBOR.Pulse.Type
+open CBOR.Pulse.Util
 open Pulse.Lib.Pervasives
 open Pulse.Lib.Trade
 
@@ -11,13 +11,6 @@ module SZ = FStar.SizeT
 module Trade = Pulse.Lib.Trade.Util
 module U8 = FStar.SizeT
 module U64 = FStar.UInt64
-
-noeq
-type cbor_raw_slice_iterator (elt: Type0) = {
-  s: Pulse.Lib.Slice.slice elt;
-  slice_perm: perm;
-  payload_perm: perm;
-}
 
 let cbor_raw_slice_iterator_match
   (#elt_low #elt_high: Type0)
@@ -173,11 +166,6 @@ ensures
   res
 }
 ```
-
-noeq
-type cbor_raw_iterator (elt: Type0) =
-| CBOR_Raw_Iterator_Slice of cbor_raw_slice_iterator elt
-| CBOR_Raw_Iterator_Serialized of cbor_raw_serialized_iterator
 
 let slice_split_right_postcond
   (#t: Type) (p: perm) (v: Ghost.erased (Seq.seq t)) (i: SZ.t) (v': Seq.seq t)
