@@ -167,8 +167,6 @@ fn get_header_major_type(h: header) -> u8
     b.major_type
 }
 
-type cbor_raw_serialized_iterator <'a> = &'a [u8];
-
 fn impl_correct(s: &[u8]) -> bool
 {
     let mut pres: [bool; 1] = [true; 1usize];
@@ -1367,27 +1365,29 @@ fn cbor_serialized_array_item <'a>(c: cbor_serialized <'a>, i: u64) -> cbor_raw 
     res0
 }
 
+pub type cbor_raw_serialized_iterator <'a> = &'a [u8];
+
 fn cbor_serialized_array_iterator_init <'a>(c: cbor_serialized <'a>) -> &'a [u8]
 { c.cbor_serialized_payload }
 
 fn cbor_serialized_array_iterator_is_empty(c: &[u8]) -> bool { c.len() == 0usize }
 
 #[derive(PartialEq, Clone, Copy)]
-enum cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_tags
+enum cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw_tags
 {
     CBOR_Raw_Iterator_Slice,
     CBOR_Raw_Iterator_Serialized
 }
 
 #[derive(PartialEq, Clone, Copy)]
-pub enum cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw <'a>
+pub enum cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw <'a>
 {
     CBOR_Raw_Iterator_Slice { _0: &'a [cbor_raw <'a>] },
     CBOR_Raw_Iterator_Serialized { _0: &'a [u8] }
 }
 
 fn cbor_serialized_array_iterator_next <'b, 'a>(
-    pi: &'b mut [cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw <'a>],
+    pi: &'b mut [cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw <'a>],
     i: &'a [u8]
 ) ->
     cbor_raw
@@ -1417,8 +1417,7 @@ fn cbor_serialized_array_iterator_next <'b, 'a>(
     let s2: &[u8] = sp.1;
     let res1: cbor_raw = cbor_read(s1);
     let i·: &[u8] = s2;
-    pi[0] =
-        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Serialized { _0: i· };
+    pi[0] = cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Serialized { _0: i· };
     res1
 }
 
@@ -1428,14 +1427,14 @@ fn cbor_serialized_map_iterator_init <'a>(c: cbor_serialized <'a>) -> &'a [u8]
 fn cbor_serialized_map_iterator_is_empty(c: &[u8]) -> bool { c.len() == 0usize }
 
 #[derive(PartialEq, Clone, Copy)]
-pub enum cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>
+pub enum cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry <'a>
 {
     CBOR_Raw_Iterator_Slice { _0: &'a [cbor_map_entry <'a>] },
     CBOR_Raw_Iterator_Serialized { _0: &'a [u8] }
 }
 
 fn cbor_serialized_map_iterator_next <'b, 'a>(
-    pi: &'b mut [cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
+    pi: &'b mut [cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry <'a>],
     i: &'a [u8]
 ) ->
     cbor_map_entry
@@ -1494,8 +1493,7 @@ fn cbor_serialized_map_iterator_next <'b, 'a>(
         };
     let i·: &[u8] = s2;
     pi[0] =
-        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
-        { _0: i· };
+        cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized { _0: i· };
     res3
 }
 
@@ -1532,7 +1530,7 @@ fn cbor_array_item <'a>(c: cbor_raw <'a>, i: u64) -> cbor_raw <'a>
 }
 
 fn cbor_array_iterator_init <'a>(c: cbor_raw <'a>) ->
-    cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw
+    cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw
     <'a>
 {
     match c
@@ -1540,30 +1538,29 @@ fn cbor_array_iterator_init <'a>(c: cbor_raw <'a>) ->
         cbor_raw::CBOR_Case_Serialized_Array { v: c· } =>
           {
               let i·: &[u8] = cbor_serialized_array_iterator_init(c·);
-              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
-              { _0: i· }
+              cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Serialized { _0: i· }
           },
         cbor_raw::CBOR_Case_Array { v: c· } =>
           {
               let i: &[cbor_raw] = c·.cbor_array_ptr;
-              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice { _0: i }
+              cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice { _0: i }
           },
         _ => panic!("Incomplete pattern matching")
     }
 }
 
-fn cbor_array_iterator_is_empty <'a>(c: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw <'a>) ->
+fn cbor_array_iterator_is_empty <'a>(c: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw <'a>) ->
     bool
 {
     match c
     {
-        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice { _0: c· } =>
+        cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice { _0: c· } =>
           {
               let res: bool = c·.len() == 0usize;
               let res0: bool = res;
               res0
           },
-        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Serialized { _0: c· } =>
+        cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Serialized { _0: c· } =>
           {
               let res: bool = cbor_serialized_array_iterator_is_empty(c·);
               res
@@ -1573,15 +1570,15 @@ fn cbor_array_iterator_is_empty <'a>(c: cbor_raw_iterator__CBOR_Pulse_Raw_Type_c
 }
 
 fn cbor_array_iterator_next <'b, 'a>(
-    pi: &'b mut [cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw <'a>]
+    pi: &'b mut [cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw <'a>]
 ) ->
     cbor_raw
     <'a>
 {
-    let i0: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw = pi[0];
+    let i0: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw = pi[0];
     match i0
     {
-        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice { _0: i1 } =>
+        cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice { _0: i1 } =>
           {
               let res: cbor_raw = i1[0usize];
               let sp: (&[cbor_raw], &[cbor_raw]) = i1.split_at(1usize);
@@ -1594,12 +1591,11 @@ fn cbor_array_iterator_next <'b, 'a>(
               let i11: &[cbor_raw] = s·;
               let i·: &[cbor_raw] = i11;
               pi[0] =
-                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice
-                  { _0: i· };
+                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice { _0: i· };
               let res0: cbor_raw = res;
               res0
           },
-        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Serialized { _0: i1 } =>
+        cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Serialized { _0: i1 } =>
           {
               let res: cbor_raw = cbor_serialized_array_iterator_next(pi, i1);
               res
@@ -1609,7 +1605,7 @@ fn cbor_array_iterator_next <'b, 'a>(
 }
 
 fn cbor_map_iterator_init <'a>(c: cbor_raw <'a>) ->
-    cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
+    cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry
     <'a>
 {
     match c
@@ -1617,35 +1613,30 @@ fn cbor_map_iterator_init <'a>(c: cbor_raw <'a>) ->
         cbor_raw::CBOR_Case_Serialized_Map { v: c· } =>
           {
               let i·: &[u8] = cbor_serialized_map_iterator_init(c·);
-              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
+              cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
               { _0: i· }
           },
         cbor_raw::CBOR_Case_Map { v: c· } =>
           {
               let i: &[cbor_map_entry] = c·.cbor_map_ptr;
-              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
-              { _0: i }
+              cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice { _0: i }
           },
         _ => panic!("Incomplete pattern matching")
     }
 }
 
-fn cbor_map_iterator_is_empty <'a>(
-    c: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>
-) ->
+fn cbor_map_iterator_is_empty <'a>(c: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry <'a>) ->
     bool
 {
     match c
     {
-        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
-        { _0: c· }
-        =>
+        cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice { _0: c· } =>
           {
               let res: bool = c·.len() == 0usize;
               let res0: bool = res;
               res0
           },
-        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
+        cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
         { _0: c· }
         =>
           {
@@ -1657,15 +1648,15 @@ fn cbor_map_iterator_is_empty <'a>(
 }
 
 fn cbor_map_iterator_next <'b, 'a>(
-    pi: &'b mut [cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>]
+    pi: &'b mut [cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry <'a>]
 ) ->
     cbor_map_entry
     <'a>
 {
-    let i0: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry = pi[0];
+    let i0: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry = pi[0];
     match i0
     {
-        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice { _0: i1 } =>
+        cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice { _0: i1 } =>
           {
               let res: cbor_map_entry = i1[0usize];
               let sp: (&[cbor_map_entry], &[cbor_map_entry]) = i1.split_at(1usize);
@@ -1678,12 +1669,12 @@ fn cbor_map_iterator_next <'b, 'a>(
               let i11: &[cbor_map_entry] = s·;
               let i·: &[cbor_map_entry] = i11;
               pi[0] =
-                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
+                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
                   { _0: i· };
               let res0: cbor_map_entry = res;
               res0
           },
-        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
+        cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
         { _0: i1 }
         =>
           {
@@ -2108,7 +2099,7 @@ fn cbor_raw_with_perm_get_header <'a>(xl: cbor_raw <'a>) -> header
 
 #[derive(PartialEq, Clone, Copy)]
 enum
-option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw_tags
+option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_raw_tags
 {
     None,
     Some
@@ -2116,7 +2107,7 @@ option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Typ
 
 #[derive(PartialEq, Clone, Copy)]
 enum
-option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw
+option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_raw
 <'a>
 {
     None,
@@ -2125,7 +2116,7 @@ option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Typ
 
 #[derive(PartialEq, Clone, Copy)]
 enum
-option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry
+option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_map_entry
 <'a>
 {
     None,
@@ -2178,13 +2169,13 @@ pub(crate) fn ser· <'a>(x·: cbor_raw <'a>, out: &'a mut [u8], offset: usize) -
                         match x2·
                         {
                             cbor_raw::CBOR_Case_Array { v: a } =>
-                              option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_raw::Some
                               { v: a.cbor_array_ptr },
                             _ =>
-                              option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::None
+                              option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_raw::None
                         }
                         {
-                            option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
+                            option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_raw::Some
                             { v }
                             => v,
                             _ => panic!("Incomplete pattern matching")
@@ -2254,13 +2245,13 @@ pub(crate) fn ser· <'a>(x·: cbor_raw <'a>, out: &'a mut [u8], offset: usize) -
                             match x2·
                             {
                                 cbor_raw::CBOR_Case_Map { v: a } =>
-                                  option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
+                                  option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_map_entry::Some
                                   { v: a.cbor_map_ptr },
                                 _ =>
-                                  option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::None
+                                  option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_map_entry::None
                             }
                             {
-                                option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
+                                option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_map_entry::Some
                                 { v }
                                 => v,
                                 _ => panic!("Incomplete pattern matching")
@@ -2441,13 +2432,13 @@ pub(crate) fn siz· <'a>(x·: cbor_raw <'a>, out: &'a mut [usize]) -> bool
                                 match x2·
                                 {
                                     cbor_raw::CBOR_Case_Array { v: a } =>
-                                      option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                      option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_raw::Some
                                       { v: a.cbor_array_ptr },
                                     _ =>
-                                      option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::None
+                                      option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_raw::None
                                 }
                                 {
-                                    option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                    option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_raw::Some
                                     { v }
                                     => v,
                                     _ => panic!("Incomplete pattern matching")
@@ -2521,13 +2512,13 @@ pub(crate) fn siz· <'a>(x·: cbor_raw <'a>, out: &'a mut [usize]) -> bool
                                     match x2·
                                     {
                                         cbor_raw::CBOR_Case_Map { v: a } =>
-                                          option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
+                                          option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_map_entry::Some
                                           { v: a.cbor_map_ptr },
                                         _ =>
-                                          option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::None
+                                          option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_map_entry::None
                                     }
                                     {
-                                        option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
+                                        option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Type_cbor_map_entry::Some
                                         { v }
                                         => v,
                                         _ => panic!("Incomplete pattern matching")
@@ -3368,16 +3359,14 @@ fn impl_raw_uint64_compare(x1: raw_uint64, x2: raw_uint64) -> i16
 }
 
 #[derive(PartialEq, Clone, Copy)]
-enum
-option__·CBOR_Pulse_Raw_Type_cbor_serialized···CBOR_Pulse_Raw_Type_cbor_serialized·
-<'a>
+enum option__·CBOR_Pulse_Type_cbor_serialized···CBOR_Pulse_Type_cbor_serialized· <'a>
 {
     None,
     Some { v: (cbor_serialized <'a>, cbor_serialized <'a>) }
 }
 
 fn cbor_pair_is_serialized <'a>(c1: cbor_raw <'a>, c2: cbor_raw <'a>) ->
-    option__·CBOR_Pulse_Raw_Type_cbor_serialized···CBOR_Pulse_Raw_Type_cbor_serialized·
+    option__·CBOR_Pulse_Type_cbor_serialized···CBOR_Pulse_Type_cbor_serialized·
     <'a>
 {
     match c1
@@ -3386,17 +3375,16 @@ fn cbor_pair_is_serialized <'a>(c1: cbor_raw <'a>, c2: cbor_raw <'a>) ->
           match c2
           {
               cbor_raw::CBOR_Case_Serialized_Tagged { v: s2 } =>
-                option__·CBOR_Pulse_Raw_Type_cbor_serialized···CBOR_Pulse_Raw_Type_cbor_serialized·::Some
+                option__·CBOR_Pulse_Type_cbor_serialized···CBOR_Pulse_Type_cbor_serialized·::Some
                 { v: (s1,s2) },
               _ =>
-                option__·CBOR_Pulse_Raw_Type_cbor_serialized···CBOR_Pulse_Raw_Type_cbor_serialized·::None
+                option__·CBOR_Pulse_Type_cbor_serialized···CBOR_Pulse_Type_cbor_serialized·::None
           },
-        _ =>
-          option__·CBOR_Pulse_Raw_Type_cbor_serialized···CBOR_Pulse_Raw_Type_cbor_serialized·::None
+        _ => option__·CBOR_Pulse_Type_cbor_serialized···CBOR_Pulse_Type_cbor_serialized·::None
     }
 }
 
-fn fst__CBOR_Pulse_Raw_Type_cbor_serialized_CBOR_Pulse_Raw_Type_cbor_serialized <'a>(
+fn fst__CBOR_Pulse_Type_cbor_serialized_CBOR_Pulse_Type_cbor_serialized <'a>(
     x: (cbor_serialized <'a>, cbor_serialized <'a>)
 ) ->
     cbor_serialized
@@ -3407,7 +3395,7 @@ fn fst__CBOR_Pulse_Raw_Type_cbor_serialized_CBOR_Pulse_Raw_Type_cbor_serialized 
     _1
 }
 
-fn snd__CBOR_Pulse_Raw_Type_cbor_serialized_CBOR_Pulse_Raw_Type_cbor_serialized <'a>(
+fn snd__CBOR_Pulse_Type_cbor_serialized_CBOR_Pulse_Type_cbor_serialized <'a>(
     x: (cbor_serialized <'a>, cbor_serialized <'a>)
 ) ->
     cbor_serialized
@@ -3523,16 +3511,16 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
             {
                 match cbor_pair_is_serialized(x1, x2)
                 {
-                    option__·CBOR_Pulse_Raw_Type_cbor_serialized···CBOR_Pulse_Raw_Type_cbor_serialized·::Some
+                    option__·CBOR_Pulse_Type_cbor_serialized···CBOR_Pulse_Type_cbor_serialized·::Some
                     { v: pair }
                     =>
                       {
                           let res: i16 =
                               cbor_match_compare_serialized_tagged(
-                                  fst__CBOR_Pulse_Raw_Type_cbor_serialized_CBOR_Pulse_Raw_Type_cbor_serialized(
+                                  fst__CBOR_Pulse_Type_cbor_serialized_CBOR_Pulse_Type_cbor_serialized(
                                       pair
                                   ),
-                                  snd__CBOR_Pulse_Raw_Type_cbor_serialized_CBOR_Pulse_Raw_Type_cbor_serialized(
+                                  snd__CBOR_Pulse_Type_cbor_serialized_CBOR_Pulse_Type_cbor_serialized(
                                       pair
                                   )
                               );
@@ -3575,16 +3563,16 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
             {
                 match cbor_pair_is_serialized(x1, x2)
                 {
-                    option__·CBOR_Pulse_Raw_Type_cbor_serialized···CBOR_Pulse_Raw_Type_cbor_serialized·::Some
+                    option__·CBOR_Pulse_Type_cbor_serialized···CBOR_Pulse_Type_cbor_serialized·::Some
                     { v: pair }
                     =>
                       {
                           let res: i16 =
                               cbor_match_compare_serialized_array(
-                                  fst__CBOR_Pulse_Raw_Type_cbor_serialized_CBOR_Pulse_Raw_Type_cbor_serialized(
+                                  fst__CBOR_Pulse_Type_cbor_serialized_CBOR_Pulse_Type_cbor_serialized(
                                       pair
                                   ),
-                                  snd__CBOR_Pulse_Raw_Type_cbor_serialized_CBOR_Pulse_Raw_Type_cbor_serialized(
+                                  snd__CBOR_Pulse_Type_cbor_serialized_CBOR_Pulse_Type_cbor_serialized(
                                       pair
                                   )
                               );
@@ -3592,16 +3580,16 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                       },
                     _ =>
                       {
-                          let i1: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw =
+                          let i1: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw =
                               cbor_array_iterator_init(x1);
-                          let i2: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw =
+                          let i2: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw =
                               cbor_array_iterator_init(x2);
-                          let pl1: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw = i1;
-                          let pl2: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw = i2;
+                          let pl1: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw = i1;
+                          let pl2: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw = i2;
                           let fin1: bool =
                               match pl1
                               {
-                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice
+                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice
                                   { _0: c· }
                                   =>
                                     {
@@ -3609,7 +3597,7 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                         let res0: bool = res;
                                         res0
                                     },
-                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
+                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
                                   { _0: c· }
                                   =>
                                     {
@@ -3622,7 +3610,7 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                           let fin2: bool =
                               match pl2
                               {
-                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice
+                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice
                                   { _0: c· }
                                   =>
                                     {
@@ -3630,7 +3618,7 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                         let res0: bool = res;
                                         res0
                                     },
-                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
+                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
                                   { _0: c· }
                                   =>
                                     {
@@ -3647,13 +3635,9 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                               { 1i16 }
                               else
                               {
-                                  let
-                                  mut pi1: [cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw; 1]
-                                  =
+                                  let mut pi1: [cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw; 1] =
                                       [pl1; 1usize];
-                                  let
-                                  mut pi2: [cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw; 1]
-                                  =
+                                  let mut pi2: [cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw; 1] =
                                       [pl2; 1usize];
                                   let mut pres: [i16; 1] = [0i16; 1usize];
                                   let mut pfin1: [bool; 1] = [false; 1usize];
@@ -3663,12 +3647,12 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                   while
                                   cond
                                   {
-                                      let i0: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw =
+                                      let i0: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw =
                                           (&pi1)[0];
                                       let elt1: cbor_raw =
                                           match i0
                                           {
-                                              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice
+                                              cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice
                                               { _0: i }
                                               =>
                                                 {
@@ -3684,12 +3668,12 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                     let i11: &[cbor_raw] = s·;
                                                     let i·: &[cbor_raw] = i11;
                                                     (&mut pi1)[0] =
-                                                        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice
+                                                        cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice
                                                         { _0: i· };
                                                     let res1: cbor_raw = res0;
                                                     res1
                                                 },
-                                              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
+                                              cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
                                               { _0: i }
                                               =>
                                                 {
@@ -3702,12 +3686,12 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                 },
                                               _ => panic!("Incomplete pattern matching")
                                           };
-                                      let i00: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw =
+                                      let i00: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw =
                                           (&pi2)[0];
                                       let elt2: cbor_raw =
                                           match i00
                                           {
-                                              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice
+                                              cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice
                                               { _0: i }
                                               =>
                                                 {
@@ -3723,12 +3707,12 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                     let i11: &[cbor_raw] = s·;
                                                     let i·: &[cbor_raw] = i11;
                                                     (&mut pi2)[0] =
-                                                        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice
+                                                        cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice
                                                         { _0: i· };
                                                     let res1: cbor_raw = res0;
                                                     res1
                                                 },
-                                              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
+                                              cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
                                               { _0: i }
                                               =>
                                                 {
@@ -3747,12 +3731,12 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                       let c2: i16 = res0;
                                       if c2 == 0i16
                                       {
-                                          let i11: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw =
+                                          let i11: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw =
                                               (&pi1)[0];
                                           let fin110: bool =
                                               match i11
                                               {
-                                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice
+                                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice
                                                   { _0: c· }
                                                   =>
                                                     {
@@ -3760,7 +3744,7 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                         let res2: bool = res1;
                                                         res2
                                                     },
-                                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
+                                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
                                                   { _0: c· }
                                                   =>
                                                     {
@@ -3772,12 +3756,12 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                     },
                                                   _ => panic!("Incomplete pattern matching")
                                               };
-                                          let i21: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw =
+                                          let i21: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw =
                                               (&pi2)[0];
                                           let fin21: bool =
                                               match i21
                                               {
-                                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Slice
+                                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Slice
                                                   { _0: c· }
                                                   =>
                                                     {
@@ -3785,7 +3769,7 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                         let res2: bool = res1;
                                                         res2
                                                     },
-                                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
+                                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw::CBOR_Raw_Iterator_Serialized
                                                   { _0: c· }
                                                   =>
                                                     {
@@ -3845,16 +3829,16 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
             {
                 match cbor_pair_is_serialized(x1, x2)
                 {
-                    option__·CBOR_Pulse_Raw_Type_cbor_serialized···CBOR_Pulse_Raw_Type_cbor_serialized·::Some
+                    option__·CBOR_Pulse_Type_cbor_serialized···CBOR_Pulse_Type_cbor_serialized·::Some
                     { v: pair }
                     =>
                       {
                           let res: i16 =
                               cbor_match_compare_serialized_map(
-                                  fst__CBOR_Pulse_Raw_Type_cbor_serialized_CBOR_Pulse_Raw_Type_cbor_serialized(
+                                  fst__CBOR_Pulse_Type_cbor_serialized_CBOR_Pulse_Type_cbor_serialized(
                                       pair
                                   ),
-                                  snd__CBOR_Pulse_Raw_Type_cbor_serialized_CBOR_Pulse_Raw_Type_cbor_serialized(
+                                  snd__CBOR_Pulse_Type_cbor_serialized_CBOR_Pulse_Type_cbor_serialized(
                                       pair
                                   )
                               );
@@ -3862,16 +3846,16 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                       },
                     _ =>
                       {
-                          let i1: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry =
+                          let i1: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry =
                               cbor_map_iterator_init(x1);
-                          let i2: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry =
+                          let i2: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry =
                               cbor_map_iterator_init(x2);
-                          let pl1: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry = i1;
-                          let pl2: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry = i2;
+                          let pl1: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry = i1;
+                          let pl2: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry = i2;
                           let fin1: bool =
                               match pl1
                               {
-                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
+                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
                                   { _0: c· }
                                   =>
                                     {
@@ -3879,7 +3863,7 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                         let res0: bool = res;
                                         res0
                                     },
-                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
+                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
                                   { _0: c· }
                                   =>
                                     {
@@ -3891,7 +3875,7 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                           let fin2: bool =
                               match pl2
                               {
-                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
+                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
                                   { _0: c· }
                                   =>
                                     {
@@ -3899,7 +3883,7 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                         let res0: bool = res;
                                         res0
                                     },
-                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
+                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
                                   { _0: c· }
                                   =>
                                     {
@@ -3916,15 +3900,11 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                               else
                               {
                                   let
-                                  mut
-                                  pi1:
-                                  [cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry; 1]
+                                  mut pi1: [cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry; 1]
                                   =
                                       [pl1; 1usize];
                                   let
-                                  mut
-                                  pi2:
-                                  [cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry; 1]
+                                  mut pi2: [cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry; 1]
                                   =
                                       [pl2; 1usize];
                                   let mut pres: [i16; 1] = [0i16; 1usize];
@@ -3935,14 +3915,12 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                   while
                                   cond
                                   {
-                                      let
-                                      i0: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
-                                      =
+                                      let i0: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry =
                                           (&pi1)[0];
                                       let elt1: cbor_map_entry =
                                           match i0
                                           {
-                                              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
+                                              cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
                                               { _0: i }
                                               =>
                                                 {
@@ -3958,12 +3936,12 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                     let i11: &[cbor_map_entry] = s·;
                                                     let i·: &[cbor_map_entry] = i11;
                                                     (&mut pi1)[0] =
-                                                        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
+                                                        cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
                                                         { _0: i· };
                                                     let res1: cbor_map_entry = res0;
                                                     res1
                                                 },
-                                              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
+                                              cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
                                               { _0: i }
                                               =>
                                                 {
@@ -3976,14 +3954,12 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                 },
                                               _ => panic!("Incomplete pattern matching")
                                           };
-                                      let
-                                      i00: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
-                                      =
+                                      let i00: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry =
                                           (&pi2)[0];
                                       let elt2: cbor_map_entry =
                                           match i00
                                           {
-                                              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
+                                              cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
                                               { _0: i }
                                               =>
                                                 {
@@ -3999,12 +3975,12 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                     let i11: &[cbor_map_entry] = s·;
                                                     let i·: &[cbor_map_entry] = i11;
                                                     (&mut pi2)[0] =
-                                                        cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
+                                                        cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
                                                         { _0: i· };
                                                     let res1: cbor_map_entry = res0;
                                                     res1
                                                 },
-                                              cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
+                                              cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
                                               { _0: i }
                                               =>
                                                 {
@@ -4039,13 +4015,13 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                       if c20 == 0i16
                                       {
                                           let
-                                          i11: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
+                                          i11: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry
                                           =
                                               (&pi1)[0];
                                           let fin110: bool =
                                               match i11
                                               {
-                                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
+                                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
                                                   { _0: c· }
                                                   =>
                                                     {
@@ -4053,7 +4029,7 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                         let res1: bool = res0;
                                                         res1
                                                     },
-                                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
+                                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
                                                   { _0: c· }
                                                   =>
                                                     {
@@ -4066,13 +4042,13 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                   _ => panic!("Incomplete pattern matching")
                                               };
                                           let
-                                          i21: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
+                                          i21: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry
                                           =
                                               (&pi2)[0];
                                           let fin21: bool =
                                               match i21
                                               {
-                                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
+                                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Slice
                                                   { _0: c· }
                                                   =>
                                                     {
@@ -4080,7 +4056,7 @@ pub(crate) fn impl_cbor_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i1
                                                         let res1: bool = res0;
                                                         res1
                                                     },
-                                                  cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
+                                                  cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry::CBOR_Raw_Iterator_Serialized
                                                   { _0: c· }
                                                   =>
                                                     {
@@ -4158,18 +4134,17 @@ pub const min_simple_value_long_argument: u8 = 32u8;
 
 pub const max_simple_value_additional_info: u8 = 23u8;
 
-pub type cbor_array_iterator <'a> = cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw <'a>;
+pub type cbor_array_iterator <'a> = cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw <'a>;
 
-pub type cbor_map_iterator <'a> = cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>;
+pub type cbor_map_iterator <'a> = cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry <'a>;
 
 pub type cbor_det_t <'a> = cbor_raw <'a>;
 
 pub type cbor_det_map_entry_t <'a> = cbor_map_entry <'a>;
 
-pub type cbor_det_array_iterator_t <'a> = cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw <'a>;
+pub type cbor_det_array_iterator_t <'a> = cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw <'a>;
 
-pub type cbor_det_map_iterator_t <'a> =
-cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>;
+pub type cbor_det_map_iterator_t <'a> = cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry <'a>;
 
 pub fn cbor_det_validate(input: &[u8]) -> usize
 {
@@ -4397,18 +4372,18 @@ pub fn cbor_det_mk_map_entry <'a>(xk: cbor_raw <'a>, xv: cbor_raw <'a>) -> cbor_
 }
 
 #[derive(PartialEq, Clone, Copy)]
-pub enum option__CBOR_Pulse_Raw_Type_cbor_raw <'a>
+pub enum option__CBOR_Pulse_Type_cbor_raw <'a>
 {
     None,
     Some { v: cbor_raw <'a> }
 }
 
 pub fn cbor_det_mk_map_gen <'a>(a: &'a mut [cbor_map_entry <'a>]) ->
-    option__CBOR_Pulse_Raw_Type_cbor_raw
+    option__CBOR_Pulse_Type_cbor_raw
     <'a>
 {
     if a.len() > 18446744073709551615u64 as usize
-    { option__CBOR_Pulse_Raw_Type_cbor_raw::None }
+    { option__CBOR_Pulse_Type_cbor_raw::None }
     else
     {
         let correct: bool = cbor_raw_sort(a);
@@ -4417,21 +4392,10 @@ pub fn cbor_det_mk_map_gen <'a>(a: &'a mut [cbor_map_entry <'a>]) ->
             let raw_len: raw_uint64 = mk_raw_uint64(a.len() as u64);
             let res·: cbor_map = cbor_map { cbor_map_length_size: raw_len.size, cbor_map_ptr: a };
             let res: cbor_raw = cbor_raw::CBOR_Case_Map { v: res· };
-            option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res }
+            option__CBOR_Pulse_Type_cbor_raw::Some { v: res }
         }
         else
-        { option__CBOR_Pulse_Raw_Type_cbor_raw::None }
-    }
-}
-
-pub fn cbor_det_mk_map <'a>(a: &'a mut [cbor_map_entry <'a>]) -> cbor_raw <'a>
-{
-    let sres: option__CBOR_Pulse_Raw_Type_cbor_raw = cbor_det_mk_map_gen(a);
-    let _letpattern: option__CBOR_Pulse_Raw_Type_cbor_raw = sres;
-    match _letpattern
-    {
-        option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
-        _ => panic!("Incomplete pattern matching")
+        { option__CBOR_Pulse_Type_cbor_raw::None }
     }
 }
 
@@ -4510,15 +4474,15 @@ pub fn cbor_det_get_array_length <'a>(x: cbor_raw <'a>) -> u64
 }
 
 pub fn cbor_det_array_iterator_start <'a>(x: cbor_raw <'a>) ->
-    cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw
+    cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw
     <'a>
 {
-    let res: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw = cbor_array_iterator_init(x);
+    let res: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw = cbor_array_iterator_init(x);
     res
 }
 
 pub fn cbor_det_array_iterator_is_empty <'a>(
-    x: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw <'a>
+    x: cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw <'a>
 ) ->
     bool
 {
@@ -4527,7 +4491,7 @@ pub fn cbor_det_array_iterator_is_empty <'a>(
 }
 
 pub fn cbor_det_array_iterator_next <'b, 'a>(
-    x: &'b mut [cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw <'a>]
+    x: &'b mut [cbor_raw_iterator__CBOR_Pulse_Type_cbor_raw <'a>]
 ) ->
     cbor_raw
     <'a>
@@ -4562,20 +4526,20 @@ fn impl_cbor_det_compare <'a>(x1: cbor_raw <'a>, x2: cbor_raw <'a>) -> i16
 }
 
 fn cbor_det_map_iterator_start· <'a>(x: cbor_raw <'a>) ->
-    cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
+    cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry
     <'a>
 {
-    let res: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry = cbor_map_iterator_init(x);
+    let res: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry = cbor_map_iterator_init(x);
     res
 }
 
 pub fn cbor_det_map_iterator_start <'a>(x: cbor_raw <'a>) ->
-    cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
+    cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry
     <'a>
 { cbor_det_map_iterator_start·(x) }
 
 pub fn cbor_det_map_iterator_is_empty <'a>(
-    x: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>
+    x: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry <'a>
 ) ->
     bool
 {
@@ -4584,7 +4548,7 @@ pub fn cbor_det_map_iterator_is_empty <'a>(
 }
 
 pub fn cbor_det_map_iterator_next <'b, 'a>(
-    x: &'b mut [cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>]
+    x: &'b mut [cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry <'a>]
 ) ->
     cbor_map_entry
     <'a>
@@ -4600,14 +4564,13 @@ pub fn cbor_det_map_entry_value <'a>(x2: cbor_map_entry <'a>) -> cbor_raw <'a>
 { x2.cbor_map_entry_value }
 
 pub fn cbor_det_map_get <'a>(x: cbor_raw <'a>, k: cbor_raw <'a>) ->
-    option__CBOR_Pulse_Raw_Type_cbor_raw
+    option__CBOR_Pulse_Type_cbor_raw
     <'a>
 {
-    let i: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry =
-        cbor_det_map_iterator_start·(x);
-    let mut pi: [cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry; 1] = [i; 1usize];
-    let mut pres: [option__CBOR_Pulse_Raw_Type_cbor_raw; 1] =
-        [option__CBOR_Pulse_Raw_Type_cbor_raw::None; 1usize];
+    let i: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry = cbor_det_map_iterator_start·(x);
+    let mut pi: [cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry; 1] = [i; 1usize];
+    let mut pres: [option__CBOR_Pulse_Type_cbor_raw; 1] =
+        [option__CBOR_Pulse_Type_cbor_raw::None; 1usize];
     let i_is_empty: bool = cbor_det_map_iterator_is_empty(i);
     let cont: bool = ! i_is_empty;
     let mut pcont: [bool; 1] = [cont; 1usize];
@@ -4620,14 +4583,14 @@ pub fn cbor_det_map_get <'a>(x: cbor_raw <'a>, k: cbor_raw <'a>) ->
         if comp == 0i16
         {
             let value: cbor_raw = cbor_det_map_entry_value(entry);
-            (&mut pres)[0] = option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: value };
+            (&mut pres)[0] = option__CBOR_Pulse_Type_cbor_raw::Some { v: value };
             (&mut pcont)[0] = false
         }
         else if comp > 0i16
         { (&mut pcont)[0] = false }
         else
         {
-            let i·: cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry = (&pi)[0];
+            let i·: cbor_raw_iterator__CBOR_Pulse_Type_cbor_map_entry = (&pi)[0];
             let is_empty: bool = cbor_det_map_iterator_is_empty(i·);
             let cont1: bool = ! is_empty;
             (&mut pcont)[0] = cont1
