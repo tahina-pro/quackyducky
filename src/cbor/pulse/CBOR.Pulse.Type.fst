@@ -102,8 +102,10 @@ type cbor_raw_iterator (elt: Type0) =
 | CBOR_Raw_Iterator_Slice of cbor_raw_slice_iterator elt
 | CBOR_Raw_Iterator_Serialized of cbor_raw_serialized_iterator
 
+inline_for_extraction
 let cbor_array_iterator
 = cbor_raw_iterator cbor_raw
 
+inline_for_extraction
 let cbor_map_iterator
 = cbor_raw_iterator cbor_map_entry
