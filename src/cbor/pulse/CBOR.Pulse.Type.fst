@@ -103,9 +103,11 @@ type cbor_raw_iterator (elt: Type0) =
 | CBOR_Raw_Iterator_Serialized of cbor_raw_serialized_iterator
 
 inline_for_extraction
+noextract [@@noextract_to "krml"]
 let cbor_array_iterator
 = cbor_raw_iterator cbor_raw
 
 inline_for_extraction
+noextract [@@noextract_to "krml"]
 let cbor_map_iterator
 = cbor_raw_iterator cbor_map_entry
