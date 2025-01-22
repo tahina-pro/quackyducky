@@ -6,6 +6,10 @@ jobs:
   build:
     runs-on: [self-hosted, windows, X64, opam-2-3]
     steps:
+      - name: clean
+        shell: C:\cygwin64\bin\bash.exe --login '{0}'
+        run: cd $GITHUB_WORKSPACE/ && rm -rf * && echo "There is a CR at the end of this line"
+
       - uses: actions/checkout@master
 
       - name: Prepare
