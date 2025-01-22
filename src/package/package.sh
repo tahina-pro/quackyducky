@@ -129,7 +129,11 @@ make_everparse() {
     if ! [[ -d $FSTAR_PKG_ROOT ]] ; then
         if [[ -d $FSTAR_SRC_PKG_ROOT ]] ; then
             # build from a source package
-            $MAKE -C $FSTAR_SRC_PKG_ROOT "$@" ADMIT=1
+            dune_sandbox_opt=
+            if $is_windows ; then
+                dune_sandbox_opt=DUNE_SANDBOX=none
+            fi
+            $dune_sandbox_opt $MAKE -C $FSTAR_SRC_PKG_ROOT "$@" ADMIT=1
             mkdir -p "$FSTAR_PKG_ROOT"
             PREFIX="$(fixpath "$PWD/$FSTAR_PKG_ROOT")" $MAKE -C $FSTAR_SRC_PKG_ROOT install
             $cp "$FSTAR_SRC_PKG_ROOT/LICENSE" "$FSTAR_PKG_ROOT/"
