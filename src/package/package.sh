@@ -133,7 +133,7 @@ make_everparse() {
             if $is_windows ; then
                 dune_sandbox_opt=DUNE_SANDBOX=none
             fi
-            $dune_sandbox_opt $MAKE -C $FSTAR_SRC_PKG_ROOT "$@" ADMIT=1
+            env $dune_sandbox_opt $MAKE -C $FSTAR_SRC_PKG_ROOT "$@" ADMIT=1
             mkdir -p "$FSTAR_PKG_ROOT"
             PREFIX="$(fixpath "$PWD/$FSTAR_PKG_ROOT")" $MAKE -C $FSTAR_SRC_PKG_ROOT install
             $cp "$FSTAR_SRC_PKG_ROOT/LICENSE" "$FSTAR_PKG_ROOT/"
