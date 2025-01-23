@@ -1,8 +1,5 @@
 name: Build everparse package (windows)
 on:
-  push:
-    branches:
-    - _taramana_release_20250122
   workflow_dispatch:
 
 jobs:
