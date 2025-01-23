@@ -131,7 +131,9 @@ make_everparse() {
             # build from a source package
             dune_sandbox_opt=
             if $is_windows ; then
-                dune_sandbox_opt=DUNE_SANDBOX=none
+		# Dune crashes with "cannot delete sandbox." This fix comes
+		# from https://github.com/ocaml/dune/issues/8228#issuecomment-1642104172
+                dune_sandbox_opt=DUNE_CONFIG__BACKGROUND_SANDBOXES=disabled
             fi
             env $dune_sandbox_opt $MAKE -C $FSTAR_SRC_PKG_ROOT "$@" ADMIT=1
             mkdir -p "$FSTAR_PKG_ROOT"
