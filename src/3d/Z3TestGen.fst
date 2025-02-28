@@ -1624,14 +1624,12 @@ let rec mk_args_as_file_name (accu: string) (l: list string) : Tot string
   | a :: q -> mk_args_as_file_name (accu ^ "." ^ a) q
 
 let mk_output_filename
-  (counter: ref nat)
+  (i: nat)
   (out_dir: string)
   (validator_name: string)
   (args: list string)
 : ML string
-= let i = !counter in
-  counter := i + 1;
-  OS.concat out_dir (mk_args_as_file_name ("witness." ^ string_of_int i ^ "." ^ validator_name) args ^ ".dat")
+= OS.concat out_dir (mk_args_as_file_name ("witness." ^ string_of_int i ^ "." ^ validator_name) args ^ ".dat")
 
 let write_witness_to_file
   (witness: Seq.seq (Seq.seq int))
@@ -1648,6 +1646,11 @@ let write_witness_to_file
   in
   aux 0
 
+let incr (x: ref nat) : ML nat =
+  let res = !x in
+  x := res + 1;
+  res
+
 let print_witness_as_c
   (out_dir: string)
   (out: (string -> ML unit))
@@ -1659,8 +1662,8 @@ let print_witness_as_c
   (witness: Seq.seq (Seq.seq int))
   (args: list string)
 : ML unit
-= write_witness_to_file witness (fun i -> mk_output_filename counter out_dir ((if positive then "POS." else "NEG.") ^ string_of_int i ^ "." ^ validator_name) args);
-  let num = !counter in
+= let num = incr counter in
+  write_witness_to_file witness (fun i -> mk_output_filename num out_dir ((if positive then "POS." else "NEG.") ^ string_of_int i ^ "." ^ validator_name) args);
   print_witness_as_c_gen out witness (fun len ->
     if len = 0
     then failwith "print_witness_as_c: no witness layers. This should not happen.";
@@ -1678,8 +1681,8 @@ let print_diff_witness_as_c
   (witness: Seq.seq (Seq.seq int))
   (args: list string)
 : ML unit
-= write_witness_to_file witness (fun i -> mk_output_filename counter out_dir ("POS." ^ string_of_int i ^ "." ^ validator_name1 ^ ".NEG." ^ validator_name2) args);
-  let num = !counter in
+= let num = incr counter in
+  write_witness_to_file witness (fun i -> mk_output_filename num out_dir ("POS." ^ string_of_int i ^ "." ^ validator_name1 ^ ".NEG." ^ validator_name2) args);
   print_witness_as_c_gen out witness (fun len ->
     if len = 0
     then failwith "print_witness_as_c: no witness layers. This should not happen.";
