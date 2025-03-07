@@ -1545,17 +1545,25 @@ let print_witness_layer_as_c_aux
 =
   let layer_name = "witness" ^ string_of_int num ^ "_" ^ string_of_int lid in
   out "  uint8_t ";
-  out layer_name;
-  out "[";
-  out (string_of_int len);
-  out "] = {";
-  begin match Seq.seq_to_list witness with
-  | [] -> ()
-  | a :: q ->
-    out (string_of_int a);
-    List.iter (fun i -> out ", "; out (string_of_int i)) q
+  if len > 0
+  then begin
+    out layer_name;
+    out "[";
+    out (string_of_int len);
+    out "] = {";
+    begin match Seq.seq_to_list witness with
+    | [] -> ()
+    | a :: q ->
+      out (string_of_int a);
+      List.iter (fun i -> out ", "; out (string_of_int i)) q
+    end;
+    out "};"
+  end
+  else begin
+    out "*";
+    out layer_name;
+    out " = NULL;"
   end;
-  out "};";
   layer_name
 
 let print_witness_as_c_aux
