@@ -1435,7 +1435,7 @@ let rec print_outparameter
   | ArgBool
   | ArgInt _ ->
     out "
-  printf(\"";
+  printf(\"// ";
     out expr;
     out " = %ld\\n\", ((uint64_t) (";
     out expr;
