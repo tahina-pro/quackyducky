@@ -1513,7 +1513,7 @@ let print_witness_call_as_c
     uint64_t output = ";
   print_witness_call_as_c_aux out flight validator_name arg_types args num;
   out "
-    printf(\"  ";
+    printf(\"  // ";
   print_witness_call_as_c_aux out flight validator_name arg_types args num;
   out " // \");
     BOOLEAN result = !EverParseIsError(output);
