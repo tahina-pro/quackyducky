@@ -20,11 +20,6 @@
   let with_range (x:'a) (l:Lexing.position) : 'a with_meta_t =
       Ast.with_range x (mk_pos l, mk_pos l)
 
-  let pointer_name j p =
-      match p with
-      | None -> {j with v={j.v with name="P"^j.v.name}}
-      | Some k -> k
-
   let parse_int_and_type r (s:string) : Z.t * string * integer_type =
       let r = mk_pos r, mk_pos r in
       let s', t = parse_int_suffix s in
@@ -62,7 +57,7 @@
 %token          MODULE EXPORT OUTPUT UNION EXTERN
 %token          ENTRYPOINT REFINING ALIGNED
 %token          HASH_IF HASH_ELSE HASH_ENDIF HASH_ELIF
-%token          PROBE
+%token          PROBE POINTER PURE SPECIALIZE 
 
 (* LBRACE_ONERROR CHECK  *)
 %start <Ast.prog> prog
@@ -212,7 +207,7 @@ expr:
   | e=expr_no_range { with_range e $startpos }
 
 arguments:
-  | es=right_flexible_nonempty_list(COMMA, expr)  { es }
+  | es=right_flexible_list(COMMA, expr)  { es }
 
 typ_param:
   | e=expr  { Inl e }
@@ -227,8 +222,9 @@ qident:
  *   It is set properly in the desugaring phase
  *)
 typ_no_range:
-  | i=qident { Type_app(i, KindSpec, []) }
-  | hd=qident LPAREN a=right_flexible_nonempty_list(COMMA, typ_param) RPAREN { Type_app(hd, KindSpec, a) }
+  | i=qident { Type_app(i, KindSpec, [], []) }
+  | hd=qident LPAREN a=right_flexible_nonempty_list(COMMA, typ_param) RPAREN 
+    { Type_app(hd, KindSpec, [], a) }
 
 typ:
   | t=typ_no_range { with_range t $startpos }
@@ -237,8 +233,25 @@ maybe_pointer_typ:
   | t=typ { t }
   | t=pointer_typ { t }
 
+pointer_qualifier:
+  | POINTER LPAREN t=IDENT RPAREN
+    { 
+      match t.v.name with
+      | "UINT32" -> PQ UInt32 
+      | "UINT64" -> PQ UInt64
+      | _ -> error "Unexpected pointer qualifier; expected UINT32 or UINT64" t.range
+    }
+
 pointer_typ:
-  | t=maybe_pointer_typ STAR { with_range (Pointer t) $startpos }
+  | t=maybe_pointer_typ STAR qopt=option_of(pointer_qualifier) 
+    { 
+      let q =
+        match qopt with
+        | None -> PQ UInt64
+        | Some q -> q 
+      in
+      with_range (Pointer(t,q)) $startpos }
+
 
 refinement:
   | LBRACE e=expr RBRACE { e }
@@ -266,17 +279,40 @@ field_action:
   | LBRACE_CHECK a=action RBRACE { a, false }
   | LBRACE_ACT a=action RBRACE { with_range (Action_act a) $startpos(a), false }
 
+probe_field:
+| field_name=IDENT EQ e=expr 
+  {
+    match field_name.v with
+    | {modul_name=None; name="length"} -> ("length", e)
+    | {modul_name=None; name="destination"} -> ("destination", e)
+    | _ -> error "Unexpected field name in probe" field_name.range
+  }
+
 with_probe:
-  | PROBE probe_fn_opt=option_of(i=IDENT { i })
-          LPAREN length=IDENT EQ len=expr COMMA
-                 destination=IDENT EQ dest=IDENT
-          RPAREN
+| PROBE
+  probe_fn_opt=option_of(i=IDENT { i })
+  LPAREN fields=separated_list(COMMA, probe_field) RPAREN
+  block=option_of(LBRACE a=probe_action RBRACE { a })
     {
-      if length.v.name <> "length" || length.v.modul_name <> None
-      then error "Expected 'length' as the first argument to 'with probe'" length.range;
-      if destination.v.name <> "destination" || destination.v.modul_name <> None
-      then error "Expected 'destination' as the second argument to 'with probe'" destination.range;
-      { probe_fn=probe_fn_opt; probe_length=len; probe_dest=dest }
+      let p = mk_pos $startpos in
+      let rng = p,p in
+      match probe_fn_opt, block with
+      | Some _, Some _ ->
+        error "Composite probe blocks do not have a probe function" rng
+      | _, None -> (
+        match fields with 
+        | [("length", l); ("destination", {v=Identifier d})] ->
+          let p = with_range (Probe_action_simple (probe_fn_opt, l)) $startpos in
+          { probe_block = p; probe_dest=d; probe_ptr_as_u64=None }
+        | _ ->
+          error "Expected 'length' and 'destination' fields in probe" rng
+      )
+      | None, Some a -> (
+        match fields with
+        | [("destination", {v=Identifier e})] ->
+          { probe_dest=e; probe_block=a; probe_ptr_as_u64=None }
+        | _ -> error "Expected 'destination' field in probe" rng
+      )        
     }
 
 atomic_field:
@@ -471,6 +507,18 @@ action_no_range:
 action:
   | a=action_no_range { with_range a ($startpos(a)) }
 
+probe_atomic_action:
+  | RETURN e=expr SEMICOLON { Probe_action_return e }
+  | f=IDENT LPAREN args=arguments RPAREN SEMICOLON { Probe_action_call(f, args) }
+
+probe_action_no_range:
+  | a=probe_atomic_action { Probe_atomic_action a }
+  | a1=probe_atomic_action a=probe_action { Probe_action_seq (with_range (Probe_atomic_action a1) ($startpos(a1)), a) }
+  | VAR i=IDENT EQ a1=probe_atomic_action a2=probe_action  { Probe_action_let (i, a1, a2) }
+
+probe_action:
+  | a=probe_action_no_range { with_range a ($startpos(a)) }
+
 enum_case:
   | i=IDENT            { i, None }
   | i=IDENT EQ j=INT   { i, Some (Inl (Z.of_string j)) }
@@ -503,14 +551,14 @@ decl_no_range:
   | MODULE i=IDENT EQ m=IDENT { ModuleAbbrev (i, m) }
   | DEFINE i=IDENT c=constant { Define (i, None, c) }
   | t=IDENT ENUM i=IDENT LBRACE es=right_flexible_nonempty_list(COMMA, enum_case) RBRACE maybe_semi
-    { Enum(with_range (Type_app (t, KindSpec, [])) ($startpos(t)), i, es) }
+    { Enum(with_range (Type_app (t, KindSpec, [], [])) ($startpos(t)), i, es) }
   | b=attributes TYPEDEF t=typ i=IDENT SEMICOLON
-    { TypeAbbrev (t, i) }
+    { TypeAbbrev ([], t, i, [], []) }
   | b=attributes TYPEDEF STRUCT i=IDENT ps=parameters w=where_opt
     LBRACE fields=fields
     RBRACE j=IDENT p=typedef_pointer_name_opt SEMICOLON
-    {  let k = pointer_name j p in
-       Record(mk_td b i j k, ps, w, fields)
+    {  
+        Record(mk_td b i j p, [], ps, w, fields)
     }
   | b=attributes CASETYPE i=IDENT ps=parameters
     LBRACE SWITCH LPAREN e=IDENT RPAREN
@@ -518,29 +566,47 @@ decl_no_range:
            RBRACE
     RBRACE j=IDENT p=typedef_pointer_name_opt SEMICOLON
     {
-        let k = pointer_name j p in
-        let td = mk_td b i j k in
-        CaseType(td, ps, (with_range (Identifier e) ($startpos(i)), cs))
+        let td = mk_td b i j p in
+        CaseType(td, [], ps, (with_range (Identifier e) ($startpos(i)), cs))
     }
+
+  | SPECIALIZE LPAREN p1=pointer_qualifier COMMA p2=pointer_qualifier RPAREN i=IDENT j=IDENT SEMICOLON
+    { let PQ p1 = p1 in
+      let PQ p2 = p2 in
+      Specialize ([p1, p2], i, j) }
 
   | OUTPUT TYPEDEF STRUCT i=IDENT
     LBRACE out_flds=right_flexible_nonempty_list(SEMICOLON, out_field) RBRACE
     j=IDENT p=typedef_pointer_name_opt SEMICOLON
-    {  let k = pointer_name j p in
-       let td = mk_td [] i j k in       
-       OutputType ({out_typ_names=td; out_typ_fields=out_flds; out_typ_is_union=false}) }
+    {
+       let td = mk_td [] i j p in
+       OutputType ({out_typ_names=td; out_typ_fields=out_flds; out_typ_is_union=false})
+    }
 
   | EXTERN TYPEDEF STRUCT i=IDENT j=IDENT
-    {  let k = pointer_name j None in
-       let td = mk_td [] i j k in
+    {  let td = mk_td [] i j None in
        ExternType td
     }
 
-  | EXTERN ret=typ i=IDENT ps=parameters
-    { ExternFn (i, ret, ps) }
+  | EXTERN pure=option_of(PURE) ret=typ i=IDENT ps=parameters
+    { ExternFn (i, ret, ps, pure <> None) }
 
-  | EXTERN PROBE i=IDENT
-    { ExternProbe i }
+  | EXTERN PROBE q=option_of(probe_qualifier) i=IDENT
+    { ExternProbe (i, q) }
+
+probe_qualifier:
+  | LPAREN q=IDENT 
+          t=option_of(t=qident{ match maybe_as_integer_typ t with
+                               | None -> error "Expected integer type" t.range
+                               | Some t -> t })
+    RPAREN
+    {
+      match q.v.name, t with
+      | "WITH_OFFSETS", None -> PQWithOffsets
+      | "READ", Some t -> PQRead t
+      | "WRITE", Some t -> PQWrite t
+      | _ -> error "Unexpected probe qualifier" q.range
+    }
 
 block_comment_opt:
   |                 {
