@@ -119,8 +119,10 @@ let (find_user_tac_for_uvar :
       | FStar_Pervasives_Native.Some (FStarC_Syntax_Syntax.Ctx_uvar_meta_attr
           a) ->
           let hooks =
-            FStarC_TypeChecker_Env.lookup_attr env
-              FStarC_Parser_Const.resolve_implicits_attr_string in
+            let uu___ =
+              FStarC_Ident.string_of_lid
+                FStarC_Parser_Const.resolve_implicits_attr_string in
+            FStarC_TypeChecker_Env.lookup_attr env uu___ in
           let candidates =
             FStarC_List.filter
               (fun hook ->
@@ -728,7 +730,7 @@ let (solve_deferred_to_tactic_goals :
          match uu___1 with
          | (more, imps) ->
              let bucketize is =
-               let map = FStarC_Util.smap_create (Prims.of_int (17)) in
+               let map = FStarC_SMap.create (Prims.of_int (17)) in
                FStarC_List.iter
                  (fun uu___3 ->
                     match uu___3 with
@@ -739,15 +741,15 @@ let (solve_deferred_to_tactic_goals :
                              failwith "Unexpected: tactic without a name"
                          | FStar_Pervasives_Native.Some l ->
                              let lstr = FStarC_Ident.string_of_lid l in
-                             let uu___5 = FStarC_Util.smap_try_find map lstr in
+                             let uu___5 = FStarC_SMap.try_find map lstr in
                              (match uu___5 with
                               | FStar_Pervasives_Native.None ->
-                                  FStarC_Util.smap_add map lstr ([i], s)
+                                  FStarC_SMap.add map lstr ([i], s)
                               | FStar_Pervasives_Native.Some (is1, s1) ->
-                                  (FStarC_Util.smap_remove map lstr;
-                                   FStarC_Util.smap_add map lstr
-                                     ((i :: is1), s1))))) is;
-               FStarC_Util.smap_fold map
+                                  (FStarC_SMap.remove map lstr;
+                                   FStarC_SMap.add map lstr ((i :: is1), s1)))))
+                 is;
+               FStarC_SMap.fold map
                  (fun uu___3 -> fun is1 -> fun out -> is1 :: out) [] in
              let buckets = bucketize (FStarC_List.op_At eqs more) in
              (FStarC_List.iter

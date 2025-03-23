@@ -354,42 +354,40 @@ let (check_expected_aqual_for_binder :
   fun aq ->
     fun b ->
       fun pos ->
-        let uu___ =
-          let expected_aq = FStarC_Syntax_Util.aqual_of_binder b in
-          match (aq, expected_aq) with
-          | (FStar_Pervasives_Native.None, FStar_Pervasives_Native.None) ->
-              FStar_Pervasives.Inr aq
-          | (FStar_Pervasives_Native.None, FStar_Pervasives_Native.Some eaq)
-              ->
-              if eaq.FStarC_Syntax_Syntax.aqual_implicit
-              then
-                FStar_Pervasives.Inl
-                  "expected implicit annotation on the argument"
-              else FStar_Pervasives.Inr expected_aq
-          | (FStar_Pervasives_Native.Some aq1, FStar_Pervasives_Native.None)
-              ->
-              FStar_Pervasives.Inl
-                "expected an explicit argument (without annotation)"
-          | (FStar_Pervasives_Native.Some aq1, FStar_Pervasives_Native.Some
-             eaq) ->
-              if
-                aq1.FStarC_Syntax_Syntax.aqual_implicit <>
-                  eaq.FStarC_Syntax_Syntax.aqual_implicit
-              then FStar_Pervasives.Inl "mismatch"
-              else FStar_Pervasives.Inr expected_aq in
-        match uu___ with
-        | FStar_Pervasives.Inl err ->
-            let msg =
-              let uu___1 =
-                FStarC_Errors_Msg.text
-                  (Prims.strcat "Inconsistent argument qualifiers: "
-                     (Prims.strcat err ".")) in
-              [uu___1] in
-            FStarC_Errors.raise_error FStarC_Class_HasRange.hasRange_range
-              pos FStarC_Errors_Codes.Fatal_InconsistentImplicitQualifier ()
-              (Obj.magic FStarC_Errors_Msg.is_error_message_list_doc)
-              (Obj.magic msg)
-        | FStar_Pervasives.Inr r -> r
+        let expected_aq = FStarC_Syntax_Util.aqual_of_binder b in
+        let is_imp a =
+          match a with
+          | FStar_Pervasives_Native.Some a1 ->
+              a1.FStarC_Syntax_Syntax.aqual_implicit
+          | uu___ -> false in
+        (let uu___1 =
+           let uu___2 = is_imp aq in
+           let uu___3 = is_imp expected_aq in uu___2 <> uu___3 in
+         if uu___1
+         then
+           let msg =
+             let uu___2 =
+               FStarC_Errors_Msg.text "Inconsistent argument qualifiers." in
+             let uu___3 =
+               let uu___4 =
+                 let uu___5 =
+                   let uu___6 =
+                     let uu___7 = is_imp aq in if uu___7 then "im" else "ex" in
+                   let uu___7 =
+                     let uu___8 = is_imp expected_aq in
+                     if uu___8 then "im" else "ex" in
+                   FStarC_Util.format2
+                     "Expected an %splicit argument, got an %splicit one."
+                     uu___6 uu___7 in
+                 FStarC_Errors_Msg.text uu___5 in
+               [uu___4] in
+             uu___2 :: uu___3 in
+           FStarC_Errors.raise_error FStarC_Class_HasRange.hasRange_range pos
+             FStarC_Errors_Codes.Fatal_InconsistentImplicitQualifier ()
+             (Obj.magic FStarC_Errors_Msg.is_error_message_list_doc)
+             (Obj.magic msg)
+         else ());
+        expected_aq
 let (check_erasable_binder_attributes :
   FStarC_TypeChecker_Env.env ->
     FStarC_Syntax_Syntax.term Prims.list -> FStarC_Syntax_Syntax.typ -> unit)
@@ -1883,7 +1881,7 @@ let rec (tc_term :
            uu___4 uu___5 uu___6 uu___7
        else ());
       (let uu___2 =
-         FStarC_Util.record_time_ms
+         FStarC_Timing.record_ms
            (fun uu___3 ->
               tc_maybe_toplevel_term
                 {
@@ -4933,10 +4931,9 @@ and (tc_value :
                      FStarC_Util.format3
                        "Unexpected number of universe instantiations for \"%s\" (%s vs %s)"
                        uu___7 uu___8 uu___9 in
-                   FStarC_Errors.raise_error
-                     FStarC_TypeChecker_Env.hasRange_env env1
-                     FStarC_Errors_Codes.Fatal_UnexpectedNumberOfUniverse ()
-                     (Obj.magic FStarC_Errors_Msg.is_error_message_string)
+                   FStarC_Errors.raise_error FStarC_Syntax_Syntax.hasRange_fv
+                     fv1 FStarC_Errors_Codes.Fatal_UnexpectedNumberOfUniverse
+                     () (Obj.magic FStarC_Errors_Msg.is_error_message_string)
                      (Obj.magic uu___6))
                 else ();
                 FStarC_List.iter2

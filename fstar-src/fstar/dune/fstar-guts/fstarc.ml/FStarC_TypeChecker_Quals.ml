@@ -1,4 +1,27 @@
 open Prims
+let pairwise_compat :
+  'a .
+    ('a -> 'a -> Prims.bool) ->
+      'a Prims.list -> ('a * 'a) FStar_Pervasives_Native.option
+  =
+  fun compat ->
+    fun xs ->
+      let rec go prev next =
+        match next with
+        | [] -> FStar_Pervasives_Native.None
+        | x::xs1 ->
+            let rec go2 ys k =
+              match ys with
+              | [] -> k ()
+              | y::ys1 ->
+                  let uu___ =
+                    let uu___1 = compat x y in Prims.op_Negation uu___1 in
+                  if uu___
+                  then FStar_Pervasives_Native.Some (x, y)
+                  else go2 ys1 k in
+            go2 prev
+              (fun uu___ -> go2 xs1 (fun uu___1 -> go (x :: prev) xs1)) in
+      go [] xs
 let (check_sigelt_quals_pre :
   FStarC_TypeChecker_Env.env -> FStarC_Syntax_Syntax.sigelt -> unit) =
   fun env ->
@@ -39,111 +62,82 @@ let (check_sigelt_quals_pre :
         | FStarC_Syntax_Syntax.Noeq -> true
         | FStarC_Syntax_Syntax.Unopteq -> true
         | uu___1 -> false in
-      let quals_combo_ok quals q =
-        match q with
+      let qual_compat q1 q2 =
+        match q1 with
         | FStarC_Syntax_Syntax.Assumption ->
-            FStarC_List.for_all
-              (fun x ->
-                 ((((((x = q) || (x = FStarC_Syntax_Syntax.Logic)) ||
-                       (inferred x))
-                      || (visibility x))
-                     || (assumption x))
-                    ||
-                    (env.FStarC_TypeChecker_Env.is_iface &&
-                       (x = FStarC_Syntax_Syntax.Inline_for_extraction)))
-                   || (x = FStarC_Syntax_Syntax.NoExtract)) quals
+            (((((q2 = FStarC_Syntax_Syntax.Logic) || (inferred q2)) ||
+                 (visibility q2))
+                || (assumption q2))
+               ||
+               (env.FStarC_TypeChecker_Env.is_iface &&
+                  (q2 = FStarC_Syntax_Syntax.Inline_for_extraction)))
+              || (q2 = FStarC_Syntax_Syntax.NoExtract)
         | FStarC_Syntax_Syntax.New ->
-            FStarC_List.for_all
-              (fun x ->
-                 (((x = q) || (inferred x)) || (visibility x)) ||
-                   (assumption x)) quals
+            ((inferred q2) || (visibility q2)) || (assumption q2)
         | FStarC_Syntax_Syntax.Inline_for_extraction ->
-            FStarC_List.for_all
-              (fun x ->
-                 ((((((((x = q) || (x = FStarC_Syntax_Syntax.Logic)) ||
-                         (visibility x))
-                        || (reducibility x))
-                       || (reification x))
-                      || (inferred x))
-                     || (has_eq x))
-                    ||
-                    (env.FStarC_TypeChecker_Env.is_iface &&
-                       (x = FStarC_Syntax_Syntax.Assumption)))
-                   || (x = FStarC_Syntax_Syntax.NoExtract)) quals
+            (((((((q2 = FStarC_Syntax_Syntax.Logic) || (visibility q2)) ||
+                   (reducibility q2))
+                  || (reification q2))
+                 || (inferred q2))
+                || (has_eq q2))
+               ||
+               (env.FStarC_TypeChecker_Env.is_iface &&
+                  (q2 = FStarC_Syntax_Syntax.Assumption)))
+              || (q2 = FStarC_Syntax_Syntax.NoExtract)
         | FStarC_Syntax_Syntax.Unfold_for_unification_and_vcgen ->
-            FStarC_List.for_all
-              (fun x ->
-                 (((((((x = q) || (x = FStarC_Syntax_Syntax.Logic)) ||
-                        (x = FStarC_Syntax_Syntax.Inline_for_extraction))
-                       || (x = FStarC_Syntax_Syntax.NoExtract))
-                      || (has_eq x))
-                     || (inferred x))
-                    || (visibility x))
-                   || (reification x)) quals
+            ((((((q2 = FStarC_Syntax_Syntax.Logic) ||
+                   (q2 = FStarC_Syntax_Syntax.Inline_for_extraction))
+                  || (q2 = FStarC_Syntax_Syntax.NoExtract))
+                 || (has_eq q2))
+                || (inferred q2))
+               || (visibility q2))
+              || (reification q2)
         | FStarC_Syntax_Syntax.Visible_default ->
-            FStarC_List.for_all
-              (fun x ->
-                 (((((((x = q) || (x = FStarC_Syntax_Syntax.Logic)) ||
-                        (x = FStarC_Syntax_Syntax.Inline_for_extraction))
-                       || (x = FStarC_Syntax_Syntax.NoExtract))
-                      || (has_eq x))
-                     || (inferred x))
-                    || (visibility x))
-                   || (reification x)) quals
+            ((((((q2 = FStarC_Syntax_Syntax.Logic) ||
+                   (q2 = FStarC_Syntax_Syntax.Inline_for_extraction))
+                  || (q2 = FStarC_Syntax_Syntax.NoExtract))
+                 || (has_eq q2))
+                || (inferred q2))
+               || (visibility q2))
+              || (reification q2)
         | FStarC_Syntax_Syntax.Irreducible ->
-            FStarC_List.for_all
-              (fun x ->
-                 (((((((x = q) || (x = FStarC_Syntax_Syntax.Logic)) ||
-                        (x = FStarC_Syntax_Syntax.Inline_for_extraction))
-                       || (x = FStarC_Syntax_Syntax.NoExtract))
-                      || (has_eq x))
-                     || (inferred x))
-                    || (visibility x))
-                   || (reification x)) quals
+            ((((((q2 = FStarC_Syntax_Syntax.Logic) ||
+                   (q2 = FStarC_Syntax_Syntax.Inline_for_extraction))
+                  || (q2 = FStarC_Syntax_Syntax.NoExtract))
+                 || (has_eq q2))
+                || (inferred q2))
+               || (visibility q2))
+              || (reification q2)
         | FStarC_Syntax_Syntax.Noeq ->
-            FStarC_List.for_all
-              (fun x ->
-                 (((((((x = q) || (x = FStarC_Syntax_Syntax.Logic)) ||
-                        (x = FStarC_Syntax_Syntax.Inline_for_extraction))
-                       || (x = FStarC_Syntax_Syntax.NoExtract))
-                      || (has_eq x))
-                     || (inferred x))
-                    || (visibility x))
-                   || (reification x)) quals
+            ((((((q2 = FStarC_Syntax_Syntax.Logic) ||
+                   (q2 = FStarC_Syntax_Syntax.Inline_for_extraction))
+                  || (q2 = FStarC_Syntax_Syntax.NoExtract))
+                 || (has_eq q2))
+                || (inferred q2))
+               || (visibility q2))
+              || (reification q2)
         | FStarC_Syntax_Syntax.Unopteq ->
-            FStarC_List.for_all
-              (fun x ->
-                 (((((((x = q) || (x = FStarC_Syntax_Syntax.Logic)) ||
-                        (x = FStarC_Syntax_Syntax.Inline_for_extraction))
-                       || (x = FStarC_Syntax_Syntax.NoExtract))
-                      || (has_eq x))
-                     || (inferred x))
-                    || (visibility x))
-                   || (reification x)) quals
+            ((((((q2 = FStarC_Syntax_Syntax.Logic) ||
+                   (q2 = FStarC_Syntax_Syntax.Inline_for_extraction))
+                  || (q2 = FStarC_Syntax_Syntax.NoExtract))
+                 || (has_eq q2))
+                || (inferred q2))
+               || (visibility q2))
+              || (reification q2)
         | FStarC_Syntax_Syntax.TotalEffect ->
-            FStarC_List.for_all
-              (fun x ->
-                 (((x = q) || (inferred x)) || (visibility x)) ||
-                   (reification x)) quals
+            ((inferred q2) || (visibility q2)) || (reification q2)
         | FStarC_Syntax_Syntax.Logic ->
-            FStarC_List.for_all
-              (fun x ->
-                 ((((x = q) || (x = FStarC_Syntax_Syntax.Assumption)) ||
-                     (inferred x))
-                    || (visibility x))
-                   || (reducibility x)) quals
+            (((q2 = FStarC_Syntax_Syntax.Assumption) || (inferred q2)) ||
+               (visibility q2))
+              || (reducibility q2)
         | FStarC_Syntax_Syntax.Reifiable ->
-            FStarC_List.for_all
-              (fun x ->
-                 ((((reification x) || (inferred x)) || (visibility x)) ||
-                    (x = FStarC_Syntax_Syntax.TotalEffect))
-                   || (x = FStarC_Syntax_Syntax.Visible_default)) quals
+            ((((reification q2) || (inferred q2)) || (visibility q2)) ||
+               (q2 = FStarC_Syntax_Syntax.TotalEffect))
+              || (q2 = FStarC_Syntax_Syntax.Visible_default)
         | FStarC_Syntax_Syntax.Reflectable uu___ ->
-            FStarC_List.for_all
-              (fun x ->
-                 ((((reification x) || (inferred x)) || (visibility x)) ||
-                    (x = FStarC_Syntax_Syntax.TotalEffect))
-                   || (x = FStarC_Syntax_Syntax.Visible_default)) quals
+            ((((reification q2) || (inferred q2)) || (visibility q2)) ||
+               (q2 = FStarC_Syntax_Syntax.TotalEffect))
+              || (q2 = FStarC_Syntax_Syntax.Visible_default)
         | FStarC_Syntax_Syntax.Private -> true
         | uu___ -> true in
       let check_no_subtyping_attribute se1 =
@@ -189,19 +183,17 @@ let (check_sigelt_quals_pre :
            let uu___2 =
              let uu___3 =
                let uu___4 =
-                 let uu___5 = FStarC_Errors_Msg.text "The qualifier list" in
+                 let uu___5 =
+                   FStarC_Errors_Msg.text
+                     "Invalid qualifiers for declaration" in
                  let uu___6 =
                    let uu___7 =
                      let uu___8 =
-                       FStarC_Class_Show.show
-                         (FStarC_Class_Show.show_list
-                            FStarC_Syntax_Print.showable_qualifier) quals in
+                       FStarC_Syntax_Print.sigelt_to_string_short se in
                      FStarC_Pprint.doc_of_string uu___8 in
-                   let uu___8 =
-                     FStarC_Errors_Msg.text
-                       "is not permissible for this element" in
-                   FStarC_Pprint.op_Hat_Slash_Hat uu___7 uu___8 in
-                 FStarC_Pprint.op_Hat_Slash_Hat uu___5 uu___6 in
+                   FStarC_Pprint.bquotes uu___7 in
+                 FStarC_Pprint.prefix (Prims.of_int (2)) Prims.int_one uu___5
+                   uu___6 in
                [uu___4] in
              FStar_List_Tot_Base.append uu___3 msg in
            FStarC_Errors.raise_error FStarC_Class_HasRange.hasRange_range r
@@ -215,16 +207,35 @@ let (check_sigelt_quals_pre :
                [uu___4] in
              err uu___3)
           else ();
-          (let uu___4 =
-             let uu___5 = FStarC_List.for_all (quals_combo_ok quals) quals in
-             Prims.op_Negation uu___5 in
-           if uu___4
-           then
-             let uu___5 =
-               let uu___6 = FStarC_Errors_Msg.text "Ill-formed combination." in
-               [uu___6] in
-             err uu___5
-           else ());
+          (let uu___4 = pairwise_compat qual_compat quals in
+           match uu___4 with
+           | FStar_Pervasives_Native.Some (q, q') ->
+               let uu___5 =
+                 let uu___6 =
+                   let uu___7 = FStarC_Errors_Msg.text "Qualifiers" in
+                   let uu___8 =
+                     let uu___9 =
+                       let uu___10 =
+                         FStarC_Class_PP.pp
+                           FStarC_Syntax_Print.pretty_qualifier q in
+                       FStarC_Pprint.bquotes uu___10 in
+                     let uu___10 =
+                       let uu___11 = FStarC_Errors_Msg.text "and" in
+                       let uu___12 =
+                         let uu___13 =
+                           let uu___14 =
+                             FStarC_Class_PP.pp
+                               FStarC_Syntax_Print.pretty_qualifier q' in
+                           FStarC_Pprint.bquotes uu___14 in
+                         let uu___14 =
+                           FStarC_Errors_Msg.text "are not compatible." in
+                         FStarC_Pprint.op_Hat_Slash_Hat uu___13 uu___14 in
+                       FStarC_Pprint.op_Hat_Slash_Hat uu___11 uu___12 in
+                     FStarC_Pprint.op_Hat_Slash_Hat uu___9 uu___10 in
+                   FStarC_Pprint.op_Hat_Slash_Hat uu___7 uu___8 in
+                 [uu___6] in
+               err uu___5
+           | FStar_Pervasives_Native.None -> ());
           (match se.FStarC_Syntax_Syntax.sigel with
            | FStarC_Syntax_Syntax.Sig_let
                { FStarC_Syntax_Syntax.lbs1 = (is_rec, uu___4);
@@ -243,17 +254,26 @@ let (check_sigelt_quals_pre :
                      [uu___8] in
                    err uu___7)
                 else ();
-                (let uu___7 =
-                   FStarC_Util.for_some
-                     (fun x -> (assumption x) || (has_eq x)) quals in
-                 if uu___7
+                (let uu___8 =
+                   FStarC_Util.for_some (fun x -> assumption x) quals in
+                 if uu___8
                  then
-                   let uu___8 =
-                     let uu___9 =
+                   let uu___9 =
+                     let uu___10 =
                        FStarC_Errors_Msg.text
-                         "Definitions cannot be assumed or marked with equality qualifiers." in
-                     [uu___9] in
-                   err uu___8
+                         "Definitions cannot be marked `assume`." in
+                     [uu___10] in
+                   err uu___9
+                 else ());
+                (let uu___9 = FStarC_Util.for_some (fun x -> has_eq x) quals in
+                 if uu___9
+                 then
+                   let uu___10 =
+                     let uu___11 =
+                       FStarC_Errors_Msg.text
+                         "Definitions cannot be marked with equality qualifiers." in
+                     [uu___11] in
+                   err uu___10
                  else ()))
            | FStarC_Syntax_Syntax.Sig_bundle uu___4 ->
                ((let uu___6 =

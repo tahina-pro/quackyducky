@@ -258,9 +258,9 @@ let (__proj__Mkinteractive_state__item__log :
     match projectee with | { chunk; stdin; buffer; log;_} -> log
 let (the_interactive_state : interactive_state) =
   let uu___ = FStarC_Util.new_string_builder () in
-  let uu___1 = FStarC_Util.mk_ref FStar_Pervasives_Native.None in
-  let uu___2 = FStarC_Util.mk_ref [] in
-  let uu___3 = FStarC_Util.mk_ref FStar_Pervasives_Native.None in
+  let uu___1 = FStarC_Effect.mk_ref FStar_Pervasives_Native.None in
+  let uu___2 = FStarC_Effect.mk_ref [] in
+  let uu___3 = FStarC_Effect.mk_ref FStar_Pervasives_Native.None in
   { chunk = uu___; stdin = uu___1; buffer = uu___2; log = uu___3 }
 let rec (read_chunk : unit -> input_chunks) =
   fun uu___ ->
@@ -930,18 +930,10 @@ let (interactive_mode : Prims.string -> unit) =
                 | FStar_Pervasives_Native.Some intf ->
                     FStarC_Universal.load_interface_decls env2 intf
                 | FStar_Pervasives_Native.None -> env2 in
-              let uu___3 =
-                (FStarC_Options.record_hints ()) ||
-                  (FStarC_Options.use_hints ()) in
-              if uu___3
-              then
-                let uu___4 =
-                  let uu___5 = FStarC_Options.file_list () in
-                  FStarC_List.hd uu___5 in
-                FStarC_SMTEncoding_Solver.with_hints_db uu___4
-                  (fun uu___5 ->
-                     go (Prims.int_one, Prims.int_zero) filename stack
-                       FStar_Pervasives_Native.None env3 ts)
-              else
-                go (Prims.int_one, Prims.int_zero) filename stack
-                  FStar_Pervasives_Native.None env3 ts))
+              let fn =
+                let uu___3 = FStarC_Options.file_list () in
+                FStarC_List.hd uu___3 in
+              FStarC_SMTEncoding_Solver.with_hints_db fn
+                (fun uu___3 ->
+                   go (Prims.int_one, Prims.int_zero) filename stack
+                     FStar_Pervasives_Native.None env3 ts)))

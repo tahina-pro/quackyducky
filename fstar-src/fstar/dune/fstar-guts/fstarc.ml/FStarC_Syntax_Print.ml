@@ -617,6 +617,15 @@ let (tscheme_to_string : FStarC_Syntax_Syntax.tscheme -> Prims.string) =
     if uu___
     then FStarC_Syntax_Print_Ugly.tscheme_to_string ts
     else FStarC_Syntax_Print_Pretty.tscheme_to_string ts
+let (tscheme_to_doc : FStarC_Syntax_Syntax.tscheme -> FStarC_Pprint.document)
+  =
+  fun ts ->
+    let uu___ = FStarC_Options.ugly () in
+    if uu___
+    then
+      let uu___1 = FStarC_Syntax_Print_Ugly.tscheme_to_string ts in
+      FStarC_Pprint.arbitrary_string uu___1
+    else FStarC_Syntax_Print_Pretty.tscheme_to_doc ts
 let (sub_eff_to_string : FStarC_Syntax_Syntax.sub_eff -> Prims.string) =
   fun se ->
     let tsopt_to_string ts_opt =
@@ -666,6 +675,14 @@ let (pretty_bv : FStarC_Syntax_Syntax.bv FStarC_Class_PP.pretty) =
     FStarC_Class_PP.pp =
       (fun x ->
          let uu___ = FStarC_Class_Show.show showable_bv x in
+         FStarC_Pprint.doc_of_string uu___)
+  }
+let (pretty_qualifier :
+  FStarC_Syntax_Syntax.qualifier FStarC_Class_PP.pretty) =
+  {
+    FStarC_Class_PP.pp =
+      (fun x ->
+         let uu___ = FStarC_Class_Show.show showable_qualifier x in
          FStarC_Pprint.doc_of_string uu___)
   }
 let (pretty_binding : FStarC_Syntax_Syntax.binding FStarC_Class_PP.pretty) =

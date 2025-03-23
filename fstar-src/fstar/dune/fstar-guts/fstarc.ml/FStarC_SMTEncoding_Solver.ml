@@ -17,99 +17,160 @@ let z3_result_as_replay_result :
     match uu___ with
     | FStar_Pervasives.Inl l -> FStar_Pervasives.Inl l
     | FStar_Pervasives.Inr (r, uu___1) -> FStar_Pervasives.Inr r
-let (recorded_hints :
-  FStarC_Hints.hints FStar_Pervasives_Native.option FStarC_Effect.ref) =
-  FStarC_Util.mk_ref FStar_Pervasives_Native.None
+let (src_filename : Prims.string FStarC_Effect.ref) = FStarC_Effect.mk_ref ""
+let (recorded_hints : FStarC_Hints.hints FStarC_Effect.ref) =
+  FStarC_Effect.mk_ref []
 let (replaying_hints :
   FStarC_Hints.hints FStar_Pervasives_Native.option FStarC_Effect.ref) =
-  FStarC_Util.mk_ref FStar_Pervasives_Native.None
+  FStarC_Effect.mk_ref FStar_Pervasives_Native.None
+let (refreshing_hints : Prims.bool FStarC_Effect.ref) =
+  FStarC_Effect.mk_ref false
 let (use_hints : unit -> Prims.bool) =
+  fun uu___ -> FStarC_Options.use_hints ()
+let (initialize_hints_db : Prims.string -> Prims.bool -> unit) =
+  fun filename ->
+    fun refresh ->
+      FStarC_Effect.op_Colon_Equals recorded_hints [];
+      FStarC_Effect.op_Colon_Equals refreshing_hints refresh;
+      (let norm_src_filename = FStarC_Filepath.normalize_file_path filename in
+       FStarC_Effect.op_Colon_Equals src_filename norm_src_filename;
+       (let val_filename = FStarC_Options.hint_file_for_src norm_src_filename in
+        let uu___3 = FStarC_Hints.read_hints val_filename in
+        match uu___3 with
+        | FStarC_Hints.HintsOK hints ->
+            let expected_digest =
+              FStarC_Util.digest_of_file norm_src_filename in
+            ((let uu___5 = FStarC_Options.hint_info () in
+              if uu___5
+              then
+                FStarC_Util.print3 "(%s) digest is %s from %s.\n"
+                  norm_src_filename
+                  (if hints.FStarC_Hints.module_digest = expected_digest
+                   then "valid; using hints"
+                   else "invalid; using potentially stale hints")
+                  val_filename
+              else ());
+             FStarC_Effect.op_Colon_Equals replaying_hints
+               (FStar_Pervasives_Native.Some (hints.FStarC_Hints.hints)))
+        | FStarC_Hints.MalformedJson ->
+            let uu___5 = use_hints () in
+            if uu___5
+            then
+              let uu___6 =
+                let uu___7 =
+                  let uu___8 =
+                    FStarC_Util.format1
+                      "Malformed JSON hints file: %s; ran without hints"
+                      val_filename in
+                  FStarC_Errors_Msg.text uu___8 in
+                [uu___7] in
+              FStarC_Errors.log_issue0
+                FStarC_Errors_Codes.Warning_CouldNotReadHints ()
+                (Obj.magic FStarC_Errors_Msg.is_error_message_list_doc)
+                (Obj.magic uu___6)
+            else ()
+        | FStarC_Hints.UnableToOpen ->
+            let uu___5 = use_hints () in
+            if uu___5
+            then
+              let uu___6 =
+                let uu___7 =
+                  let uu___8 =
+                    FStarC_Util.format1
+                      "Unable to open hints file: %s; ran without hints"
+                      val_filename in
+                  FStarC_Errors_Msg.text uu___8 in
+                [uu___7] in
+              FStarC_Errors.log_issue0
+                FStarC_Errors_Codes.Warning_CouldNotReadHints ()
+                (Obj.magic FStarC_Errors_Msg.is_error_message_list_doc)
+                (Obj.magic uu___6)
+            else ()))
+let rec (merge_hints :
+  FStarC_Hints.hints -> FStarC_Hints.hints -> FStarC_Hints.hints) =
+  fun prev ->
+    fun next ->
+      match (prev, next) with
+      | ((FStar_Pervasives_Native.None)::prev1, next1) ->
+          merge_hints prev1 next1
+      | (prev1, (FStar_Pervasives_Native.None)::next1) ->
+          merge_hints prev1 next1
+      | ((FStar_Pervasives_Native.Some p)::prev1,
+         (FStar_Pervasives_Native.Some n)::next1) ->
+          if
+            ((FStarC_String.compare p.FStarC_Hints.hint_name
+                n.FStarC_Hints.hint_name)
+               < Prims.int_zero)
+              ||
+              ((p.FStarC_Hints.hint_name = n.FStarC_Hints.hint_name) &&
+                 (p.FStarC_Hints.hint_index < n.FStarC_Hints.hint_index))
+          then
+            let uu___ =
+              merge_hints prev1 ((FStar_Pervasives_Native.Some n) :: next1) in
+            (FStar_Pervasives_Native.Some p) :: uu___
+          else
+            if
+              (p.FStarC_Hints.hint_name = n.FStarC_Hints.hint_name) &&
+                (p.FStarC_Hints.hint_index = n.FStarC_Hints.hint_index)
+            then
+              (let uu___1 = merge_hints prev1 next1 in
+               (FStar_Pervasives_Native.Some n) :: uu___1)
+            else
+              (let uu___2 =
+                 merge_hints ((FStar_Pervasives_Native.Some p) :: prev1)
+                   next1 in
+               (FStar_Pervasives_Native.Some n) :: uu___2)
+      | ([], next1) -> next1
+      | (prev1, []) -> prev1
+let (merge_hints_db :
+  FStarC_Hints.hints_db -> FStarC_Hints.hints_db -> FStarC_Hints.hints_db) =
+  fun prev ->
+    fun next ->
+      let uu___ = merge_hints prev.FStarC_Hints.hints next.FStarC_Hints.hints in
+      {
+        FStarC_Hints.module_digest = (next.FStarC_Hints.module_digest);
+        FStarC_Hints.hints = uu___
+      }
+let (flush_hints : unit -> unit) =
   fun uu___ ->
-    (FStarC_Options.use_hints ()) &&
-      (let uu___1 = FStarC_Options_Ext.get "context_pruning" in uu___1 = "")
-let initialize_hints_db : 'uuuuu . Prims.string -> 'uuuuu -> unit =
-  fun src_filename ->
-    fun format_filename ->
-      (let uu___1 = FStarC_Options.record_hints () in
-       if uu___1
-       then
-         FStarC_Effect.op_Colon_Equals recorded_hints
-           (FStar_Pervasives_Native.Some [])
-       else ());
-      (let norm_src_filename = FStarC_Util.normalize_file_path src_filename in
-       let val_filename = FStarC_Options.hint_file_for_src norm_src_filename in
-       let uu___1 = FStarC_Hints.read_hints val_filename in
-       match uu___1 with
-       | FStarC_Hints.HintsOK hints ->
-           let expected_digest = FStarC_Util.digest_of_file norm_src_filename in
-           ((let uu___3 = FStarC_Options.hint_info () in
-             if uu___3
-             then
-               FStarC_Util.print3 "(%s) digest is %s from %s.\n"
-                 norm_src_filename
-                 (if hints.FStarC_Hints.module_digest = expected_digest
-                  then "valid; using hints"
-                  else "invalid; using potentially stale hints") val_filename
-             else ());
-            FStarC_Effect.op_Colon_Equals replaying_hints
-              (FStar_Pervasives_Native.Some (hints.FStarC_Hints.hints)))
-       | FStarC_Hints.MalformedJson ->
-           let uu___3 = use_hints () in
-           if uu___3
-           then
-             let uu___4 =
-               let uu___5 =
-                 let uu___6 =
-                   FStarC_Util.format1
-                     "Malformed JSON hints file: %s; ran without hints"
-                     val_filename in
-                 FStarC_Errors_Msg.text uu___6 in
-               [uu___5] in
-             FStarC_Errors.log_issue0
-               FStarC_Errors_Codes.Warning_CouldNotReadHints ()
-               (Obj.magic FStarC_Errors_Msg.is_error_message_list_doc)
-               (Obj.magic uu___4)
-           else ()
-       | FStarC_Hints.UnableToOpen ->
-           let uu___3 = use_hints () in
-           if uu___3
-           then
-             let uu___4 =
-               let uu___5 =
-                 let uu___6 =
-                   FStarC_Util.format1
-                     "Unable to open hints file: %s; ran without hints"
-                     val_filename in
-                 FStarC_Errors_Msg.text uu___6 in
-               [uu___5] in
-             FStarC_Errors.log_issue0
-               FStarC_Errors_Codes.Warning_CouldNotReadHints ()
-               (Obj.magic FStarC_Errors_Msg.is_error_message_list_doc)
-               (Obj.magic uu___4)
-           else ())
-let (finalize_hints_db : Prims.string -> unit) =
-  fun src_filename ->
-    (let uu___1 = FStarC_Options.record_hints () in
-     if uu___1
-     then
-       let hints =
-         let uu___2 = FStarC_Effect.op_Bang recorded_hints in
-         FStarC_Option.get uu___2 in
-       let hints_db =
-         let uu___2 = FStarC_Util.digest_of_file src_filename in
+    let hints = FStarC_Effect.op_Bang recorded_hints in
+    let src_filename1 = FStarC_Effect.op_Bang src_filename in
+    if Prims.uu___is_Cons hints
+    then
+      (let hints_db =
+         let uu___2 = FStarC_Util.digest_of_file src_filename1 in
          { FStarC_Hints.module_digest = uu___2; FStarC_Hints.hints = hints } in
-       let norm_src_filename = FStarC_Util.normalize_file_path src_filename in
-       let val_filename = FStarC_Options.hint_file_for_src norm_src_filename in
-       FStarC_Hints.write_hints val_filename hints_db
-     else ());
-    FStarC_Effect.op_Colon_Equals recorded_hints FStar_Pervasives_Native.None;
+       let val_filename = FStarC_Options.hint_file_for_src src_filename1 in
+       let hints_db1 =
+         let uu___2 = FStarC_Effect.op_Bang refreshing_hints in
+         if uu___2
+         then hints_db
+         else
+           (let uu___4 = FStarC_Hints.read_hints val_filename in
+            match uu___4 with
+            | FStarC_Hints.HintsOK prev_hints ->
+                merge_hints_db prev_hints hints_db
+            | uu___5 -> hints_db) in
+       FStarC_Hints.write_hints val_filename hints_db1)
+    else ();
+    FStarC_Effect.op_Colon_Equals recorded_hints [];
     FStarC_Effect.op_Colon_Equals replaying_hints
       FStar_Pervasives_Native.None
+let (finalize_hints_db : unit -> unit) = fun uu___ -> flush_hints ()
 let with_hints_db : 'a . Prims.string -> (unit -> 'a) -> 'a =
   fun fname ->
     fun f ->
-      initialize_hints_db fname false;
-      (let result = f () in finalize_hints_db fname; result)
+      let uu___ =
+        let uu___1 = FStarC_Effect.op_Bang src_filename in uu___1 <> "" in
+      if uu___
+      then f ()
+      else
+        ((let uu___3 =
+            (FStarC_Options.record_hints ()) &&
+              (let uu___4 = FStarC_Options.interactive () in
+               Prims.op_Negation uu___4) in
+          initialize_hints_db fname uu___3);
+         (let result = f () in finalize_hints_db (); result))
 type errors =
   {
   error_reason: Prims.string ;
@@ -197,7 +258,8 @@ type query_settings =
   query_suffix: FStarC_SMTEncoding_Term.decl Prims.list ;
   query_hash: Prims.string FStar_Pervasives_Native.option ;
   query_can_be_split_and_retried: Prims.bool ;
-  query_term: FStarC_Syntax_Syntax.term }
+  query_term: FStarC_Syntax_Syntax.term ;
+  query_record_hints: Prims.bool }
 let (__proj__Mkquery_settings__item__query_env :
   query_settings -> FStarC_SMTEncoding_Env.env_t) =
   fun projectee ->
@@ -205,7 +267,8 @@ let (__proj__Mkquery_settings__item__query_env :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_env
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_env
 let (__proj__Mkquery_settings__item__query_decl :
   query_settings -> FStarC_SMTEncoding_Term.decl) =
   fun projectee ->
@@ -213,7 +276,8 @@ let (__proj__Mkquery_settings__item__query_decl :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_decl
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_decl
 let (__proj__Mkquery_settings__item__query_name :
   query_settings -> Prims.string) =
   fun projectee ->
@@ -221,7 +285,8 @@ let (__proj__Mkquery_settings__item__query_name :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_name
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_name
 let (__proj__Mkquery_settings__item__query_index :
   query_settings -> Prims.int) =
   fun projectee ->
@@ -229,7 +294,8 @@ let (__proj__Mkquery_settings__item__query_index :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_index
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_index
 let (__proj__Mkquery_settings__item__query_range :
   query_settings -> FStarC_Range_Type.range) =
   fun projectee ->
@@ -237,7 +303,8 @@ let (__proj__Mkquery_settings__item__query_range :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_range
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_range
 let (__proj__Mkquery_settings__item__query_fuel :
   query_settings -> Prims.int) =
   fun projectee ->
@@ -245,7 +312,8 @@ let (__proj__Mkquery_settings__item__query_fuel :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_fuel
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_fuel
 let (__proj__Mkquery_settings__item__query_ifuel :
   query_settings -> Prims.int) =
   fun projectee ->
@@ -253,7 +321,8 @@ let (__proj__Mkquery_settings__item__query_ifuel :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_ifuel
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_ifuel
 let (__proj__Mkquery_settings__item__query_rlimit :
   query_settings -> Prims.int) =
   fun projectee ->
@@ -261,7 +330,8 @@ let (__proj__Mkquery_settings__item__query_rlimit :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_rlimit
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_rlimit
 let (__proj__Mkquery_settings__item__query_hint :
   query_settings ->
     FStarC_SMTEncoding_UnsatCore.unsat_core FStar_Pervasives_Native.option)
@@ -271,7 +341,8 @@ let (__proj__Mkquery_settings__item__query_hint :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_hint
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_hint
 let (__proj__Mkquery_settings__item__query_errors :
   query_settings -> errors Prims.list) =
   fun projectee ->
@@ -279,7 +350,8 @@ let (__proj__Mkquery_settings__item__query_errors :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_errors
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_errors
 let (__proj__Mkquery_settings__item__query_all_labels :
   query_settings -> FStarC_SMTEncoding_Term.error_labels) =
   fun projectee ->
@@ -287,7 +359,8 @@ let (__proj__Mkquery_settings__item__query_all_labels :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_all_labels
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_all_labels
 let (__proj__Mkquery_settings__item__query_suffix :
   query_settings -> FStarC_SMTEncoding_Term.decl Prims.list) =
   fun projectee ->
@@ -295,7 +368,8 @@ let (__proj__Mkquery_settings__item__query_suffix :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_suffix
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_suffix
 let (__proj__Mkquery_settings__item__query_hash :
   query_settings -> Prims.string FStar_Pervasives_Native.option) =
   fun projectee ->
@@ -303,7 +377,8 @@ let (__proj__Mkquery_settings__item__query_hash :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_hash
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_hash
 let (__proj__Mkquery_settings__item__query_can_be_split_and_retried :
   query_settings -> Prims.bool) =
   fun projectee ->
@@ -311,7 +386,7 @@ let (__proj__Mkquery_settings__item__query_can_be_split_and_retried :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} ->
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
         query_can_be_split_and_retried
 let (__proj__Mkquery_settings__item__query_term :
   query_settings -> FStarC_Syntax_Syntax.term) =
@@ -320,7 +395,17 @@ let (__proj__Mkquery_settings__item__query_term :
     | { query_env; query_decl; query_name; query_index; query_range;
         query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
         query_all_labels; query_suffix; query_hash;
-        query_can_be_split_and_retried; query_term;_} -> query_term
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_term
+let (__proj__Mkquery_settings__item__query_record_hints :
+  query_settings -> Prims.bool) =
+  fun projectee ->
+    match projectee with
+    | { query_env; query_decl; query_name; query_index; query_range;
+        query_fuel; query_ifuel; query_rlimit; query_hint; query_errors;
+        query_all_labels; query_suffix; query_hash;
+        query_can_be_split_and_retried; query_term; query_record_hints;_} ->
+        query_record_hints
 let (convert_rlimit : Prims.int -> Prims.int) =
   fun r ->
     let uu___ =
@@ -384,15 +469,21 @@ let (with_fuel_and_diagnostics :
             [uu___4;
             FStarC_SMTEncoding_Term.CheckSat;
             FStarC_SMTEncoding_Term.SetOption ("rlimit", "0");
-            FStarC_SMTEncoding_Term.GetReasonUnknown;
-            FStarC_SMTEncoding_Term.GetUnsatCore] in
+            FStarC_SMTEncoding_Term.GetReasonUnknown] in
           let uu___4 =
             let uu___5 =
               let uu___6 =
-                (FStarC_Options.print_z3_statistics ()) ||
-                  (FStarC_Options.query_stats ()) in
-              if uu___6 then [FStarC_SMTEncoding_Term.GetStatistics] else [] in
-            FStarC_List.op_At uu___5 settings.query_suffix in
+                let uu___7 =
+                  (FStarC_Options.print_z3_statistics ()) ||
+                    (FStarC_Options.query_stats ()) in
+                if uu___7
+                then [FStarC_SMTEncoding_Term.GetStatistics]
+                else [] in
+              FStarC_List.op_At uu___6 settings.query_suffix in
+            FStarC_List.op_At
+              (if settings.query_record_hints
+               then [FStarC_SMTEncoding_Term.GetUnsatCore]
+               else []) uu___5 in
           FStarC_List.op_At uu___3 uu___4 in
         FStarC_List.op_At label_assumptions uu___2 in
       FStarC_List.op_At uu___ uu___1
@@ -701,7 +792,8 @@ let (errors_to_report :
              query_hash = (settings.query_hash);
              query_can_be_split_and_retried =
                (settings.query_can_be_split_and_retried);
-             query_term = (settings.query_term)
+             query_term = (settings.query_term);
+             query_record_hints = (settings.query_record_hints)
            } in
          let ask_z3 label_assumptions =
            let uu___1 =
@@ -738,7 +830,7 @@ let (__proj__Mkunique_string_accumulator__item__clear :
   fun projectee -> match projectee with | { add; get; clear;_} -> clear
 let (mk_unique_string_accumulator : unit -> unique_string_accumulator) =
   fun uu___ ->
-    let strings = FStarC_Util.mk_ref [] in
+    let strings = FStarC_Effect.mk_ref [] in
     let add m =
       let ms = FStarC_Effect.op_Bang strings in
       if FStarC_List.contains m ms
@@ -894,22 +986,22 @@ let (query_info : query_settings -> FStarC_SMTEncoding_Z3.z3result -> unit) =
                    Prims.strcat "(" uu___3 in
                  let used_hint_tag =
                    if used_hint settings then " (with hint)" else "" in
-                 let stats =
-                   let uu___3 = FStarC_Options.query_stats () in
-                   if uu___3
+                 let stats uu___3 =
+                   let uu___4 = FStarC_Options.query_stats () in
+                   if uu___4
                    then
                      let f k v a =
                        Prims.strcat a
                          (Prims.strcat k
                             (Prims.strcat "=" (Prims.strcat v " "))) in
                      let str =
-                       FStarC_Util.smap_fold
+                       FStarC_SMap.smap_fold
                          z3result.FStarC_SMTEncoding_Z3.z3result_statistics f
                          "statistics={" in
-                     let uu___4 =
+                     let uu___5 =
                        FStarC_Util.substring str Prims.int_zero
                          ((FStarC_String.length str) - Prims.int_one) in
-                     Prims.strcat uu___4 "}"
+                     Prims.strcat uu___5 "}"
                    else "" in
                  ((let uu___4 =
                      let uu___5 =
@@ -973,9 +1065,7 @@ let (query_info : query_settings -> FStarC_SMTEncoding_Z3.z3result -> unit) =
                                 FStarC_Errors_Msg.is_error_message_list_doc)
                              (Obj.magic msg1)) errs))
       else
-        (let uu___2 =
-           let uu___3 = FStarC_Options_Ext.get "profile_context" in
-           uu___3 <> "" in
+        (let uu___2 = FStarC_Options_Ext.enabled "profile_context" in
          if uu___2
          then
            match z3result.FStarC_SMTEncoding_Z3.z3result_status with
@@ -984,13 +1074,9 @@ let (query_info : query_settings -> FStarC_SMTEncoding_Z3.z3result -> unit) =
          else ())
 let (store_hint : FStarC_Hints.hint -> unit) =
   fun hint ->
-    let uu___ = FStarC_Effect.op_Bang recorded_hints in
-    match uu___ with
-    | FStar_Pervasives_Native.Some l ->
-        FStarC_Effect.op_Colon_Equals recorded_hints
-          (FStar_Pervasives_Native.Some
-             (FStarC_List.op_At l [FStar_Pervasives_Native.Some hint]))
-    | uu___1 -> ()
+    let l = FStarC_Effect.op_Bang recorded_hints in
+    FStarC_Effect.op_Colon_Equals recorded_hints
+      (FStarC_List.op_At l [FStar_Pervasives_Native.Some hint])
 let (record_hint : query_settings -> FStarC_SMTEncoding_Z3.z3result -> unit)
   =
   fun settings ->
@@ -1227,6 +1313,7 @@ let (make_solver_configs :
                             env.FStarC_SMTEncoding_Env.tcenv in
                         let uu___3 = FStarC_Options.initial_fuel () in
                         let uu___4 = FStarC_Options.initial_ifuel () in
+                        let uu___5 = FStarC_Options.record_hints () in
                         {
                           query_env = env;
                           query_decl = query;
@@ -1245,16 +1332,17 @@ let (make_solver_configs :
                              | FStar_Pervasives_Native.None ->
                                  FStar_Pervasives_Native.None
                              | FStar_Pervasives_Native.Some
-                                 { FStarC_Hints.hint_name = uu___5;
-                                   FStarC_Hints.hint_index = uu___6;
-                                   FStarC_Hints.fuel = uu___7;
-                                   FStarC_Hints.ifuel = uu___8;
-                                   FStarC_Hints.unsat_core = uu___9;
-                                   FStarC_Hints.query_elapsed_time = uu___10;
+                                 { FStarC_Hints.hint_name = uu___6;
+                                   FStarC_Hints.hint_index = uu___7;
+                                   FStarC_Hints.fuel = uu___8;
+                                   FStarC_Hints.ifuel = uu___9;
+                                   FStarC_Hints.unsat_core = uu___10;
+                                   FStarC_Hints.query_elapsed_time = uu___11;
                                    FStarC_Hints.hash = h;_}
                                  -> h);
                           query_can_be_split_and_retried = can_split;
-                          query_term
+                          query_term;
+                          query_record_hints = uu___5
                         } in
                       (default_settings, next_hint) in
                 match uu___ with
@@ -1291,7 +1379,9 @@ let (make_solver_configs :
                                query_hash = (default_settings.query_hash);
                                query_can_be_split_and_retried =
                                  (default_settings.query_can_be_split_and_retried);
-                               query_term = (default_settings.query_term)
+                               query_term = (default_settings.query_term);
+                               query_record_hints =
+                                 (default_settings.query_record_hints)
                              }]
                       else [] in
                     let initial_fuel_max_ifuel =
@@ -1320,7 +1410,9 @@ let (make_solver_configs :
                             query_hash = (default_settings.query_hash);
                             query_can_be_split_and_retried =
                               (default_settings.query_can_be_split_and_retried);
-                            query_term = (default_settings.query_term)
+                            query_term = (default_settings.query_term);
+                            query_record_hints =
+                              (default_settings.query_record_hints)
                           } in
                         [uu___2]
                       else [] in
@@ -1355,7 +1447,9 @@ let (make_solver_configs :
                             query_hash = (default_settings.query_hash);
                             query_can_be_split_and_retried =
                               (default_settings.query_can_be_split_and_retried);
-                            query_term = (default_settings.query_term)
+                            query_term = (default_settings.query_term);
+                            query_record_hints =
+                              (default_settings.query_record_hints)
                           } in
                         [uu___2]
                       else [] in
@@ -1389,7 +1483,9 @@ let (make_solver_configs :
                             query_hash = (default_settings.query_hash);
                             query_can_be_split_and_retried =
                               (default_settings.query_can_be_split_and_retried);
-                            query_term = (default_settings.query_term)
+                            query_term = (default_settings.query_term);
+                            query_record_hints =
+                              (default_settings.query_record_hints)
                           } in
                         [uu___2]
                       else [] in
@@ -1455,8 +1551,8 @@ let (ask_solver_quake : query_settings Prims.list -> answer) =
       else
         (let uu___1 = f acc lo2 in
          fold_nat' f uu___1 (lo2 + Prims.int_one) hi2) in
-    let best_fuel = FStarC_Util.mk_ref FStar_Pervasives_Native.None in
-    let best_ifuel = FStarC_Util.mk_ref FStar_Pervasives_Native.None in
+    let best_fuel = FStarC_Effect.mk_ref FStar_Pervasives_Native.None in
+    let best_ifuel = FStarC_Effect.mk_ref FStar_Pervasives_Native.None in
     let maybe_improve r n =
       let uu___ = FStarC_Effect.op_Bang r in
       match uu___ with
@@ -1596,7 +1692,7 @@ let (ask_solver_recover : query_settings Prims.list -> answer) =
       (if r.ok
        then r
        else
-         (let restarted = FStarC_Util.mk_ref false in
+         (let restarted = FStarC_Effect.mk_ref false in
           let cfg = FStarC_List.last configs in
           (let uu___3 =
              let uu___4 =
@@ -1637,7 +1733,8 @@ let (ask_solver_recover : query_settings Prims.list -> answer) =
                   query_hash = (cfg.query_hash);
                   query_can_be_split_and_retried =
                     (cfg.query_can_be_split_and_retried);
-                  query_term = (cfg.query_term)
+                  query_term = (cfg.query_term);
+                  query_record_hints = (cfg.query_record_hints)
                 } in
               ask_solver_quake [cfg1]) in
            let rec try_hammer h =
@@ -1702,7 +1799,7 @@ let (ask_solver_recover : query_settings Prims.list -> answer) =
              RestartAnd (IncreaseRLimit (Prims.of_int (8)))])))
     else ask_solver_quake configs
 let (failing_query_ctr : Prims.int FStarC_Effect.ref) =
-  FStarC_Util.mk_ref Prims.int_zero
+  FStarC_Effect.mk_ref Prims.int_zero
 let (maybe_save_failing_query :
   FStarC_SMTEncoding_Env.env_t -> query_settings -> unit) =
   fun env ->
@@ -1832,7 +1929,8 @@ let (report : FStarC_TypeChecker_Env.env -> query_settings -> answer -> unit)
                    query_hash = (default_settings.query_hash);
                    query_can_be_split_and_retried =
                      (default_settings.query_can_be_split_and_retried);
-                   query_term = (default_settings.query_term)
+                   query_term = (default_settings.query_term);
+                   query_record_hints = (default_settings.query_record_hints)
                  } in
              let errs = FStarC_List.map errors_to_report1 all_errs in
              let errs1 = collect_dups (FStarC_List.flatten errs) in
@@ -1901,7 +1999,9 @@ let (report : FStarC_TypeChecker_Env.env -> query_settings -> answer -> unit)
                     query_hash = (default_settings.query_hash);
                     query_can_be_split_and_retried =
                       (default_settings.query_can_be_split_and_retried);
-                    query_term = (default_settings.query_term)
+                    query_term = (default_settings.query_term);
+                    query_record_hints =
+                      (default_settings.query_record_hints)
                   } in
               FStarC_List.iter report1 all_errs))
         else ()
@@ -1914,53 +2014,59 @@ type solver_cfg =
   valid_intro: Prims.bool ;
   valid_elim: Prims.bool ;
   z3version: Prims.string ;
-  context_pruning: Prims.bool }
+  context_pruning: Prims.bool ;
+  record_hints: Prims.bool }
 let (__proj__Mksolver_cfg__item__seed : solver_cfg -> Prims.int) =
   fun projectee ->
     match projectee with
     | { seed; cliopt; smtopt; facts; valid_intro; valid_elim; z3version;
-        context_pruning;_} -> seed
+        context_pruning; record_hints;_} -> seed
 let (__proj__Mksolver_cfg__item__cliopt :
   solver_cfg -> Prims.string Prims.list) =
   fun projectee ->
     match projectee with
     | { seed; cliopt; smtopt; facts; valid_intro; valid_elim; z3version;
-        context_pruning;_} -> cliopt
+        context_pruning; record_hints;_} -> cliopt
 let (__proj__Mksolver_cfg__item__smtopt :
   solver_cfg -> Prims.string Prims.list) =
   fun projectee ->
     match projectee with
     | { seed; cliopt; smtopt; facts; valid_intro; valid_elim; z3version;
-        context_pruning;_} -> smtopt
+        context_pruning; record_hints;_} -> smtopt
 let (__proj__Mksolver_cfg__item__facts :
   solver_cfg -> (Prims.string Prims.list * Prims.bool) Prims.list) =
   fun projectee ->
     match projectee with
     | { seed; cliopt; smtopt; facts; valid_intro; valid_elim; z3version;
-        context_pruning;_} -> facts
+        context_pruning; record_hints;_} -> facts
 let (__proj__Mksolver_cfg__item__valid_intro : solver_cfg -> Prims.bool) =
   fun projectee ->
     match projectee with
     | { seed; cliopt; smtopt; facts; valid_intro; valid_elim; z3version;
-        context_pruning;_} -> valid_intro
+        context_pruning; record_hints;_} -> valid_intro
 let (__proj__Mksolver_cfg__item__valid_elim : solver_cfg -> Prims.bool) =
   fun projectee ->
     match projectee with
     | { seed; cliopt; smtopt; facts; valid_intro; valid_elim; z3version;
-        context_pruning;_} -> valid_elim
+        context_pruning; record_hints;_} -> valid_elim
 let (__proj__Mksolver_cfg__item__z3version : solver_cfg -> Prims.string) =
   fun projectee ->
     match projectee with
     | { seed; cliopt; smtopt; facts; valid_intro; valid_elim; z3version;
-        context_pruning;_} -> z3version
+        context_pruning; record_hints;_} -> z3version
 let (__proj__Mksolver_cfg__item__context_pruning : solver_cfg -> Prims.bool)
   =
   fun projectee ->
     match projectee with
     | { seed; cliopt; smtopt; facts; valid_intro; valid_elim; z3version;
-        context_pruning;_} -> context_pruning
+        context_pruning; record_hints;_} -> context_pruning
+let (__proj__Mksolver_cfg__item__record_hints : solver_cfg -> Prims.bool) =
+  fun projectee ->
+    match projectee with
+    | { seed; cliopt; smtopt; facts; valid_intro; valid_elim; z3version;
+        context_pruning; record_hints;_} -> record_hints
 let (_last_cfg : solver_cfg FStar_Pervasives_Native.option FStarC_Effect.ref)
-  = FStarC_Util.mk_ref FStar_Pervasives_Native.None
+  = FStarC_Effect.mk_ref FStar_Pervasives_Native.None
 let (get_cfg : FStarC_TypeChecker_Env.env -> solver_cfg) =
   fun env ->
     let uu___ = FStarC_Options.z3_seed () in
@@ -1969,8 +2075,8 @@ let (get_cfg : FStarC_TypeChecker_Env.env -> solver_cfg) =
     let uu___3 = FStarC_Options.smtencoding_valid_intro () in
     let uu___4 = FStarC_Options.smtencoding_valid_elim () in
     let uu___5 = FStarC_Options.z3_version () in
-    let uu___6 =
-      let uu___7 = FStarC_Options_Ext.get "context_pruning" in uu___7 <> "" in
+    let uu___6 = FStarC_Options_Ext.enabled "context_pruning" in
+    let uu___7 = FStarC_Options.record_hints () in
     {
       seed = uu___;
       cliopt = uu___1;
@@ -1979,7 +2085,8 @@ let (get_cfg : FStarC_TypeChecker_Env.env -> solver_cfg) =
       valid_intro = uu___3;
       valid_elim = uu___4;
       z3version = uu___5;
-      context_pruning = uu___6
+      context_pruning = uu___6;
+      record_hints = uu___7
     }
 let (save_cfg : FStarC_TypeChecker_Env.env -> unit) =
   fun env ->
@@ -2405,7 +2512,7 @@ let (solver : FStarC_TypeChecker_Env.solver_t) =
     FStarC_TypeChecker_Env.handle_smt_goal = (fun e -> fun g -> [(e, g)]);
     FStarC_TypeChecker_Env.solve = solve;
     FStarC_TypeChecker_Env.solve_sync = solve_sync_bool;
-    FStarC_TypeChecker_Env.finish = (fun uu___ -> ());
+    FStarC_TypeChecker_Env.finish = FStarC_SMTEncoding_Z3.stop;
     FStarC_TypeChecker_Env.refresh = FStarC_SMTEncoding_Z3.refresh
   }
 let (dummy : FStarC_TypeChecker_Env.solver_t) =

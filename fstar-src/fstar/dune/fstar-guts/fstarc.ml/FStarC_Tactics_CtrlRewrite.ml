@@ -224,9 +224,7 @@ let (__do_rewrite :
                                lcomp.FStarC_TypeChecker_Common.res_typ in
                              let typ1 =
                                let uu___4 =
-                                 let uu___5 =
-                                   FStarC_Options_Ext.get "__unrefine" in
-                                 uu___5 <> "" in
+                                 FStarC_Options_Ext.enabled "__unrefine" in
                                if uu___4
                                then
                                  let typ_norm =

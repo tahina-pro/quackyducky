@@ -1,9 +1,9 @@
 open Prims
-let (anyref : Prims.bool FStarC_Effect.ref) = FStarC_Util.mk_ref false
-let (_debug_all : Prims.bool FStarC_Effect.ref) = FStarC_Util.mk_ref false
+let (anyref : Prims.bool FStarC_Effect.ref) = FStarC_Effect.mk_ref false
+let (_debug_all : Prims.bool FStarC_Effect.ref) = FStarC_Effect.mk_ref false
 let (toggle_list :
   (Prims.string * Prims.bool FStarC_Effect.ref) Prims.list FStarC_Effect.ref)
-  = FStarC_Util.mk_ref []
+  = FStarC_Effect.mk_ref []
 type saved_state =
   {
   toggles: (Prims.string * Prims.bool) Prims.list ;
@@ -30,7 +30,7 @@ let (snapshot : unit -> saved_state) =
     { toggles = uu___1; any = uu___2; all = uu___3 }
 let (register_toggle : Prims.string -> Prims.bool FStarC_Effect.ref) =
   fun k ->
-    let r = FStarC_Util.mk_ref false in
+    let r = FStarC_Effect.mk_ref false in
     (let uu___1 = FStarC_Effect.op_Bang _debug_all in
      if uu___1 then FStarC_Effect.op_Colon_Equals r true else ());
     (let uu___2 =
@@ -78,7 +78,7 @@ let (tag : Prims.string -> unit) =
 let (enable : unit -> unit) =
   fun uu___ -> FStarC_Effect.op_Colon_Equals anyref true
 let (dbg_level : Prims.int FStarC_Effect.ref) =
-  FStarC_Util.mk_ref Prims.int_zero
+  FStarC_Effect.mk_ref Prims.int_zero
 let (low : unit -> Prims.bool) =
   fun uu___ ->
     (let uu___1 = FStarC_Effect.op_Bang dbg_level in uu___1 >= Prims.int_one)
@@ -126,4 +126,10 @@ let (disable_all : unit -> unit) =
           match uu___4 with
           | (uu___5, r) -> FStarC_Effect.op_Colon_Equals r false) uu___3)
 let (set_debug_all : unit -> unit) =
-  fun uu___ -> FStarC_Effect.op_Colon_Equals _debug_all true
+  fun uu___ ->
+    FStarC_Effect.op_Colon_Equals _debug_all true;
+    (let uu___2 = FStarC_Effect.op_Bang toggle_list in
+     FStarC_List.iter
+       (fun uu___3 ->
+          match uu___3 with
+          | (uu___4, r) -> FStarC_Effect.op_Colon_Equals r true) uu___2)

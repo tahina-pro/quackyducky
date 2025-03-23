@@ -65,6 +65,8 @@ let (fstar_tactics_TacticFailure : tac_constant) =
   fstar_tactics_data ["Common"; "TacticFailure"]
 let (fstar_tactics_SKIP : tac_constant) =
   fstar_tactics_data ["Common"; "SKIP"]
+let (fstar_tactics_Stop : tac_constant) =
+  fstar_tactics_data ["Common"; "Stop"]
 let (fstar_tactics_result : tac_constant) =
   fstar_tactics_const ["Result"; "__result"]
 let (fstar_tactics_Success : tac_constant) =
@@ -341,6 +343,15 @@ let (e_exn : Prims.exn FStarC_Syntax_Embeddings_Base.embedding) =
           FStarC_Syntax_Syntax.hash_code =
             (uu___2.FStarC_Syntax_Syntax.hash_code)
         }
+    | FStarC_Errors.Stop ->
+        let uu___2 = fstar_tactics_Stop.t in
+        {
+          FStarC_Syntax_Syntax.n = (uu___2.FStarC_Syntax_Syntax.n);
+          FStarC_Syntax_Syntax.pos = rng;
+          FStarC_Syntax_Syntax.vars = (uu___2.FStarC_Syntax_Syntax.vars);
+          FStarC_Syntax_Syntax.hash_code =
+            (uu___2.FStarC_Syntax_Syntax.hash_code)
+        }
     | FStarC_Tactics_Common.EExn t ->
         {
           FStarC_Syntax_Syntax.n = (t.FStarC_Syntax_Syntax.n);
@@ -390,6 +401,9 @@ let (e_exn : Prims.exn FStarC_Syntax_Embeddings_Base.embedding) =
     | (FStarC_Syntax_Syntax.Tm_fvar fv, []) when
         FStarC_Syntax_Syntax.fv_eq_lid fv fstar_tactics_SKIP.lid ->
         FStar_Pervasives_Native.Some FStarC_Tactics_Common.SKIP
+    | (FStarC_Syntax_Syntax.Tm_fvar fv, []) when
+        FStarC_Syntax_Syntax.fv_eq_lid fv fstar_tactics_Stop.lid ->
+        FStar_Pervasives_Native.Some FStarC_Errors.Stop
     | uu___2 -> FStar_Pervasives_Native.Some (FStarC_Tactics_Common.EExn t) in
   FStarC_Syntax_Embeddings_Base.mk_emb_full embed_exn unembed_exn
     (fun uu___ -> FStarC_Syntax_Syntax.t_exn) (fun uu___ -> "(exn)")

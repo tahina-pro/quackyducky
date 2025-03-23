@@ -14,7 +14,7 @@ let (dbg_Top : Prims.bool FStarC_Effect.ref) =
 let (dbg_Exit : Prims.bool FStarC_Effect.ref) =
   FStarC_Debug.get_toggle "CoreExit"
 let (goal_ctr : Prims.int FStarC_Effect.ref) =
-  FStarC_Util.mk_ref Prims.int_zero
+  FStarC_Effect.mk_ref Prims.int_zero
 let (get_goal_ctr : unit -> Prims.int) =
   fun uu___ -> FStarC_Effect.op_Bang goal_ctr
 let (incr_goal_ctr : unit -> Prims.int) =
@@ -537,7 +537,7 @@ let (__proj__Mkcache_stats_t__item__hits : cache_stats_t -> Prims.int) =
 let (__proj__Mkcache_stats_t__item__misses : cache_stats_t -> Prims.int) =
   fun projectee -> match projectee with | { hits; misses;_} -> misses
 let (cache_stats : cache_stats_t FStarC_Effect.ref) =
-  FStarC_Util.mk_ref { hits = Prims.int_zero; misses = Prims.int_zero }
+  FStarC_Effect.mk_ref { hits = Prims.int_zero; misses = Prims.int_zero }
 let (record_cache_hit : unit -> unit) =
   fun uu___ ->
     let cs = FStarC_Effect.op_Bang cache_stats in
@@ -948,6 +948,12 @@ let (check_bqual :
           (fun uu___ -> Success ((), FStar_Pervasives_Native.None))
       | (FStar_Pervasives_Native.Some (FStarC_Syntax_Syntax.Implicit b01),
          FStar_Pervasives_Native.Some (FStarC_Syntax_Syntax.Implicit b11)) ->
+          (fun uu___ -> Success ((), FStar_Pervasives_Native.None))
+      | (FStar_Pervasives_Native.Some (FStarC_Syntax_Syntax.Equality),
+         FStar_Pervasives_Native.None) ->
+          (fun uu___ -> Success ((), FStar_Pervasives_Native.None))
+      | (FStar_Pervasives_Native.None, FStar_Pervasives_Native.Some
+         (FStarC_Syntax_Syntax.Equality)) ->
           (fun uu___ -> Success ((), FStar_Pervasives_Native.None))
       | (FStar_Pervasives_Native.Some (FStarC_Syntax_Syntax.Equality),
          FStar_Pervasives_Native.Some (FStarC_Syntax_Syntax.Equality)) ->
@@ -1733,9 +1739,20 @@ let rec (check_relation :
     fun rel ->
       fun t0 ->
         fun t1 ->
-          let err uu___ =
+          let err lbl =
             match rel with
             | EQUALITY ->
+                let uu___ =
+                  let uu___1 =
+                    FStarC_Class_Show.show FStarC_Syntax_Print.showable_term
+                      t0 in
+                  let uu___2 =
+                    FStarC_Class_Show.show FStarC_Syntax_Print.showable_term
+                      t1 in
+                  FStarC_Util.format3 "(%s) not equal terms: %s <> %s" lbl
+                    uu___1 uu___2 in
+                fail uu___
+            | uu___ ->
                 let uu___1 =
                   let uu___2 =
                     FStarC_Class_Show.show FStarC_Syntax_Print.showable_term
@@ -1743,20 +1760,9 @@ let rec (check_relation :
                   let uu___3 =
                     FStarC_Class_Show.show FStarC_Syntax_Print.showable_term
                       t1 in
-                  FStarC_Util.format2 "not equal terms: %s <> %s" uu___2
-                    uu___3 in
-                fail uu___1
-            | uu___1 ->
-                let uu___2 =
-                  let uu___3 =
-                    FStarC_Class_Show.show FStarC_Syntax_Print.showable_term
-                      t0 in
-                  let uu___4 =
-                    FStarC_Class_Show.show FStarC_Syntax_Print.showable_term
-                      t1 in
-                  FStarC_Util.format2 "%s is not a subtype of %s" uu___3
-                    uu___4 in
-                fail uu___2 in
+                  FStarC_Util.format3 "(%s) %s is not a subtype of %s" lbl
+                    uu___2 uu___3 in
+                fail uu___1 in
           let rel_to_string rel1 =
             match rel1 with | EQUALITY -> "=?=" | SUBTYPING uu___ -> "<:?" in
           (let uu___1 = FStarC_Effect.op_Bang dbg in
@@ -1934,8 +1940,10 @@ let rec (check_relation :
                        if guard_ok
                        then
                          let uu___4 = (equatable g t01) || (equatable g t11) in
-                         (if uu___4 then emit_guard t01 t11 else err ())
-                       else err () in
+                         (if uu___4
+                          then emit_guard t01 t11
+                          else err "not equatable")
+                       else err "guards not allowed" in
                      let maybe_unfold_side_and_retry side1 t01 t11 ctx01 =
                        let uu___4 = unfolding_ok ctx01 in
                        match uu___4 with
@@ -2021,7 +2029,7 @@ let rec (check_relation :
                             then
                               (fun uu___7 ->
                                  Success ((), FStar_Pervasives_Native.None))
-                            else err ()
+                            else err "teq_nosmt_force over Types failed"
                         | (FStarC_Syntax_Syntax.Tm_meta
                            { FStarC_Syntax_Syntax.tm2 = t02;
                              FStarC_Syntax_Syntax.meta =
@@ -2084,7 +2092,8 @@ let rec (check_relation :
                                then
                                  fun uu___8 ->
                                    Success ((), FStar_Pervasives_Native.None)
-                               else err ())
+                               else
+                                 err "teq_nosmt_force over Tm_uinst failed")
                             else maybe_unfold_and_retry t01 t11
                         | (FStarC_Syntax_Syntax.Tm_fvar uu___6,
                            FStarC_Syntax_Syntax.Tm_fvar uu___7) ->

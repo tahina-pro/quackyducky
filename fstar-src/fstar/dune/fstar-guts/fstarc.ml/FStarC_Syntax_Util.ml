@@ -2,7 +2,7 @@ open Prims
 let (tts_f :
   (FStarC_Syntax_Syntax.term -> Prims.string) FStar_Pervasives_Native.option
     FStarC_Effect.ref)
-  = FStarC_Util.mk_ref FStar_Pervasives_Native.None
+  = FStarC_Effect.mk_ref FStar_Pervasives_Native.None
 let (tts : FStarC_Syntax_Syntax.term -> Prims.string) =
   fun t ->
     let uu___ = FStarC_Effect.op_Bang tts_f in
@@ -12,7 +12,7 @@ let (tts : FStarC_Syntax_Syntax.term -> Prims.string) =
 let (ttd_f :
   (FStarC_Syntax_Syntax.term -> FStarC_Pprint.document)
     FStar_Pervasives_Native.option FStarC_Effect.ref)
-  = FStarC_Util.mk_ref FStar_Pervasives_Native.None
+  = FStarC_Effect.mk_ref FStar_Pervasives_Native.None
 let (ttd : FStarC_Syntax_Syntax.term -> FStarC_Pprint.document) =
   fun t ->
     let uu___ = FStarC_Effect.op_Bang ttd_f in
@@ -1820,16 +1820,14 @@ let (is_tuple_constructor : FStarC_Syntax_Syntax.typ -> Prims.bool) =
   fun t ->
     match t.FStarC_Syntax_Syntax.n with
     | FStarC_Syntax_Syntax.Tm_fvar fv ->
-        let uu___ =
-          FStarC_Ident.string_of_lid
-            (fv.FStarC_Syntax_Syntax.fv_name).FStarC_Syntax_Syntax.v in
-        FStarC_Parser_Const.is_tuple_constructor_string uu___
+        FStarC_Parser_Const_Tuples.is_tuple_constructor_lid
+          (fv.FStarC_Syntax_Syntax.fv_name).FStarC_Syntax_Syntax.v
     | uu___ -> false
 let (is_dtuple_constructor : FStarC_Syntax_Syntax.typ -> Prims.bool) =
   fun t ->
     match t.FStarC_Syntax_Syntax.n with
     | FStarC_Syntax_Syntax.Tm_fvar fv ->
-        FStarC_Parser_Const.is_dtuple_constructor_lid
+        FStarC_Parser_Const_Tuples.is_dtuple_constructor_lid
           (fv.FStarC_Syntax_Syntax.fv_name).FStarC_Syntax_Syntax.v
     | uu___ -> false
 let (is_lid_equality : FStarC_Ident.lident -> Prims.bool) =
@@ -3030,7 +3028,8 @@ let eqopt :
         | (FStar_Pervasives_Native.None, FStar_Pervasives_Native.None) ->
             true
         | uu___ -> false
-let (debug_term_eq : Prims.bool FStarC_Effect.ref) = FStarC_Util.mk_ref false
+let (debug_term_eq : Prims.bool FStarC_Effect.ref) =
+  FStarC_Effect.mk_ref false
 let (check : Prims.bool -> Prims.string -> Prims.bool -> Prims.bool) =
   fun dbg ->
     fun msg ->
@@ -3542,20 +3541,40 @@ let (process_pragma :
       FStarC_Errors.set_option_warning_callback_range
         (FStar_Pervasives_Native.Some r);
       (let set_options s =
-         let uu___1 = FStarC_Options.set_options s in
-         match uu___1 with
-         | FStarC_Getopt.Success -> ()
-         | FStarC_Getopt.Help ->
-             FStarC_Errors.raise_error FStarC_Class_HasRange.hasRange_range r
-               FStarC_Errors_Codes.Fatal_FailToProcessPragma ()
-               (Obj.magic FStarC_Errors_Msg.is_error_message_string)
-               (Obj.magic
-                  "Failed to process pragma: use 'fstar --help' to see which options are available")
-         | FStarC_Getopt.Error (s1, opt) ->
+         try
+           (fun uu___1 ->
+              match () with
+              | () ->
+                  let uu___2 = FStarC_Options.set_options s in
+                  (match uu___2 with
+                   | FStarC_Getopt.Success -> ()
+                   | FStarC_Getopt.Help ->
+                       FStarC_Errors.raise_error
+                         FStarC_Class_HasRange.hasRange_range r
+                         FStarC_Errors_Codes.Fatal_FailToProcessPragma ()
+                         (Obj.magic FStarC_Errors_Msg.is_error_message_string)
+                         (Obj.magic
+                            "Failed to process pragma: use 'fstar --help' to see which options are available")
+                   | FStarC_Getopt.Error (s1, opt) ->
+                       let uu___3 =
+                         let uu___4 =
+                           FStarC_Errors_Msg.text
+                             (Prims.strcat "Failed to process pragma: " s1) in
+                         [uu___4] in
+                       FStarC_Errors.raise_error
+                         FStarC_Class_HasRange.hasRange_range r
+                         FStarC_Errors_Codes.Fatal_FailToProcessPragma ()
+                         (Obj.magic
+                            FStarC_Errors_Msg.is_error_message_list_doc)
+                         (Obj.magic uu___3))) ()
+         with
+         | FStarC_Options.NotSettable x ->
              let uu___2 =
                let uu___3 =
-                 FStarC_Errors_Msg.text
-                   (Prims.strcat "Failed to process pragma: " s1) in
+                 let uu___4 =
+                   FStarC_Util.format1
+                     "Option '%s' is not settable via a pragma." x in
+                 FStarC_Errors_Msg.text uu___4 in
                [uu___3] in
              FStarC_Errors.raise_error FStarC_Class_HasRange.hasRange_range r
                FStarC_Errors_Codes.Fatal_FailToProcessPragma ()

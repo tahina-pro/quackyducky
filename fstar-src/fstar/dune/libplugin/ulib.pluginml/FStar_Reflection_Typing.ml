@@ -1718,9 +1718,10 @@ let (subtyping_token_renaming :
               Fstarcompiler.FStarC_Reflection_Types.term ->
                 Fstarcompiler.FStarC_Reflection_Types.term ->
                   (unit, unit, unit)
-                    Fstarcompiler.FStarC_Tactics_Types.subtyping_token ->
+                    Fstarcompiler.FStarC_Tactics_Types_Reflection.subtyping_token
+                    ->
                     (unit, unit, unit)
-                      Fstarcompiler.FStarC_Tactics_Types.subtyping_token)
+                      Fstarcompiler.FStarC_Tactics_Types_Reflection.subtyping_token)
   =
   fun g ->
     fun bs0 ->
@@ -1736,9 +1737,10 @@ let (subtyping_token_weakening :
             Fstarcompiler.FStarC_Reflection_Types.term ->
               Fstarcompiler.FStarC_Reflection_Types.term ->
                 (unit, unit, unit)
-                  Fstarcompiler.FStarC_Tactics_Types.subtyping_token ->
+                  Fstarcompiler.FStarC_Tactics_Types_Reflection.subtyping_token
+                  ->
                   (unit, unit, unit)
-                    Fstarcompiler.FStarC_Tactics_Types.subtyping_token)
+                    Fstarcompiler.FStarC_Tactics_Types_Reflection.subtyping_token)
   =
   fun g ->
     fun bs0 ->
@@ -2059,5 +2061,6 @@ let (typing_to_token :
     Fstarcompiler.FStarC_Reflection_Types.term ->
       comp_typ ->
         (unit, unit, unit) typing ->
-          (unit, unit, unit) Fstarcompiler.FStarC_Tactics_Types.typing_token)
+          (unit, unit, unit)
+            Fstarcompiler.FStarC_Tactics_Types_Reflection.typing_token)
   = fun g -> fun e -> fun c -> fun uu___ -> Prims.magic ()

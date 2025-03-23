@@ -1341,7 +1341,7 @@ let (showable_should_check_uvar :
 let (lazy_chooser :
   (lazy_kind -> lazyinfo -> term) FStar_Pervasives_Native.option
     FStarC_Effect.ref)
-  = FStarC_Util.mk_ref FStar_Pervasives_Native.None
+  = FStarC_Effect.mk_ref FStar_Pervasives_Native.None
 let (cmp_qualifier : qualifier -> qualifier -> FStarC_Order.order) =
   fun q1 ->
     fun q2 ->
@@ -2591,10 +2591,10 @@ let syn :
   = fun p -> fun k -> fun f -> f k p
 let mk_fvs :
   'uuuuu . unit -> 'uuuuu FStar_Pervasives_Native.option FStarC_Effect.ref =
-  fun uu___ -> FStarC_Util.mk_ref FStar_Pervasives_Native.None
+  fun uu___ -> FStarC_Effect.mk_ref FStar_Pervasives_Native.None
 let mk_uvs :
   'uuuuu . unit -> 'uuuuu FStar_Pervasives_Native.option FStarC_Effect.ref =
-  fun uu___ -> FStarC_Util.mk_ref FStar_Pervasives_Native.None
+  fun uu___ -> FStarC_Effect.mk_ref FStar_Pervasives_Native.None
 let (list_of_freenames : freenames -> bv Prims.list) =
   fun fvs ->
     FStarC_Class_Setlike.elems ()
@@ -2602,8 +2602,8 @@ let (list_of_freenames : freenames -> bv Prims.list) =
 let mk : 'a . 'a -> FStarC_Range_Type.range -> 'a syntax =
   fun t ->
     fun r ->
-      let uu___ = FStarC_Util.mk_ref FStar_Pervasives_Native.None in
-      let uu___1 = FStarC_Util.mk_ref FStar_Pervasives_Native.None in
+      let uu___ = FStarC_Effect.mk_ref FStar_Pervasives_Native.None in
+      let uu___1 = FStarC_Effect.mk_ref FStar_Pervasives_Native.None in
       { n = t; pos = r; vars = uu___; hash_code = uu___1 }
 let (bv_to_tm : bv -> term) =
   fun bv1 -> let uu___ = range_of_bv bv1 in mk (Tm_bvar bv1) uu___
@@ -3050,7 +3050,7 @@ let (t_tuple2_of : term -> term -> term) =
   fun t1 ->
     fun t2 ->
       let uu___ =
-        let uu___1 = tabbrev FStarC_Parser_Const.lid_tuple2 in
+        let uu___1 = tabbrev FStarC_Parser_Const_Tuples.lid_tuple2 in
         mk_Tm_uinst uu___1 [U_zero; U_zero] in
       let uu___1 =
         let uu___2 = as_arg t1 in
@@ -3061,7 +3061,7 @@ let (t_tuple3_of : term -> term -> term -> term) =
     fun t2 ->
       fun t3 ->
         let uu___ =
-          let uu___1 = tabbrev FStarC_Parser_Const.lid_tuple3 in
+          let uu___1 = tabbrev FStarC_Parser_Const_Tuples.lid_tuple3 in
           mk_Tm_uinst uu___1 [U_zero; U_zero; U_zero] in
         let uu___1 =
           let uu___2 = as_arg t1 in
@@ -3077,7 +3077,7 @@ let (t_tuple4_of : term -> term -> term -> term -> term) =
       fun t3 ->
         fun t4 ->
           let uu___ =
-            let uu___1 = tabbrev FStarC_Parser_Const.lid_tuple4 in
+            let uu___1 = tabbrev FStarC_Parser_Const_Tuples.lid_tuple4 in
             mk_Tm_uinst uu___1 [U_zero; U_zero; U_zero; U_zero] in
           let uu___1 =
             let uu___2 = as_arg t1 in
@@ -3097,7 +3097,7 @@ let (t_tuple5_of : term -> term -> term -> term -> term -> term) =
         fun t4 ->
           fun t5 ->
             let uu___ =
-              let uu___1 = tabbrev FStarC_Parser_Const.lid_tuple5 in
+              let uu___1 = tabbrev FStarC_Parser_Const_Tuples.lid_tuple5 in
               mk_Tm_uinst uu___1 [U_zero; U_zero; U_zero; U_zero; U_zero] in
             let uu___1 =
               let uu___2 = as_arg t1 in
