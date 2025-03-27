@@ -134,7 +134,14 @@ type atomic_probe_action =
       f: A.ident ->
       args: list expr ->
       atomic_probe_action
-  | Atomic_probe_skip:
+  | Atomic_probe_skip_read:
+      n:expr ->
+      atomic_probe_action
+  | Atomic_probe_skip_write:
+      n:expr ->
+      atomic_probe_action
+  | Atomic_probe_init:
+      f:A.ident ->
       n:expr ->
       atomic_probe_action
   | Atomic_probe_return:
@@ -189,6 +196,8 @@ type typ =
       probe_fn:probe_action ->
       dest:A.ident ->
       as_u64:A.ident ->
+      init:A.ident ->
+      dest_sz:expr ->
       typ
   | T_arrow : list typ -> typ -> typ
 
@@ -292,7 +301,10 @@ type parser' =
       pointer_size:A.pointer_size_t ->
       probe:probe_action ->
       dest:A.ident ->
-      as_u64:A.ident -> parser'
+      as_u64:A.ident ->
+      probe_init:A.ident ->
+      dest_sz:expr ->
+      parser'
   
 and parser = {
   p_kind:parser_kind;
@@ -363,6 +375,7 @@ noeq
 type probe_qualifier =
   | PQSimple
   | PQWithOffsets
+  | PQInit
   | PQRead of A.integer_type
   | PQWrite of A.integer_type
 

@@ -373,8 +373,11 @@ and typ' =
   | Type_arrow : args:list typ { Cons? args } -> typ -> typ'
 
 and pointer_qualifier =
-  | PQ of pointer_size_t
-
+  | PQ : 
+    pq:pointer_size_t ->
+    explicit:bool { not explicit ==> pq==UInt64 } ->
+    pointer_qualifier
+  
 and typ = with_meta_t typ'
 
 let field_typ = t:typ { Type_app? t.v }
@@ -493,7 +496,8 @@ type probe_atomic_action =
   | Probe_action_read : f:ident -> probe_atomic_action
   | Probe_action_write : f:ident -> value:expr -> probe_atomic_action
   | Probe_action_copy : f:ident -> len:expr -> probe_atomic_action
-  | Probe_action_skip : len:expr -> probe_atomic_action
+  | Probe_action_skip_read : len:expr -> probe_atomic_action
+  | Probe_action_skip_write : len:expr -> probe_atomic_action
   | Probe_action_fail : probe_atomic_action
 noeq
 [@@ PpxDerivingYoJson ]
@@ -527,7 +531,9 @@ noeq
 type probe_call = {
   probe_dest:ident;
   probe_block:probe_action;
-  probe_ptr_as_u64: option ident
+  probe_ptr_as_u64: option ident;
+  probe_dest_sz: expr;
+  probe_init: option ident
 }
 
 [@@ PpxDerivingYoJson ]
@@ -614,6 +620,7 @@ type out_typ = {
 [@@ PpxDerivingYoJson ]
 type probe_qualifier =
   | PQWithOffsets
+  | PQInit
   | PQRead of integer_type
   | PQWrite of integer_type
 
@@ -898,19 +905,24 @@ let rec print_typ t : ML string =
         (print_generic_insts gs)
         (String.concat ", " (List.map print_typ_param ps))
     end
-  | Pointer t (PQ q) ->
-     Printf.sprintf "(pointer %s (%s))"
+  | Pointer t (PQ q explicit) ->
+     Printf.sprintf "(pointer %s (%b %s))"
        (print_typ t)
+        explicit
        (print_integer_type q)
   | Type_arrow ts t ->
     Printf.sprintf "%s -> %s"
       (String.concat " -> " (List.map print_typ ts))
       (print_typ t)
 
+let pq_as_integer_type (pq:pointer_qualifier) : integer_type =
+  match pq with
+  | PQ i _ -> i
+
 let typ_as_integer_type (t:typ) : ML integer_type =
   match t.v with
   | Type_app i _k [] [] -> as_integer_typ i
-  | Pointer _ (PQ i) -> i
+  | Pointer _ pq -> pq_as_integer_type pq
   | _ -> error ("Expected an integer type; got: " ^ (print_typ t)) t.range
 
 let bit_order_of_typ (t:typ) : ML bitfield_bit_order =
@@ -1032,7 +1044,8 @@ and print_probe_atomic_action (p:probe_atomic_action)
   | Probe_action_read f -> Printf.sprintf "(Probe_action_read %s);" (print_ident f)
   | Probe_action_write f v ->Printf.sprintf "(Probe_action_write %s(%s));" (print_ident f) (print_expr v)
   | Probe_action_copy f v -> Printf.sprintf "(Probe_action_copy %s(%s));" (print_ident f) (print_expr v)
-  | Probe_action_skip n -> Printf.sprintf "(Probe_action_skip %s);" (print_expr n)
+  | Probe_action_skip_read n -> Printf.sprintf "(Probe_action_skip_read %s);" (print_expr n)
+  | Probe_action_skip_write n -> Printf.sprintf "(Probe_action_skip_write %s);" (print_expr n)
   | Probe_action_fail -> "(Probe_action_fail);"
 
 and print_probe_call (p:probe_call) : ML string =
@@ -1415,8 +1428,8 @@ let eq_opt (f:'a -> 'a -> bool) (x y:option 'a) =
   | _ -> false
 
 let eq_pointer_qualifier (q1 q2:pointer_qualifier) =
-  let PQ a1, PQ a2 = q1, q2 in
-  a1=a2
+  match q1, q2 with
+  | PQ i1 x1, PQ i2 x2 -> i1 = i2 && x1 = x2
 
 let rec eq_typ (t1 t2:typ) : Tot bool =
   match t1.v, t2.v with
@@ -1523,7 +1536,8 @@ let subst_probe_atomic_action (s:subst) (aa:probe_atomic_action) : ML probe_atom
   | Probe_action_read f -> Probe_action_read f
   | Probe_action_write f value -> Probe_action_write f (subst_expr s value)
   | Probe_action_copy f len -> Probe_action_copy f (subst_expr s len)
-  | Probe_action_skip len -> Probe_action_skip (subst_expr s len)
+  | Probe_action_skip_read len -> Probe_action_skip_read (subst_expr s len)
+  | Probe_action_skip_write len -> Probe_action_skip_write (subst_expr s len)
   | Probe_action_fail -> Probe_action_fail
 
 let rec subst_probe_action (s:subst) (a:probe_action) : ML probe_action =
@@ -1573,11 +1587,13 @@ and subst_atomic_field (s:subst) (f:atomic_field) : ML atomic_field =
   let pa =
     match sf.field_probe with
     | None -> None
-    | Some { probe_dest; probe_block; probe_ptr_as_u64 } ->
+    | Some { probe_dest; probe_block; probe_ptr_as_u64; probe_dest_sz; probe_init } ->
       Some {
         probe_dest;
         probe_block=subst_probe_action s probe_block; 
-        probe_ptr_as_u64
+        probe_ptr_as_u64;
+        probe_dest_sz=subst_expr s probe_dest_sz;
+        probe_init
       }
   in
   let sf = {

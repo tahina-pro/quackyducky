@@ -43,6 +43,7 @@ let print_probe_qualifier = function
   | PQWithOffsets -> "WithOffsets"
   | PQRead i -> Printf.sprintf "Read %s" (print_integer_type i)
   | PQWrite i -> Printf.sprintf "Write %s" (print_integer_type i)
+  | PQInit -> "Init"
 
 
 let find_probe_fn (e:B.env) (q:probe_qualifier)
@@ -110,7 +111,7 @@ let probe_and_copy_type (e:B.env) (t0:typ) (k:probe_action)
           t.range
       | Some id -> (
         let insts, _ = GeneralizeProbes.generic_instantiations_for_type e t in
-        FStar.IO.print_string <|
+        Options.debug_print_string <|
           Printf.sprintf "****Instantiating probe function for type %s unfolded to %s with %s\n" 
             (print_typ t0)
             (print_typ t)
@@ -140,36 +141,18 @@ let probe_and_copy_type (e:B.env) (t0:typ) (k:probe_action)
       (with_dummy_range <| Probe_atomic_action (Probe_action_copy probe_and_copy_n (with_dummy_range <| Constant (Int UInt64 size))))
       k
   
-let rec write_n_bytes_zero (e:B.env) (n:int) (k:probe_action)
-: ML probe_action
-= let writei t
-    : ML probe_action
-    = let writer = find_probe_fn e (PQWrite t) in
-      with_dummy_range <|
-      Probe_action_seq
-        (with_dummy_range <| Probe_atomic_action (Probe_action_write writer (with_dummy_range <| Constant (Int t 0))))
-        k
-  in
-  match n with
-  | 0 -> k
-  | 1 -> writei UInt8
-  | 2 -> writei UInt16
-  | 4 -> writei UInt32
-  | 8 -> writei UInt64
-  | _ -> 
-    if n > 8
-    then write_n_bytes_zero e (n - 8) (write_n_bytes_zero e 8 k)
-    else if n > 4
-    then write_n_bytes_zero e (n - 4) (write_n_bytes_zero e 4 k)
-    else if n > 2
-    then write_n_bytes_zero e (n - 2) (write_n_bytes_zero e 2 k)
-    else write_n_bytes_zero e (n - 1) (write_n_bytes_zero e 1 k)
-
-let skip_bytes (n:int) (k:probe_action)
+let skip_bytes_read (n:int) (k:probe_action)
 : ML probe_action
 = with_dummy_range <|
     Probe_action_seq 
-      (with_dummy_range <| Probe_atomic_action (Probe_action_skip (with_dummy_range <| Constant (Int UInt64 n))))
+      (with_dummy_range <| Probe_atomic_action (Probe_action_skip_read (with_dummy_range <| Constant (Int UInt64 n))))
+      k
+
+let skip_bytes_write (n:int) (k:probe_action)
+: ML probe_action
+= with_dummy_range <|
+    Probe_action_seq 
+      (with_dummy_range <| Probe_atomic_action (Probe_action_skip_write (with_dummy_range <| Constant (Int UInt64 n))))
       k
 
 let probe_and_copy_alignment 
@@ -187,7 +170,7 @@ let probe_and_copy_alignment
         k
   )
   else (
-    skip_bytes n0 (write_n_bytes_zero e n1 k)
+    skip_bytes_read n0 (skip_bytes_write n1 k)
   )
 
 let alignment_bytes (af:atomic_field)
@@ -235,10 +218,10 @@ let rec coerce_fields (e:B.env) (r0 r1:record)
         probe_and_copy_alignment e n0 n1 (coerce_fields e tl0 tl1)
       | true, false ->
         let n0 = alignment_bytes af0 in
-        skip_bytes n0 (coerce_fields e tl0 r1)
+        skip_bytes_read n0 (coerce_fields e tl0 r1)
       | false, true ->
         let n1 = alignment_bytes af1 in
-        write_n_bytes_zero e n1 (coerce_fields e r0 tl1)
+        skip_bytes_write n1 (coerce_fields e r0 tl1)
       | false, false -> (
         if not (eq_idents af0.v.field_ident af1.v.field_ident)
         then failwith <|
@@ -249,12 +232,12 @@ let rec coerce_fields (e:B.env) (r0 r1:record)
         else (
           let t0_is_u32 =
             match af0.v.field_type.v with
-            | Pointer _ (PQ UInt32) -> true
+            | Pointer _ pq -> pq_as_integer_type pq = UInt32
             | _ -> eq_typ af0.v.field_type tuint32
           in
           let t1_is_ptr64 =
             match af1.v.field_type.v with
-            | Pointer _ (PQ UInt64) -> true
+            | Pointer _ pq -> pq_as_integer_type pq = UInt64
             | _ -> false
           in
           if t0_is_u32 && t1_is_ptr64
@@ -265,7 +248,7 @@ let rec coerce_fields (e:B.env) (r0 r1:record)
             match Generate32BitTypes.has_32bit_coercion e af0.v.field_type af1.v.field_type with
             | Some id -> (
               let insts, _ = GeneralizeProbes.generic_instantiations_for_type e af0.v.field_type in
-              FStar.IO.print_string <|
+              Options.debug_print_string <|
                 Printf.sprintf "****Instantiating probe function for type %s with %s\n" 
                   (print_typ af0.v.field_type)
                   (String.concat ", " (List.map print_expr insts));
@@ -310,7 +293,7 @@ and coerce_switch_case (e:B.env) (sw0 sw1:switch_case)
   let cases = List.zip cases0 cases1 in
   List.fold_right
     (fun (c0, c1) k ->
-      FStar.IO.print_string <|
+      Options.debug_print_string <|
         Printf.sprintf "Coercing switch case %s to %s\n" (print_case c0) (print_case c1);
       match c0, c1 with
       | Case e0 f0, Case e1 f1 -> (
@@ -371,7 +354,7 @@ let rec optimize_coercion (p:probe_action)
 let replace_stub (e:B.env) (d:decl { CoerceProbeFunctionStub? d.d_decl.v })
 : ML decl
 = let CoerceProbeFunctionStub i params (CoerceProbeFunction (t0, t1)) = d.d_decl.v in
-  FStar.IO.print_string <|
+  Options.debug_print_string <|
     Printf.sprintf "Replacing stub %s (from %s to %s)\n" i.v.name (print_ident t0) (print_ident t1);
   let d0, _ = B.lookup_type_decl e t0 in
   let d1, _ = B.lookup_type_decl e t1 in

@@ -142,7 +142,8 @@ let scan_deps (fn:string) : ML scan_deps_t =
     | Probe_action_read f -> []
     | Probe_action_write f v -> deps_of_expr v
     | Probe_action_copy f len -> deps_of_expr len
-    | Probe_action_skip len -> deps_of_expr len
+    | Probe_action_skip_read len
+    | Probe_action_skip_write len -> deps_of_expr len
     | Probe_action_fail -> [] in
 
   let rec deps_of_probe_action (a:probe_action) : ML (list string) =
@@ -180,7 +181,7 @@ let scan_deps (fn:string) : ML scan_deps_t =
       (deps_of_opt deps_of_expr af.field_constraint)@
       (deps_of_opt deps_of_field_bitwidth_t af.field_bitwidth)@
       (deps_of_opt (fun (a, _) -> deps_of_action a) af.field_action)@
-      (deps_of_opt (fun pc -> deps_of_probe_action pc.probe_block @ maybe_dep pc.probe_dest) af.field_probe)
+      (deps_of_opt (fun pc -> deps_of_probe_action pc.probe_block @ maybe_dep pc.probe_dest @ deps_of_expr pc.probe_dest_sz) af.field_probe)
   in
 
   let rec deps_of_field (f:field) : ML (list string) = 

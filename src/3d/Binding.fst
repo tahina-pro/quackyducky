@@ -331,7 +331,7 @@ let typ_is_integral env (t:typ) : ML bool =
 
 let tag_of_integral_typ env (t:typ) : ML (option _) =
   match t.v with
-  | Pointer _ (PQ a) -> Some a
+  | Pointer _ pq -> Some <| pq_as_integer_type pq
   | Type_app hd _ _ _ -> (
     match lookup env hd with
     | Inr (_, Inl attrs) -> attrs.integral
@@ -341,7 +341,7 @@ let tag_of_integral_typ env (t:typ) : ML (option _) =
 
 let tag_and_bit_order_of_integral_typ env (t:typ) : ML (tag_and_bit_order: (option integer_type & option bitfield_bit_order) { Some? (snd tag_and_bit_order) ==> Some? (fst tag_and_bit_order) }) =
   match t.v with
-  | Pointer _ (PQ a) -> Some a, None
+  | Pointer _ pq -> Some <| pq_as_integer_type pq, None
   | Type_app hd _ _ _ -> (
     match lookup env hd with
     | Inr (_, Inl attrs) -> attrs.integral, attrs.bit_order
@@ -366,7 +366,7 @@ let parser_weak_kind (env:global_env) (id:ident) : ML (option _) =
 
 let rec typ_weak_kind env (t:typ) : ML (option weak_kind) =
   match t.v with
-  | Pointer _ (PQ i) -> typ_weak_kind env (type_of_integer_type i)
+  | Pointer _ pq -> typ_weak_kind env (type_of_integer_type (pq_as_integer_type pq))
   | Type_app hd _ _ _ -> parser_weak_kind env.globals hd
   | _ -> None
 
@@ -456,9 +456,26 @@ let bit_order_of_integral_typ (env:env) (t:typ) r
     | _, None -> failwith "Impossible"
     | _, Some order -> order
 
+let rec convertible_typ (t1 t2:typ) : Tot bool =
+  match t1.v, t2.v with
+  | Type_app hd1 k1 gs1 ps1, Type_app hd2 k2 gs2 ps2 ->
+    Ast.eq_typ t1 t2
+  | Pointer t1 q1, Pointer t2 q2 ->
+    convertible_typ t1 t2 &&
+    pq_as_integer_type q1 = pq_as_integer_type q2
+  | Type_arrow ts1 t1, Type_arrow ts2 t2 ->
+    convertible_typs ts1 ts2
+    && convertible_typ t1 t2
+  | _ -> false
+and convertible_typs (ts1 ts2:list typ) : Tot bool =
+  match ts1, ts2 with
+  | [], [] -> true
+  | t1::ts1, t2::ts2 -> convertible_typ t1 t2 && convertible_typs ts1 ts2
+  | _ -> false
+
 let eq_typ env t1 t2 =
-  if Ast.eq_typ t1 t2 then true
-  else Ast.eq_typ (unfold_typ_abbrev_and_enum env t1) (unfold_typ_abbrev_and_enum env t2)
+  if convertible_typ t1 t2 then true
+  else convertible_typ (unfold_typ_abbrev_and_enum env t1) (unfold_typ_abbrev_and_enum env t2)
 
 let eq_typs env ts =
   List.for_all (fun (t1, t2) -> eq_typ env t1 t2) ts
@@ -631,7 +648,7 @@ let rec check_out_expr (env:env) (oe0:out_expr)
           out_expr_t = oe_t;
           out_expr_bit_width = bopt } = Some?.v oe.out_expr_meta in
     (match oe_t.v, bopt with
-     | Pointer t (PQ UInt64), None ->
+     | Pointer t (PQ UInt64 _), None ->
        {oe0 with
         out_expr_node={oe0.out_expr_node with v=OE_star oe};
         out_expr_meta=Some ({ out_expr_base_t = oe_bt;
@@ -653,7 +670,7 @@ let rec check_out_expr (env:env) (oe0:out_expr)
 
         out_expr_meta=Some ({
           out_expr_base_t = oe_bt;
-          out_expr_t = with_range (Pointer oe_t (PQ UInt64)) oe.out_expr_node.range;
+          out_expr_t = with_range (Pointer oe_t (PQ UInt64 true)) oe.out_expr_node.range;
           out_expr_bit_width = None })}
      | _ ->
        error
@@ -665,7 +682,7 @@ let rec check_out_expr (env:env) (oe0:out_expr)
           out_expr_t = oe_t;
           out_expr_bit_width = bopt }  = Some?.v oe.out_expr_meta in
     (match oe_t.v, bopt with
-     | Pointer t (PQ UInt64), None ->
+     | Pointer t (PQ UInt64 _), None ->
        let i = check_output_type (global_env_of_env env) t in
        let out_expr_t, out_expr_bit_width = lookup_output_type_field
          (global_env_of_env env)
@@ -717,13 +734,7 @@ let rec check_typ (pointer_ok:bool) (env:env) (t:typ)
 
     | Pointer t0 pq ->
       let check_pointer_qualifier : pointer_qualifier -> ML pointer_qualifier =
-        function
-        | PQ a ->
-          match a with
-          | UInt32
-          | UInt64 ->
-            PQ a
-          | _ -> error (Printf.sprintf "Pointer qualifier %s must be either UINT32 or UINT64" (print_integer_type a)) t.range
+        fun p -> p
       in
       if pointer_ok
       then { t with v = Pointer (check_typ pointer_ok env t0) (check_pointer_qualifier pq) }
@@ -1171,7 +1182,7 @@ let rec check_field_action (env:env) (f:atomic_field) (a:action)
           let t = lookup_expr_name env i in
           begin
           match t.v with
-          | Pointer t (PQ UInt64) -> Action_deref i, t
+          | Pointer t (PQ UInt64 _) -> Action_deref i, t
           | _ -> error "Dereferencing a non-pointer" i.range
           end
 
@@ -1272,14 +1283,25 @@ let rec check_probe env a : ML (probe_action & typ) =
     | Probe_action_return e ->
       let e, t= check_expr env e in
       Probe_action_return e, t
-    | Probe_action_skip n ->
+    
+    | Probe_action_skip_read n ->
       let n, t = check_expr env n in
       if not (eq_typ env t tuint64)
       then error (Printf.sprintf "Skip value %s has type %s instead of UInt64"
                     (print_expr n)
                     (print_typ t))
                     n.range
-      else Probe_action_skip n, tunit
+      else Probe_action_skip_read n, tunit
+    
+    | Probe_action_skip_write n ->
+      let n, t = check_expr env n in
+      if not (eq_typ env t tuint64)
+      then error (Printf.sprintf "Skip value %s has type %s instead of UInt64"
+                    (print_expr n)
+                    (print_typ t))
+                    n.range
+      else Probe_action_skip_write n, tunit
+      
     | Probe_action_read f -> (
       match GlobalEnv.resolve_probe_fn_any env.globals f with
       | Some (id, Inr (Some (PQRead i))) ->
@@ -1443,6 +1465,76 @@ let rec check_probe env a : ML (probe_action & typ) =
                 a.range;
     { a with v = Probe_action_ite e th el }, t
 
+let check_probe_call (env:env) (ft:typ) (p:probe_call)
+: ML probe_call
+= let check_dest env (d:ident) : ML ident =
+    let dest, dest_typ = check_ident env d in
+    if not (eq_typ env dest_typ tcopybuffer)
+    then error (Printf.sprintf "Probe destination expression %s has type %s instead of EVERPARSE_COPY_BUFFER_T"
+                        (print_ident dest)
+                        (print_typ dest_typ))
+                        dest.range;
+    dest
+  in
+  let check_probe_ptr_as_u64 env (as_u64:option ident) 
+    : ML (option ident)
+    = let ptr_size =
+        match ft.v with
+        | Pointer _ pq -> pq_as_integer_type pq
+        | _ ->
+          error (
+              Printf.sprintf "Probes are only allowed on pointer fields, got %s"
+                (print_typ ft)
+          ) ft.range
+      in
+      let coercion =
+        match ptr_size with
+        | UInt64 -> Some as_u64_identity
+        | UInt32 -> (
+          match GlobalEnv.resolve_extern_coercion (global_env_of_env env) tuint32 tuint64 with
+          | None ->
+            error (Printf.sprintf "Could not find a coercion from 32-bit to 64-bit pointers; please add an `extern PURE UINT64 <CoercionName> (UINT33 ptr)`")
+                  ft.range
+          | Some i -> Some i
+        )
+        | _ ->
+          error (Printf.sprintf "Probes are only allowed on 32-bit or 64-bit pointers, got %s"
+                  (print_integer_type ptr_size)) ft.range
+      in
+      coercion
+  in
+  let check_probe_init (init:option ident) : ML (option ident) =
+    match init with
+    | None -> (
+      match GlobalEnv.extern_probe_fn_qual env.globals (Some PQInit) with
+      | Some id -> Some id
+      | _ ->
+        error (Printf.sprintf "Probe init function not found")
+              ft.range
+    )
+    | Some f -> (
+      match GlobalEnv.resolve_probe_fn_any env.globals f with
+      | Some (id, Inr (Some PQInit)) -> Some id
+      | _ ->
+        error (Printf.sprintf "Probe function %s not found or not an init function" (print_ident f))
+              f.range
+    )
+  in
+  let probe_dest = check_dest env p.probe_dest in
+  let probe_block, t = check_probe env p.probe_block in
+  let probe_ptr_as_u64 = check_probe_ptr_as_u64 env p.probe_ptr_as_u64 in
+  if not (eq_typ env t tunit)
+  then error (Printf.sprintf "Probe block has type %s instead of unit" (print_typ t)) 
+            p.probe_block.range;
+  let probe_dest_sz, ty = check_expr env p.probe_dest_sz in
+  match try_cast_integer env (probe_dest_sz, ty) tuint64 with
+  | None -> error (Printf.sprintf "Probe destination size %s has type %s instead of UINT64"
+                    (print_expr probe_dest_sz)
+                    (print_typ ty))
+              probe_dest_sz.range
+  | Some probe_dest_sz ->
+   { probe_dest; probe_block; probe_ptr_as_u64; probe_dest_sz; probe_init=check_probe_init p.probe_init }
+
 #push-options "--z3rlimit_factor 4"
 let check_atomic_field (env:env) (extend_scope: bool) (f:atomic_field)
   : ML atomic_field
@@ -1484,55 +1576,7 @@ let check_atomic_field (env:env) (extend_scope: bool) (f:atomic_field)
         remove_local env sf.field_ident;
         a, dependent)
     in
-    let f_probe =
-      let check_dest env (d:ident) : ML ident =
-        let dest, dest_typ = check_ident env d in
-        if not (eq_typ env dest_typ tcopybuffer)
-        then error (Printf.sprintf "Probe destination expression %s has type %s instead of EVERPARSE_COPY_BUFFER_T"
-                            (print_ident dest)
-                            (print_typ dest_typ))
-                            dest.range;
-        dest
-      in
-      let check_probe_ptr_as_u64 env (as_u64:option ident) 
-        : ML (option ident)
-        = let ptr_size =
-            match sf.field_type.v with
-            | Pointer _ (PQ sz) -> sz
-            | _ ->
-              error (
-                  Printf.sprintf "Probes are only allowed on pointer fields, got %s"
-                    (print_typ sf.field_type)
-              ) f.range
-          in
-          let coercion =
-            match ptr_size with
-            | UInt64 -> Some as_u64_identity
-            | UInt32 -> (
-              match GlobalEnv.resolve_extern_coercion (global_env_of_env env) tuint32 tuint64 with
-              | None ->
-                error (Printf.sprintf "Could not find a coercion from 32-bit to 64-bit pointers; please add an `extern PURE UINT64 <CoercionName> (UINT33 ptr)`")
-                      f.range
-              | Some i -> Some i
-            )
-            | _ ->
-              error (Printf.sprintf "Probes are only allowed on 32-bit or 64-bit pointers, got %s"
-                      (print_integer_type ptr_size)) f.range
-          in
-          coercion
-      in
-      match sf.field_probe with
-      | None -> None
-      | Some p ->
-        let probe_dest = check_dest env p.probe_dest in
-        let probe_block, t = check_probe env p.probe_block in
-        let probe_ptr_as_u64 = check_probe_ptr_as_u64 env p.probe_ptr_as_u64 in
-        if not (eq_typ env t tunit)
-        then error (Printf.sprintf "Probe block has type %s instead of unit" (print_typ t)) 
-                  p.probe_block.range;
-        Some { probe_dest; probe_block; probe_ptr_as_u64 }
-      
-    in        
+    let f_probe = map_opt (check_probe_call env sf.field_type) sf.field_probe in
     if extend_scope then add_local env sf.field_ident sf.field_type;
     let sf = {
         sf with
@@ -2015,8 +2059,8 @@ let rec check_mutable_param_type (env:env) (t:typ) : ML typ =
        (i.v.modul_name = None && List.Tot.mem i.v.name allowed_base_types_as_output_types)
     then t
     else err (Some i)
-  | Pointer t (PQ UInt64) -> 
-    { t with v = Pointer (check_mutable_param_type env t) (PQ UInt64) }
+  | Pointer t (PQ UInt64 explicit) -> 
+    { t with v = Pointer (check_mutable_param_type env t) (PQ UInt64 explicit) }
   | _ -> err None
     
 let rec check_integer_or_output_type (env:env) (t:typ) : ML unit =
@@ -2026,7 +2070,7 @@ let rec check_integer_or_output_type (env:env) (t:typ) : ML unit =
     if i.v.modul_name = None && List.Tot.mem i.v.name allowed_base_types_as_output_types
     then ()
     else if not (k = KindOutput) then error (Printf.sprintf "%s is not an integer or output type" (print_typ t)) t.range
-  | Pointer t (PQ UInt64) -> check_integer_or_output_type env t
+  | Pointer t (PQ UInt64 _) -> check_integer_or_output_type env t
   | _ -> error (Printf.sprintf "%s is not an integer or output type" (print_typ t)) t.range
 
 let check_mutable_param (env:env) (p:param) : ML param =
@@ -2034,8 +2078,8 @@ let check_mutable_param (env:env) (p:param) : ML param =
   //and the base type may be a base type or an output type
   let t, i, q = p in
   match t.v with
-  | Pointer bt (PQ UInt64) ->
-    let t = { t with v = Pointer (check_mutable_param_type env bt) (PQ UInt64) } in
+  | Pointer bt (PQ UInt64 explicit) ->
+    let t = { t with v = Pointer (check_mutable_param_type env bt) (PQ UInt64 explicit) } in
     t, i, q 
   | _ ->
     error (Printf.sprintf "%s is not a valid mutable parameter type, it is not a pointer type" (print_typ t)) t.range
@@ -2351,10 +2395,11 @@ let bind_decl (e:global_env) (d:decl) : ML decl =
 let bind_decls (g:global_env) (p:list decl) : ML (list decl & global_env) =
   List.map (bind_decl g) p, g
 
-let initial_global_env () =
+let initial_global_env mname =
   let cfg = Deps.get_config () in
   let e =
     {
+      mname;
       ge_h = H.create 10;
       ge_out_t = H.create 10;
       ge_extern_t = H.create 10;

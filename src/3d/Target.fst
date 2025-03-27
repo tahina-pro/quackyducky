@@ -471,7 +471,7 @@ let rec print_typ (mname:string) (t:typ) : ML string = //(decreases t) =
   | T_with_action t _
   | T_with_dep_action t _
   | T_with_comment t _ -> print_typ mname t
-  | T_with_probe t _ _ _ _ -> Printf.sprintf "%s probe" (print_typ mname t)
+  | T_with_probe t _ _ _ _ _ _ -> Printf.sprintf "%s probe" (print_typ mname t)
   | T_arrow [] t -> print_typ mname t
   | T_arrow ts t ->
     Printf.sprintf "(%s -> %s)"
@@ -596,8 +596,15 @@ let rec print_probe_action (mname:string) (p:probe_action) : ML string =
       Printf.sprintf "(Atomic_probe_call_pure (%s %s))"
       (print_ident f)
       (String.concat " " (List.map (print_expr mname) args))
-    | Atomic_probe_skip n ->
-      Printf.sprintf "(Atomic_probe_skip %s)"
+    | Atomic_probe_skip_read n ->
+      Printf.sprintf "(Atomic_probe_skip_read %s)"
+      (print_expr mname n)
+    | Atomic_probe_skip_write n ->
+      Printf.sprintf "(Atomic_probe_skip_write %s)"
+      (print_expr mname n)
+    | Atomic_probe_init f n ->
+      Printf.sprintf "(Atomic_probe_init %s %s)"
+      (print_ident f)
       (print_expr mname n)
     | Atomic_probe_return v ->
       Printf.sprintf "(Atomic_probe_return %s)"
@@ -1455,6 +1462,9 @@ let print_external_api_fstar_interpreter (modul:string) (ds:decls) : ML string =
       Printf.sprintf "\n\nval %s : EverParse3d.ProbeActions.write_at_offset_%s \n\n" 
               (print_ident f)
               (print_integer_type t)
+    | Extern_probe f PQInit ->
+      Printf.sprintf "\n\nval %s : EverParse3d.ProbeActions.init_probe_dest_t \n\n" 
+              (print_ident f)
     | _ -> "")) in
 
    let external_types_include =
