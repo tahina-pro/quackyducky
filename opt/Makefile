@@ -1,4 +1,4 @@
-all: FStar karamel pulse
+all: FStar.do karamel.do pulse.do submodules
 
 export ADMIT=1
 
@@ -12,21 +12,47 @@ export PATH := $(EVERPARSE_OPT_PATH)/z3:$(PATH)
 
 include env.Makefile
 
-submodules:
+submodules.tmp:
 	git submodule init
 	git submodule update
+	touch $@
 
-FStar: submodules
-	+$(MAKE) -C $@ 1 ADMIT=1
+submodules: submodules.tmp z3 karamel pulse everest hacl-star
+	touch $@
 
-z3: submodules
-	mkdir -p $@
-	FStar/.scripts/get_fstar_z3.sh $(realpath .)/$@
+everest:
+	rm -rf $@ $@.tmp
+	git clone https://github.com/project-everest/$@.git $@.tmp
+	mv $@.tmp $@
 
-karamel: FStar z3
-	+$(MAKE) -C $@
+hacl-star:
+	rm -rf $@ $@.tmp
+	git clone https://github.com/hacl-star/$@.git $@.tmp
+	mv $@.tmp $@
 
-pulse: FStar z3
-	+$(MAKE) -C $@ ADMIT=1
+FStar.do: submodules.tmp
+	+$(MAKE) -C $(basename $@) 1 ADMIT=1
 
-.PHONY: all FStar karamel z3 pulse submodules
+z3: submodules.tmp
+	rm -rf $@ $@.tmp
+	mkdir -p $@.tmp
+	FStar/.scripts/get_fstar_z3.sh $(realpath .)/$@.tmp
+	mv $@.tmp $@
+
+karamel:
+	rm -rf $@ $@.tmp
+	git clone https://github.com/FStarLang/$@.git $@.tmp
+	mv $@.tmp $@
+
+karamel.do: FStar.do karamel z3
+	+$(MAKE) -C $(basename $@)
+
+pulse:
+	rm -rf $@ $@.tmp
+	git clone https://github.com/FStarLang/$@.git $@.tmp
+	mv $@.tmp $@
+
+pulse.do: FStar.do pulse z3
+	+$(MAKE) -C $(basename $@) ADMIT=1
+
+.PHONY: all %.do
