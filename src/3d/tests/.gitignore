@@ -8,3 +8,4 @@ out.z3-testgen
 test-cpp.exe
 *.out
 *.err
+*.test

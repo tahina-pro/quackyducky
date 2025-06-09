@@ -153,3 +153,10 @@ clean:
 	make -C probe clean
 
 .PHONY: all batch-test batch-test-negative %.negtest clean batch-cleanup-test inplace-hash-test modules tcpip extern %.interpret batch-interpret-test static funptr ifdefs
+
+.PHONY: %.test
+
+%.test: %.3d
+	rm -rf $@
+	$(3D) --odir $@ --batch $<
+	$(MAKE) -C $@ -f Makefile.basic USER_TARGET=build # because of EverParseError
