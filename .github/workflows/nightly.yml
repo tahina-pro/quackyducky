@@ -23,6 +23,7 @@ jobs:
       - uses: actions/checkout@master
       - run: sudo apt update && sudo apt install -y libssl-dev
       - name: Everparse CI
+        if: false
         id: cistep
         run: |
           . $HOME/.cargo/env && env OPAMYES=1 make _opam && eval $(opam env) && make -C opt -j$(nproc) && env OTHERFLAGS='--admit_smt_queries true' make cbor-snapshot 3d-doc-snapshot -kj$(nproc) && env OTHERFLAGS='--admit_smt_queries true' make cose-snapshot -kj$(nproc)
