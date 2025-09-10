@@ -684,8 +684,6 @@ jobs:
         with:
           path: everparse
           ref: ${{ env.CI_HASH }}
-          sparse-checkout: |
-            version.txt
 
       - name: Delete branch
         run: |
