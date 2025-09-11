@@ -57,7 +57,7 @@
 %token          MODULE EXPORT OUTPUT UNION EXTERN
 %token          ENTRYPOINT REFINING ALIGNED
 %token          HASH_IF HASH_ELSE HASH_ENDIF HASH_ELIF
-%token          PROBE POINTER PURE SPECIALIZE 
+%token          PROBE POINTER PURE SPECIALIZE SKIP_READ SKIP_WRITE
 
 (* LBRACE_ONERROR CHECK  *)
 %start <Ast.prog> prog
@@ -309,12 +309,14 @@ with_probe:
       let p = mk_pos $startpos in
       let rng = p,p in
       match probe_fn_opt, block with
+      | None, None -> 
+        error "Expected either a probe function or a probe action" rng
       | Some _, Some _ ->
         error "Composite probe blocks do not have a probe function" rng
-      | _, None -> (
+      | Some pf, None -> (
         match fields with 
         | [("length", l); ("destination", {v=Identifier d})] ->
-          let p = with_range (Probe_action_simple (probe_fn_opt, l)) $startpos in
+          let p = with_range (probe_action_simple pf l) $startpos in
           { probe_block = p; probe_dest=d; probe_ptr_as_u64=None; probe_dest_sz=l; probe_init=None }
         | _ ->
           error "Expected 'length' and 'destination' fields in probe" rng
@@ -521,12 +523,14 @@ action:
 
 probe_atomic_action:
   | RETURN e=expr SEMICOLON { Probe_action_return e }
+  | SKIP_WRITE LPAREN e=expr RPAREN SEMICOLON { Probe_action_skip_write e }
+  | SKIP_READ LPAREN e=expr RPAREN SEMICOLON { Probe_action_skip_read e }
   | f=IDENT LPAREN args=arguments RPAREN SEMICOLON { Probe_action_call(f, args) }
 
 probe_action_no_range:
   | a=probe_atomic_action { Probe_atomic_action a }
-  | a1=probe_atomic_action a=probe_action { Probe_action_seq (with_range (Probe_atomic_action a1) ($startpos(a1)), a) }
-  | VAR i=IDENT EQ a1=probe_atomic_action a2=probe_action  { Probe_action_let (i, a1, a2) }
+  | a1=probe_atomic_action a=probe_action { Probe_action_seq (string_as_expr "", with_range (Probe_atomic_action a1) ($startpos(a1)), a) }
+  | VAR i=IDENT EQ a1=probe_atomic_action a2=probe_action  { Probe_action_let (string_as_expr "", i, a1, a2) }
 
 probe_action:
   | a=probe_action_no_range { with_range a ($startpos(a)) }
@@ -559,6 +563,15 @@ out_field:
   | UNION LBRACE out_flds=right_flexible_nonempty_list(SEMICOLON, out_field) RBRACE
     { Out_field_anon (out_flds, true) }
 
+specialize_lhs:
+  | POINTER LPAREN STAR RPAREN { () }
+  | POINTER LPAREN i=IDENT RPAREN 
+    {
+      match i.v.name with
+      | "UINT64" -> ()
+      | _ -> error "Unexpected pointer qualifier; '*'" i.range
+    }
+
 decl_no_range:
   | MODULE i=IDENT EQ m=IDENT { ModuleAbbrev (i, m) }
   | DEFINE i=IDENT c=constant { Define (i, None, c) }
@@ -582,10 +595,9 @@ decl_no_range:
         CaseType(td, [], ps, (with_range (Identifier e) ($startpos(i)), cs))
     }
 
-  | SPECIALIZE LPAREN p1=pointer_qualifier COMMA p2=pointer_qualifier RPAREN i=IDENT j=IDENT SEMICOLON
-    { let PQ(p1, _, _) = p1 in
-      let PQ(p2, _, _) = p2 in
-      Specialize ([p1, p2], i, j) }
+  | SPECIALIZE LPAREN specialize_lhs COMMA p2=pointer_qualifier RPAREN i=IDENT j=IDENT SEMICOLON
+    { let PQ(p2, _, _) = p2 in
+      Specialize ([UInt64, p2], i, j) }
 
   | OUTPUT TYPEDEF STRUCT i=IDENT
     LBRACE out_flds=right_flexible_nonempty_list(SEMICOLON, out_field) RBRACE
@@ -604,7 +616,7 @@ decl_no_range:
     { ExternFn (i, ret, ps, pure <> None) }
 
   | EXTERN PROBE q=option_of(probe_qualifier) i=IDENT
-    { ExternProbe (i, q) }
+    { let q = match q with None -> PQWithOffsets | Some q -> q in ExternProbe (i, q) }
 
 probe_qualifier:
   | LPAREN q=IDENT 
@@ -614,7 +626,6 @@ probe_qualifier:
     RPAREN
     {
       match q.v.name, t with
-      | "WITH_OFFSETS", None -> PQWithOffsets
       | "INIT", None -> PQInit
       | "READ", Some t -> PQRead t
       | "WRITE", Some t -> PQWrite t
@@ -651,7 +662,8 @@ type_refinement:
     {
           {
             includes = includes;
-            type_map = type_map
+            type_map = type_map;
+            auto_type_map = []
           }
     }
 

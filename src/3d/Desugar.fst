@@ -336,14 +336,16 @@ let rec resolve_probe_action' (env:qenv) (act:probe_action') : ML probe_action' 
   match act with
   | Probe_atomic_action ac -> Probe_atomic_action (resolve_probe_atomic_action env ac)
   | Probe_action_var i -> Probe_action_var (resolve_expr env i)
-  | Probe_action_simple f n ->
-    Probe_action_simple (map_opt (resolve_ident env) f) (resolve_expr env n)
-  | Probe_action_seq hd tl ->
-    Probe_action_seq (resolve_probe_action env hd) (resolve_probe_action env tl)
-  | Probe_action_let i a k ->
-    Probe_action_let i (resolve_probe_atomic_action env a) (resolve_probe_action (push_name env i.v.name) k)
+  | Probe_action_seq d hd tl ->
+    Probe_action_seq d (resolve_probe_action env hd) (resolve_probe_action env tl)
+  | Probe_action_let d i a k ->
+    Probe_action_let d i (resolve_probe_atomic_action env a) (resolve_probe_action (push_name env i.v.name) k)
   | Probe_action_ite hd then_ else_ ->
     Probe_action_ite (resolve_expr env hd) (resolve_probe_action env then_) (resolve_probe_action env else_)
+  | Probe_action_array len body ->
+    Probe_action_array (resolve_expr env len) (resolve_probe_action env body)
+  | Probe_action_copy_init_sz f ->
+    Probe_action_copy_init_sz (resolve_ident env f)
 and resolve_probe_action (env:qenv) (act:probe_action) : ML probe_action =
   { act with v = resolve_probe_action' env act.v }
 
@@ -468,8 +470,10 @@ let resolve_out_type (env:qenv) (out_t:out_typ) : ML out_typ =
 
 let resolve_probe_function_type env = function
     | SimpleProbeFunction id -> SimpleProbeFunction (resolve_ident env id)
+    | CoerceProbeFunctionPlaceholder i -> CoerceProbeFunctionPlaceholder (resolve_ident env i)
     | CoerceProbeFunction (x, y) -> CoerceProbeFunction (resolve_ident env x, resolve_ident env y)
-  
+    | HelperProbeFunction -> HelperProbeFunction
+
 let resolve_decl' (env:qenv) (d:decl') : ML decl' =
   match d with
   | ModuleAbbrev i m -> push_module_abbrev env i.v.name m.v.name; d
@@ -525,6 +529,13 @@ let resolve_decl' (env:qenv) (d:decl') : ML decl' =
 
 let resolve_decl (env:qenv) (d:decl) : ML decl = decl_with_v d (resolve_decl' env d.d_decl.v)
 
+let hoist_extern_probes (decls:list decl) : ML (list decl) =
+  let externs, rest = List.partition (fun d -> match d.d_decl.v with
+                                               | ExternProbe _ _ -> true
+                                               | _ -> false) decls in
+  externs @ rest
+
+(* The main desugaring function *)
 let desugar (genv:GlobalEnv.global_env) (mname:string) (p:prog) : ML prog =
   let decls, refinement = p in
   let decls = List.collect desugar_one_enum decls in
@@ -539,6 +550,7 @@ let desugar (genv:GlobalEnv.global_env) (mname:string) (p:prog) : ML prog =
   } in
   H.insert env.extern_types (Ast.to_ident' "void") ();
   let decls = List.map (resolve_decl env) decls in
+  let decls = hoist_extern_probes decls in
   decls,
   (match refinement with
    | None -> None

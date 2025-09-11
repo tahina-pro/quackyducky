@@ -307,7 +307,7 @@ let type_of_constant rng (c:constant) : ML typ =
   | XInt tag _ -> //bounds checked by the syntax
     type_of_integer_type tag
   | Bool _ -> tbool
-
+  | String _ -> tstring
 
 let parser_may_fail (env:env) (t:typ) : ML bool =
   match t.v with
@@ -498,8 +498,6 @@ let try_cast_integer env et to : ML (option expr) =
     else None
   else None
 
-let _or_ b1 b2 = b1 || b2
-let _and_ b1 b2 = b1 && b2
 let try_retype_arith_exprs (env:env) e1 e2 rng : ML (option (expr & expr & typ))=
   let e1, t1 = e1 in
   let e2, t2 = e2 in
@@ -740,13 +738,13 @@ let rec check_typ (pointer_ok:bool) (env:env) (t:typ)
       then { t with v = Pointer (check_typ pointer_ok env t0) (check_pointer_qualifier pq) }
       else error (Printf.sprintf "Pointer types are not permissible here; got %s" (print_typ t)) t.range
 
-    | Type_app s KindSpec gs ps ->
-      (match lookup env s with
-       | Inl _ ->
-         error (Printf.sprintf "%s is not a type" (ident_to_string s)) s.range
+    | Type_app s KindSpec gs ps -> (
+      match lookup env s with
+      | Inl _ ->
+        error (Printf.sprintf "%s is not a type" (ident_to_string s)) s.range
 
-       | Inr (d, _) ->
-         let gparams, params =
+      | Inr (d, _) ->
+        let gparams, params =
           match d.d_decl.v with
           | Specialize _ id _ ->
             let d, _ = lookup_type_decl env id in
@@ -754,48 +752,49 @@ let rec check_typ (pointer_ok:bool) (env:env) (t:typ)
             [], snd <| params_of_decl d
           | _ -> params_of_decl d
         in
-         if List.length gparams <> List.length gs 
-         || List.length params <> List.length ps
-         then error (Printf.sprintf "Not enough arguments to %s" (ident_to_string s)) s.range;
-         let gs =
-           List.map2 
-            (fun e (GenericProbeFunction _ gt _) ->
-              let e, t = check_expr env e in
-              if not (eq_typ env t gt)
-              then 
-                error (
-                  Printf.sprintf "Expected a generic instantiation of a probe function of type %s; got %s of type %s" 
-                    (print_typ gt) (print_expr e) (print_typ t)
-                ) e.range;
-              e)
-            gs
-            gparams
-         in
-         let err t t' p : ML typ_param =
-            error (Printf.sprintf 
-                          "Argument type mismatch (%s has type %s, expected %s)"
-                          (Ast.print_typ_param p)
-                          (Ast.print_typ t) (Ast.print_typ t')) (range_of_typ_param p)
-         in
-         let ps =
-           List.map2 (fun (t, _, _) p ->
-             let p, t' = check_typ_param env p in
-             if not (eq_typ env t t')
-             then begin
-               match p with
-               | Inl e -> (
-                  match try_cast_integer env (e, t') t with
-                  | Some e -> Inl e
-                  | _ -> err t' t p
-                )
-               | Inr o ->
-                 err t' t p
-             end
-             else p)
-             params
-             ps
-         in
-         {t with v = Type_app s KindSpec gs ps})
+        if List.length gparams <> List.length gs 
+        || List.length params <> List.length ps
+        then error (Printf.sprintf "Not enough arguments to %s" (ident_to_string s)) s.range;
+        let gs =
+          List.map2 
+          (fun e (GenericProbeFunction _ gt _) ->
+            let e, t = check_expr env e in
+            if not (eq_typ env t gt)
+            then
+              error (
+                Printf.sprintf "Expected a generic instantiation of a probe function of type %s; got %s of type %s" 
+                  (print_typ gt) (print_expr e) (print_typ t)
+              ) e.range;
+            e)
+          gs
+          gparams
+        in
+        let err t t' p : ML typ_param =
+          error (Printf.sprintf 
+                        "Argument type mismatch (%s has type %s, expected %s)"
+                        (Ast.print_typ_param p)
+                        (Ast.print_typ t) (Ast.print_typ t')) (range_of_typ_param p)
+        in
+        let ps =
+          List.map2 (fun (t, _, _) p ->
+            let p, t' = check_typ_param env p in
+            if not (eq_typ env t t')
+            then begin
+              match p with
+              | Inl e -> (
+                match try_cast_integer env (e, t') t with
+                | Some e -> Inl e
+                | _ -> err t' t p
+              )
+              | Inr o ->
+                err t' t p
+            end
+            else p)
+            params
+            ps
+        in
+        {t with v = Type_app s KindSpec gs ps}
+    )
 
     | Type_app i KindExtern gs args ->
       if List.length gs <> 0
@@ -865,8 +864,8 @@ and check_expr (env:env) (e:expr)
              // else
              let e = cast n from_t to in
              let t = type_of_integer_type to in
-             Options.debug_print_string
-               (Printf.sprintf "--------------- %s has type %s\n" (print_expr e) (print_typ t));
+            //  Options.debug_print_string
+            //    (Printf.sprintf "--------------- %s has type %s\n" (print_expr e) (print_typ t));
              e, t
            | _ -> failwith "Impossible: must be an integral type"
       end
@@ -1284,35 +1283,50 @@ let rec check_probe env a : ML (probe_action & typ) =
       let e, t= check_expr env e in
       Probe_action_return e, t
     
-    | Probe_action_skip_read n ->
+    | Probe_action_skip_read n -> (
       let n, t = check_expr env n in
-      if not (eq_typ env t tuint64)
-      then error (Printf.sprintf "Skip value %s has type %s instead of UInt64"
+      match try_cast_integer env (n, t) tuint64 with
+      | Some v ->
+        Probe_action_skip_read v, tunit
+      | None -> 
+        error (Printf.sprintf "Probe skip read %s has type %s instead of %s"
                     (print_expr n)
-                    (print_typ t))
+                    (print_typ t)
+                    (print_integer_type UInt64))
                     n.range
-      else Probe_action_skip_read n, tunit
+    )
     
-    | Probe_action_skip_write n ->
+    | Probe_action_skip_write n -> (
       let n, t = check_expr env n in
-      if not (eq_typ env t tuint64)
-      then error (Printf.sprintf "Skip value %s has type %s instead of UInt64"
+      match try_cast_integer env (n, t) tuint64 with
+      | Some v ->
+        Probe_action_skip_write v, tunit
+      | None -> 
+        error (Printf.sprintf "Probe skip write %s has type %s instead of %s"
                     (print_expr n)
-                    (print_typ t))
+                    (print_typ t)
+                    (print_integer_type UInt64))
                     n.range
-      else Probe_action_skip_write n, tunit
-      
+    )
+
     | Probe_action_read f -> (
       match GlobalEnv.resolve_probe_fn_any env.globals f with
-      | Some (id, Inr (Some (PQRead i))) ->
+      | Some (id, Inr (PQRead i)) ->
         Probe_action_read id, type_of_integer_type i
-      | _ ->
-        error (Printf.sprintf "Probe function %s not found or not a read function" (print_ident f))
+      | Some (_, Inr _) ->
+        error (Printf.sprintf "Probe function %s not a read function" (print_ident f))
+              f.range
+      | Some (_, Inl _) ->
+        error (Printf.sprintf "Probe function %s not an extern function" (print_ident f))
+              f.range
+      | None ->
+        error (Printf.sprintf "Probe function %s not found" 
+                  (print_ident f))
               f.range
     )
     | Probe_action_write f v -> (
       match GlobalEnv.resolve_probe_fn_any env.globals f with
-      | Some (id, Inr (Some (PQWrite i))) -> (
+      | Some (id, Inr (PQWrite i)) -> (
         let v, t = check_expr env v in
         match try_cast_integer env (v, t) (type_of_integer_type i) with
         | Some v ->
@@ -1329,7 +1343,7 @@ let rec check_probe env a : ML (probe_action & typ) =
               f.range
     )
     | Probe_action_copy f v -> (
-      match GlobalEnv.resolve_probe_fn env.globals f (Some PQWithOffsets) with
+      match GlobalEnv.resolve_probe_fn env.globals f PQWithOffsets with
       | None ->
         error (Printf.sprintf "Probe function %s not found" (print_ident f))
               f.range
@@ -1347,11 +1361,11 @@ let rec check_probe env a : ML (probe_action & typ) =
 
     | Probe_action_call f args -> (
       match GlobalEnv.resolve_probe_fn_any env.globals f, args with
-      | Some (_, Inr (Some (PQWrite _))), [v] ->
+      | Some (_, Inr (PQWrite _)), [v] ->
         check_atomic_probe env (Probe_action_write f v)
-      | Some (_, Inr (Some (PQRead _))), [] ->
+      | Some (_, Inr (PQRead _)), [] ->
         check_atomic_probe env (Probe_action_read f)
-      | Some (_, Inr (Some PQWithOffsets)), [l] ->
+      | Some (_, Inr PQWithOffsets), [l] ->
         check_atomic_probe env (Probe_action_copy f l)
       | Some (_, Inl _), [] ->
         Probe_action_call f args, tunit
@@ -1397,39 +1411,8 @@ let rec check_probe env a : ML (probe_action & typ) =
               e.range;
     { a with v=Probe_action_var e }, tunit
   )
-  | Probe_action_simple probe_fn length ->
-    let length, typ = check_expr env length in
-    let length =
-      if not (eq_typ env typ tuint64)
-      then match try_cast_integer env (length, typ) tuint64 with
-          | Some e -> e
-          | _ -> error (Printf.sprintf "Probe length expression %s has type %s instead of UInt64"
-                        (print_expr length)
-                        (print_typ typ))
-                        length.range
-      else length
-    in
-    let probe_fn =
-      match probe_fn with
-      | None -> (
-        match GlobalEnv.default_probe_fn env.globals with
-        | None -> 
-          error (Printf.sprintf "Probe function not specified and no default probe function found")
-                length.range
-        | Some i -> i
-      )
-      | Some p -> (
-        match GlobalEnv.resolve_probe_fn env.globals p None with
-        | None -> 
-          error (Printf.sprintf "Probe function %s not found" (print_ident p))
-                p.range
-        | Some i -> 
-          i
-      )
-    in
-    { a with v=Probe_action_simple (Some probe_fn) length}, tunit
 
-  | Probe_action_seq a0 rest ->
+  | Probe_action_seq detail a0 rest ->
     let a0, t0 = check_probe env a0 in
     if not (eq_typ env t0 tunit)
     then (
@@ -1438,14 +1421,14 @@ let rec check_probe env a : ML (probe_action & typ) =
             a.range
     );
     let rest, t = check_probe env rest in
-    { a with v=Probe_action_seq a0 rest }, t
+    { a with v=Probe_action_seq detail a0 rest }, t
 
-  | Probe_action_let i aa k ->
+  | Probe_action_let detail i aa k ->
     let aa, t = check_atomic_probe env aa in
     add_local env i t;
     let k, t = check_probe env k in
     remove_local env i;
-    { a with v = Probe_action_let i aa k }, t
+    { a with v = Probe_action_let detail i aa k }, t
 
   | Probe_action_ite e th el ->
     let e, t = check_expr env e in
@@ -1464,6 +1447,34 @@ let rec check_probe env a : ML (probe_action & typ) =
                   (print_typ t'))
                 a.range;
     { a with v = Probe_action_ite e th el }, t
+
+  | Probe_action_array len body ->
+    let len, t = check_expr env len in
+    let len =
+      if not (eq_typ env t tuint64)
+      then match try_cast_integer env (len, t) tuint64 with
+          | Some e -> e
+          | _ -> error (Printf.sprintf "Probe array length %s has type %s instead of UInt64"
+                        (print_expr len)
+                        (print_typ t))
+                        len.range
+      else len
+    in
+    let body, t = check_probe env body in
+    if not (eq_typ env t tunit)
+    then error (Printf.sprintf "Probe array body has type %s instead of unit" (print_typ t)) 
+              body.range;
+    { a with v = Probe_action_array len body }, tunit
+
+  | Probe_action_copy_init_sz f -> (
+    match GlobalEnv.resolve_probe_fn_any env.globals f with
+    | Some (id, Inr PQWithOffsets) ->
+      { a with v = Probe_action_copy_init_sz id }, tunit
+    | _ ->
+      error (Printf.sprintf "Probe function %s not found or not a probe-and-copy function" (print_ident f))
+            f.range
+  )
+
 
 let check_probe_call (env:env) (ft:typ) (p:probe_call)
 : ML probe_call
@@ -1491,7 +1502,7 @@ let check_probe_call (env:env) (ft:typ) (p:probe_call)
         match ptr_size with
         | UInt64 -> Some as_u64_identity
         | UInt32 -> (
-          match GlobalEnv.resolve_extern_coercion (global_env_of_env env) tuint32 tuint64 with
+          match GlobalEnv.resolve_extern_coercion (global_env_of_env env) p.probe_block.range tuint32 tuint64 with
           | None ->
             error (Printf.sprintf "Could not find a coercion from 32-bit to 64-bit pointers; please add an `extern PURE UINT64 <CoercionName> (UINT33 ptr)`")
                   ft.range
@@ -1506,7 +1517,7 @@ let check_probe_call (env:env) (ft:typ) (p:probe_call)
   let check_probe_init (init:option ident) : ML (option ident) =
     match init with
     | None -> (
-      match GlobalEnv.extern_probe_fn_qual env.globals (Some PQInit) with
+      match GlobalEnv.extern_probe_fn_qual env.globals p.probe_block.range PQInit with
       | Some id -> Some id
       | _ ->
         error (Printf.sprintf "Probe init function not found")
@@ -1514,7 +1525,7 @@ let check_probe_call (env:env) (ft:typ) (p:probe_call)
     )
     | Some f -> (
       match GlobalEnv.resolve_probe_fn_any env.globals f with
-      | Some (id, Inr (Some PQInit)) -> Some id
+      | Some (id, Inr PQInit) -> Some id
       | _ ->
         error (Printf.sprintf "Probe function %s not found or not an init function" (print_ident f))
               f.range
@@ -2228,9 +2239,30 @@ let check_typedef_names
   (tdnames: Ast.typedef_names)
 : ML Ast.typedef_names
 = let env = { mk_env e with this=Some tdnames.typedef_name } in
-  {
-      tdnames with
-        typedef_attributes = List.map (check_attribute env) tdnames.typedef_attributes
+  let attrs = List.map (check_attribute env) tdnames.typedef_attributes in
+  let eq_attrs a0 a1 =
+    match a0, a1 with
+    | Entrypoint None, Entrypoint _
+    | Entrypoint _, Entrypoint None ->
+      true
+    | Entrypoint (Some p0), Entrypoint (Some p1) ->
+      eq_idents p0.probe_ep_fn p1.probe_ep_fn
+    | Aligned, Aligned
+    | Noextract, Noextract -> true
+    | _ -> false
+  in
+  let _ = 
+    List.fold_right 
+      (fun a out ->
+        if List.existsb (eq_attrs a) out
+        then error (Printf.sprintf "Duplicate attribute %s" (print_attribute a)) tdnames.typedef_name.range
+        else a :: out)
+      attrs
+      []
+  in
+  {    tdnames with
+        typedef_attributes =
+          List.map (check_attribute env) tdnames.typedef_attributes
   }
 
 let check_probe_function_type
@@ -2238,9 +2270,13 @@ let check_probe_function_type
      (p: probe_function_type)
 : ML probe_function_type
 = match p with
+  | HelperProbeFunction -> HelperProbeFunction
   | SimpleProbeFunction tn ->
     let _ = lookup_type_decl e tn in
     SimpleProbeFunction tn
+  | CoerceProbeFunctionPlaceholder i ->
+    let _ = lookup_type_decl e i in
+    CoerceProbeFunctionPlaceholder i
   | CoerceProbeFunction (t, u) ->
     let _ = lookup_type_decl e t in
     let _ = lookup_type_decl e u in
@@ -2433,6 +2469,15 @@ let initial_global_env mname =
           has_reader = true;
           parser_weak_kind = WeakKindStrongPrefix;
           parser_kind_nz = Some true
+        });
+      ("string",
+        {
+          may_fail = true;
+          integral = None;
+          bit_order = None;
+          has_reader = false;
+          parser_weak_kind = WeakKindWeak;
+          parser_kind_nz = None
         });
       ("UINT8",
         {

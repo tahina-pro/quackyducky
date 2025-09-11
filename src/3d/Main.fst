@@ -50,10 +50,15 @@ let right (x:either 'a 'b)
     | _ -> failwith "Expected right"
 
 let fail () : ML unit = failwith "stop"
+noeq
+type static_asserts = {
+  explicit:   StaticAssertions.static_asserts; 
+  auto_asserts: (list RefineCStruct.ctype_decl & StaticAssertions.static_asserts);
+}
+
 let parse_check_and_desugar (en:env) (mname:string) (fn:string)
   : ML (list Ast.decl &
-        StaticAssertions.static_asserts &
-        list RefineCStruct.ctype_decl &
+        static_asserts &
         env) =
   Options.debug_print_string (FStar.Printf.sprintf "Processing file: %s\nModule name: %s\n" fn mname);
   let decls, refinement = parse_prog fn in
@@ -114,7 +119,7 @@ let parse_check_and_desugar (en:env) (mname:string) (fn:string)
   
   let decls = TypeSizes.size_of_decls benv en.typesizes_env decls in
 
-  Options.debug_print_string "=============Finished typesizes pass=============\n";
+  Options.debug_print_string "=============After typesizes pass=============\n";
 
   let decls = CoerceProbes.replace_stubs benv decls in
 
@@ -137,35 +142,33 @@ let parse_check_and_desugar (en:env) (mname:string) (fn:string)
   Options.debug_print_string "\n";
 
   let cstructs, (decls, refinement) =
-    if specialized
-    then (
-      FStar.IO.print_string "Refining records\n";
-      RefineCStruct.refine_records benv en.typesizes_env (decls, refinement)
-    )
-    else [], (decls, refinement)
+    RefineCStruct.refine_records benv en.typesizes_env (decls, refinement)
   in
   Options.debug_print_string "=============After refining records =============\n";
+  Options.debug_print_string (print_decls decls);
+  Options.debug_print_string "\n";
 
-  let static_asserts = StaticAssertions.compute_static_asserts benv en.typesizes_env refinement in
-  Options.debug_print_string "=============Finished static asserts pass=============\n";
-
+  let static_asserts, auto_asserts = StaticAssertions.compute_static_asserts benv en.typesizes_env refinement in
+  Options.debug_print_string "=============After static asserts pass=============\n";
+  let sa = {
+    explicit = static_asserts;
+    auto_asserts = (cstructs, auto_asserts);
+  } in
   let en = {
     en with 
       binding_env = benv
   } in
   decls,
-  static_asserts,
-  cstructs,
+  sa,
   en
   
 let translate_module (en:env) (mname:string) (fn:string)
   : ML (list Target.decl &
         list InterpreterTarget.decl &
-        StaticAssertions.static_asserts &
-        list RefineCStruct.ctype_decl &
+        static_asserts &
         env) =
 
-  let decls, static_asserts, ctypes, en = 
+  let decls, static_asserts, en = 
       parse_check_and_desugar en mname fn
   in      
       
@@ -181,7 +184,6 @@ let translate_module (en:env) (mname:string) (fn:string)
   t_decls,
   i_decls,
   static_asserts,
-  ctypes,
   en
 
 let emit_fstar_code_for_interpreter (en:env)
@@ -233,7 +235,7 @@ let emit_fstar_code_for_interpreter (en:env)
                              module T = FStar.Tactics\n\
                              module A = EverParse3d.Actions.All\n\
                              module P = EverParse3d.Prelude\n\
-                             #set-options \"--fuel 0 --ifuel 0 --ext context_pruning\"\n"
+                             #set-options \"--fuel 0 --ifuel 0 --ext optimize_let_vc\"\n"
                              modul maybe_open_external_api
     in
 
@@ -257,10 +259,30 @@ let emit_fstar_code_for_interpreter (en:env)
 
     ()
    
+let emit_static_assertions 
+      modul
+      filename_suffix 
+      ctypes
+      sas
+: ML unit
+= if StaticAssertions.has_static_asserts sas then begin
+    let c_static_asserts_file =
+      open_write_file
+        (Printf.sprintf "%s/%s%s.c"
+          (Options.get_output_dir())
+          modul
+          filename_suffix) in
+    FStar.IO.write_string c_static_asserts_file "\n\n";
+    FStar.IO.write_string c_static_asserts_file 
+    (StaticAssertions.print_static_asserts 
+       (RefineCStruct.print_ctypes ctypes)
+       sas);
+    FStar.IO.close_write_file c_static_asserts_file
+  end
+ 
 let emit_entrypoint (produce_ep_error: Target.opt_produce_everparse_error)
                     (en:env) (modul:string) (t_decls:list Target.decl)
-                    (static_asserts:StaticAssertions.static_asserts)
-                    (ctypes:list RefineCStruct.ctype_decl)
+                    (sas:static_asserts)
                     (emit_output_types_defs:bool)
   : ML unit =
   //print wrapper only if there is an entrypoint
@@ -373,19 +395,22 @@ let emit_entrypoint (produce_ep_error: Target.opt_produce_everparse_error)
     FStar.IO.close_write_file output_types_c_file
   end;
 
-  if StaticAssertions.has_static_asserts static_asserts then begin
-    let c_static_asserts_file =
-      open_write_file
-        (Printf.sprintf "%s/%sStaticAssertions.c"
-          (Options.get_output_dir())
-          modul) in
-    FStar.IO.write_string c_static_asserts_file "\n\n";
-    FStar.IO.write_string c_static_asserts_file 
-    (StaticAssertions.print_static_asserts 
-       (RefineCStruct.print_ctypes ctypes)
-       static_asserts);
-    FStar.IO.close_write_file c_static_asserts_file
-  end
+  emit_static_assertions modul "StaticAssertions" [] sas.explicit;
+  emit_static_assertions modul "AutoStaticAssertions" (fst sas.auto_asserts) (snd sas.auto_asserts)
+  
+  // if StaticAssertions.has_static_asserts static_asserts then begin
+  //   let c_static_asserts_file =
+  //     open_write_file
+  //       (Printf.sprintf "%s/%sStaticAssertions.c"
+  //         (Options.get_output_dir())
+  //         modul) in
+  //   FStar.IO.write_string c_static_asserts_file "\n\n";
+  //   FStar.IO.write_string c_static_asserts_file 
+  //   (StaticAssertions.print_static_asserts 
+  //      (RefineCStruct.print_ctypes ctypes)
+  //      static_asserts);
+  //   FStar.IO.close_write_file c_static_asserts_file
+  // end
 
 let process_file_gen
                  (produce_ep_error: Target.opt_produce_everparse_error)
@@ -397,13 +422,13 @@ let process_file_gen
                  (all_modules:list string)
   : ML (env & list InterpreterTarget.decl) =
   
-  let t_decls, interpreter_decls, static_asserts, ctypes, en =
+  let t_decls, interpreter_decls, sas, en =
       translate_module en modul fn
   in
   if emit_fstar 
   then (
     emit_fstar_code_for_interpreter en modul t_decls interpreter_decls all_modules;
-    emit_entrypoint produce_ep_error en modul t_decls static_asserts ctypes emit_output_types_defs
+    emit_entrypoint produce_ep_error en modul t_decls sas emit_output_types_defs
   )
   else IO.print_string (Printf.sprintf "Not emitting F* code for %s\n" fn);
 
@@ -590,7 +615,10 @@ let produce_z3_and_test
   (name: string)
 : Tot process_files_t
 = produce_z3_and_test_gen batch produce_testcases_c out_dir (fun out_file nbwitnesses prog z3 ->
-    Z3TestGen.do_test out_dir out_file z3 prog name nbwitnesses (Options.get_z3_branch_depth ()) (Options.get_z3_pos_test ()) (Options.get_z3_neg_test ())
+    let print_c_initializers = not (Options.get_z3_skip_c_initializers ()) in
+    let use_ptr = Options.get_z3_use_ptr () in
+    let flight = Options.get_z3_flight_name () in
+    Z3TestGen.do_test out_dir out_file z3 print_c_initializers use_ptr flight prog name nbwitnesses (Options.get_z3_branch_depth ()) (Options.get_z3_pos_test ()) (Options.get_z3_neg_test ())
   )
 
 let produce_z3_and_diff_test
@@ -599,10 +627,12 @@ let produce_z3_and_diff_test
   (out_dir: string)
   (names: (string & string))
 : Tot process_files_t
-=
-  let (name1, name2) = names in
+= let (name1, name2) = names in
   produce_z3_and_test_gen batch produce_testcases_c out_dir (fun out_file nbwitnesses prog z3 ->
-    Z3TestGen.do_diff_test out_dir out_file z3 prog name1 name2 nbwitnesses (Options.get_z3_branch_depth ())
+    let print_c_initializers = not (Options.get_z3_skip_c_initializers ()) in
+    let use_ptr = Options.get_z3_use_ptr () in
+    let flight = Options.get_z3_flight_name () in
+    Z3TestGen.do_diff_test out_dir out_file z3 print_c_initializers use_ptr flight prog name1 name2 nbwitnesses (Options.get_z3_branch_depth ())
   )
 
 let produce_test_checker_exe
@@ -705,6 +735,7 @@ let go () : ML unit =
       (Options.get_emit_output_types_defs ())
       (Options.get_skip_o_rules ())
       (Options.get_clang_format ())
+      (not (Options.get_clang_format_use_custom_config ()))
       cmd_line_files
   | None ->
   (* Special mode: --__produce_c_from_existing_krml *)
@@ -777,6 +808,7 @@ let go () : ML unit =
         (Options.get_add_include ())
         (Options.get_clang_format ())
         (Options.get_clang_format_executable ())
+        (not (Options.get_clang_format_use_custom_config ()))
         (Options.get_skip_c_makefiles ())
         (Options.get_cleanup ())
         (Options.get_no_everparse_h ())

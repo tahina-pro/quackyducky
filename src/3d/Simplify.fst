@@ -133,18 +133,19 @@ let simplify_probe_atomic_action (env:T.env_t) (a:probe_atomic_action)
 let rec simplify_probe_action (env:T.env_t) (a:probe_action) : ML probe_action =
   match a.v with
   | Probe_action_var i -> a
-  | Probe_action_simple f l -> 
-    {a with v = Probe_action_simple f (simplify_expr env l) }
   | Probe_atomic_action aa ->
     {a with v = Probe_atomic_action (simplify_probe_atomic_action env aa)}
-  | Probe_action_seq hd tl ->
-    {a with v = Probe_action_seq (simplify_probe_action env hd) (simplify_probe_action env tl) }
-  | Probe_action_let i aa k ->
-    {a with v = Probe_action_let i (simplify_probe_atomic_action env aa) (simplify_probe_action env k) }
+  | Probe_action_seq d hd tl ->
+    {a with v = Probe_action_seq d (simplify_probe_action env hd) (simplify_probe_action env tl) }
+  | Probe_action_let d i aa k ->
+    {a with v = Probe_action_let d i (simplify_probe_atomic_action env aa) (simplify_probe_action env k) }
   | Probe_action_ite hd then_ else_ ->
     {a with v = Probe_action_ite (simplify_expr env hd) (simplify_probe_action env then_)
                                  (simplify_probe_action env else_) }
- 
+  | Probe_action_array len b ->
+    {a with v = Probe_action_array (simplify_expr env len) (simplify_probe_action env b) }  
+  | Probe_action_copy_init_sz f ->
+    {a with v = Probe_action_copy_init_sz f }
 let simplify_field_array (env:T.env_t) (f:field_array_t) : ML field_array_t =
   match f with
   | FieldScalar -> FieldScalar

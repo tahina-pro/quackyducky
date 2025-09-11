@@ -31,7 +31,7 @@ noextract
 let ___EVERPARSE_COPY_BUFFER_T = CP.copy_buffer_t
 
 inline_for_extraction
-let probe_m_unit = probe_m unit true
+let probe_m_unit = probe_m unit true false
 
 inline_for_extraction
 noextract
@@ -522,12 +522,8 @@ let mk_action_binding
 (* Type type of atomic probe actions *)
 noeq
 type atomic_probe_action : Type0 -> Type u#1 =
-  // | Atomic_probe_init:
-  //     init_cb:PA.init_probe_dest_t ->
-  //     sz:U64.t ->
-  //     atomic_probe_action unit false
   | Atomic_probe_and_copy :
-      bytes_to_read : U64.t { bytes_to_read <> 0uL }->
+      bytes_to_read : U64.t ->
       probe_fn: PA.probe_fn_incremental ->
       atomic_probe_action unit
   | Atomic_probe_and_read :
@@ -560,10 +556,8 @@ type atomic_probe_action : Type0 -> Type u#1 =
 
 [@@specialize]
 let atomic_probe_action_as_probe_m (#t:Type) (p:atomic_probe_action t)
-: PA.probe_m t true
+: PA.probe_m t true false
 = match p with
-  // | Atomic_probe_init sz init_cb ->
-  //   PA.init_probe_m sz init_cb
   | Atomic_probe_and_copy bytes_to_read probe_fn_incremental ->
     PA.probe_fn_incremental_as_probe_m probe_fn_incremental bytes_to_read 
   | Atomic_probe_and_read reader ->
@@ -582,49 +576,56 @@ let atomic_probe_action_as_probe_m (#t:Type) (p:atomic_probe_action t)
     PA.fail
 
 noeq
-type probe_action : Type u#1 =
+type probe_action : bool -> Type u#1 =
   | Probe_action_atomic :
       atomic_probe_action unit ->
-      probe_action
+      probe_action false
   | Probe_action_var :
-      probe_m unit true ->
-      probe_action
-  | Probe_action_simple:
-      bytes_to_read : U64.t ->
-      probe_fn: PA.probe_fn ->
-      probe_action
+      probe_m unit true false ->
+      probe_action false
   | Probe_action_seq:
-      m1: probe_action ->
-      m2: probe_action ->
-      probe_action
+      detail:string ->
+      m1: probe_action false ->
+      m2: probe_action false ->
+      probe_action false
   | Probe_action_let:
       #t:Type0 ->
+      detail:string ->
       m1: atomic_probe_action t ->
-      m2: (t -> probe_action) ->
-      probe_action
+      m2: (t -> probe_action false) ->
+      probe_action false
   | Probe_action_ite:
       cond:bool ->
-      m1: probe_action ->
-      m2: probe_action ->
-      probe_action
+      m1: probe_action false ->
+      m2: probe_action false ->
+      probe_action false
+  | Probe_action_array:
+      bytes_len:U64.t ->
+      elemnent_probe:probe_action false ->
+      probe_action false
+  | Probe_action_copy_init_sz:
+      probe_fn:PA.probe_fn_incremental ->
+      probe_action false
 
 [@@specialize]
-let rec probe_action_as_probe_m (p:probe_action)
-: PA.probe_m unit true
+let rec probe_action_as_probe_m #maybe_zero (p:probe_action maybe_zero)
+: PA.probe_m unit true maybe_zero
 = match p with
   | Probe_action_atomic a ->
     atomic_probe_action_as_probe_m a
   | Probe_action_var m ->
     m
-  | Probe_action_simple bytes_to_read probe_fn ->
-    PA.probe_fn_as_probe_m bytes_to_read probe_fn
-  | Probe_action_seq m1 m2 ->
-    PA.seq_probe_m () (probe_action_as_probe_m m1) (probe_action_as_probe_m m2)
-  | Probe_action_let m1 m2 ->
-    let k x : PA.probe_m unit _ = probe_action_as_probe_m (m2 x) in
-    PA.bind_probe_m () (atomic_probe_action_as_probe_m m1) k
+  | Probe_action_seq detail m1 m2 ->
+    PA.seq_probe_m detail () (probe_action_as_probe_m m1) (probe_action_as_probe_m m2)
+  | Probe_action_let detail m1 m2 ->
+    let k x : PA.probe_m unit _ _ = probe_action_as_probe_m (m2 x) in
+    PA.bind_probe_m detail () (atomic_probe_action_as_probe_m m1) k
   | Probe_action_ite cond m1 m2 ->
     PA.if_then_else cond (probe_action_as_probe_m m1) (probe_action_as_probe_m m2)
+  | Probe_action_array len body ->
+    PA.probe_array len (probe_action_as_probe_m body)
+  | Probe_action_copy_init_sz probe_fn ->
+    PA.probe_and_copy_init_sz probe_fn
 
 (* The type of atomic actions.
 
@@ -705,7 +706,8 @@ type atomic_action
       atomic_action inv disj_none loc b false t
   
   | Action_probe_then_validate:
-      #nz:bool -> 
+      #nz:bool ->
+      #maybe_zero:bool ->
       #wk:_ ->
       #k:P.parser_kind nz wk ->
       #ha:bool ->
@@ -723,7 +725,7 @@ type atomic_action
       dest:CP.copy_buffer_t ->
       init_cb:PA.init_probe_dest_t ->
       dest_prep_sz:U64.t -> 
-      probe:probe_action ->
+      probe:probe_action maybe_zero ->
       atomic_action (join_inv inv (NonTrivial (A.copy_buffer_inv dest)))
                     (join_disj disj (disjoint (NonTrivial (A.copy_buffer_loc dest)) l))
                     (join_loc l (NonTrivial (A.copy_buffer_loc dest)))
@@ -1097,7 +1099,7 @@ let t_probe_then_validate
       (fieldname:string)
       (init_cb:PA.init_probe_dest_t)
       (dest_sz:U64.t)
-      (probe:probe_m unit true)
+      (probe:probe_m unit true false)
       (dest:CP.copy_buffer_t)
       (as_u64:itype_as_type pointer_size -> PA.pure_external_action U64.t)
       (#nz #wk:_) (#pk:P.parser_kind nz wk)
@@ -1117,12 +1119,13 @@ let t_probe_then_validate
 
 [@@specialize]
 let t_probe_then_validate_alt
+      (#mz:bool)
       (pointer_size:pointer_size_t)
       (nullable:bool)
       (fieldname:string)
       (init_cb:PA.init_probe_dest_t)
       (dest_sz:U64.t)
-      (probe:probe_action)
+      (probe:probe_action mz)
       (dest:CP.copy_buffer_t)
       (as_u64:itype_as_type pointer_size -> PA.pure_external_action U64.t)
       (#nz #wk:_) (#pk:P.parser_kind nz wk)
@@ -1135,16 +1138,10 @@ let t_probe_then_validate_alt
        (join_loc l (NonTrivial (A.copy_buffer_loc dest)))
        true
        false
- = t_probe_then_validate
-      pointer_size
-      nullable
-      fieldname
-      init_cb
-      dest_sz
-      (probe_action_as_probe_m probe)
-      dest
-      as_u64
-      td
+ = T_with_dep_action fieldname
+     (DT_IType pointer_size)
+     (fun typename src ->
+        Atomic_action (Action_probe_then_validate typename fieldname td src as_u64 nullable dest init_cb dest_sz probe))
 
 (* Type denotation of `typ` *)
 let rec as_type
@@ -1438,8 +1435,8 @@ let rec as_validator
 
     | T_if_else b t0 t1 ->
       assert_norm (as_type (T_if_else b t0 t1) == P.t_ite b (fun _ -> as_type (t0())) (fun _ -> as_type (t1 ())));
-      let p0 (_:squash b) = P.parse_weaken_right (as_parser (t0())) _ in
-      let p1 (_:squash (not b)) = P.parse_weaken_left (as_parser (t1())) _ in
+      let unfold p0 (_:squash b) = P.parse_weaken_right (as_parser (t0())) _ in
+      let unfold p1 (_:squash (not b)) = P.parse_weaken_left (as_parser (t1())) _ in
       assert_norm (as_parser (T_if_else b t0 t1) == P.parse_ite b p0 p1);
       let v0 (_:squash b) = 
         A.validate_weaken_right (as_validator typename (t0())) _
@@ -1451,8 +1448,8 @@ let rec as_validator
 
     | T_cases b t0 t1 ->
       assert_norm (as_type (T_cases b t0 t1) == P.t_ite b (fun _ -> as_type t0) (fun _ -> as_type t1));
-      let p0 (_:squash b) = P.parse_weaken_right (as_parser t0) _ in
-      let p1 (_:squash (not b)) = P.parse_weaken_left (as_parser t1) _ in
+      let unfold p0 (_:squash b) = P.parse_weaken_right (as_parser t0) _ in
+      let unfold p1 (_:squash (not b)) = P.parse_weaken_left (as_parser t1) _ in
       assert_norm (as_parser (T_cases b t0 t1) == P.parse_ite b p0 p1);
       let v0 (_:squash b) = 
         A.validate_weaken_right (as_validator typename t0) _

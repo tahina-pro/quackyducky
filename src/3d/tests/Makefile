@@ -27,17 +27,19 @@ FSTAR_OPTIONS=$(addprefix --include , $(INCLUDES))
 positive_tests=$(filter-out $(wildcard FAIL*.3d) FieldDependence0.3d ActAndCheck.3d,$(wildcard *.3d))
 positive_tests_nosuffix=$(basename $(positive_tests))
 modules_or_wrappers=$(positive_tests_nosuffix) $(addsuffix Wrapper,$(positive_tests_nosuffix))
-modules_static_assertions=$(addsuffix StaticAssertions.c, TestFieldPtr Align Specialize2 Specialize3 FineGrainedProbeSpecialize)
-module_extern_apis=$(addsuffix _ExternalAPI.h, Specialize2 Specialize3 FineGrainedProbe FineGrainedProbeSpecialize)
+modules_static_assertions=$(addsuffix StaticAssertions.c, TestFieldPtr Align)
+modules_auto_static_assertions=$(addsuffix AutoStaticAssertions.c, Align Specialize2 Specialize3 Specialize5 Specialize6 FineGrainedProbe FineGrainedProbeSpecialize)
+module_extern_apis=$(addsuffix _ExternalAPI.h, Specialize2 Specialize3 Specialize5 Specialize6 FineGrainedProbe FineGrainedProbeSpecialize)
 clean_out_files=\
 	$(addsuffix .c,$(modules_or_wrappers)) \
 	$(modules_static_assertions) \
+	$(modules_auto_static_assertions) \
 	$(addsuffix .h,$(modules_or_wrappers)) \
 	$(module_extern_apis)
 
 OTHER_HEADERS=TestFieldPtrBase.h AlignC.h
 
-all: batch-test batch-test-negative batch-cleanup-test inplace-hash-test modules tcpip extern output-types batch-interpret-test elf-test static funptr ifdefs probe iter z3-testgen-test exttype specialize_test
+all: batch-test batch-test-negative batch-cleanup-test inplace-hash-test modules tcpip extern output-types batch-interpret-test elf-test static funptr ifdefs probe iter z3-testgen-test exttype z3-testgen-probe-test specialize_test specialize_test2
 
 .PHONY: exttype
 
@@ -103,9 +105,9 @@ batch-interpret-test:
 	./test-cpp.exe
 
 elf-test: ELF.3d
-	mkdir -p out.batch
-	$(3D) --odir out.batch --batch ELF.3d
-	$(CXX) -o out.batch/elf-test -I out.batch $(addprefix out.batch/, ELF.c ELFWrapper.c) TestELF.cpp
+	mkdir -p out.elf
+	$(3D) --odir out.elf --batch ELF.3d
+	$(CXX) -o out.elf/elf-test -I out.elf $(addprefix out.elf/, ELF.c ELFWrapper.c) TestELF.cpp
 
 z3-testgen-test: ELF.3d
 	mkdir -p out.z3-testgen
@@ -113,9 +115,10 @@ z3-testgen-test: ELF.3d
 
 .PHONY: z3-testgen-test
 
-%-test: %.3d
-	mkdir -p out.batch
-	$(3D) $(FLAGS3D) --odir out.batch --batch $^
+z3-testgen-probe-test: probe/src/Probe.3d
+	+$(MAKE) -C probe/src
+
+.PHONY: z3-testgen-probe-test
 
 inplace-hash-test:
 	mkdir -p out.inplace-hash
@@ -129,6 +132,9 @@ echo-clean-out-files:
 echo-out-files:
 	echo "$$(ls out.cleanup | sort)"
 
+test-cleanup:
+	test "$$(ls out.cleanup | sort)" = "$$(for f in $(clean_out_files) ; do echo $$f ; done | sort)"
+
 batch-cleanup-test:
 	mkdir -p out.cleanup
 	env EVERPARSE_FSTAR_OPTIONS='--admit_smt_queries true' $(3D) --odir out.cleanup --batch --cleanup --skip_c_makefiles --no_copy_everparse_h $(positive_tests)
@@ -141,6 +147,9 @@ batch-cleanup-test:
 	$(3D) --batch $^
 
 clean:
-	rm -rf out.batch out.fail.batch out.cleanup out.inplace-hash test-cpp.exe out.batch-interpret
+	rm -rf out.batch out.fail.batch out.cleanup out.elf out.inplace-hash out.pos test-cpp.exe out.batch-interpret out.z3-testgen
+	make -C specialize_test clean
+	make -C specialize_test2 clean
+	make -C probe clean
 
 .PHONY: all batch-test batch-test-negative %.negtest clean batch-cleanup-test inplace-hash-test modules tcpip extern %.interpret batch-interpret-test static funptr ifdefs

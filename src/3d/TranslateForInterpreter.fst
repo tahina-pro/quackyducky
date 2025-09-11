@@ -314,8 +314,7 @@ let translate_op : A.op -> ML T.op =
   | SizeOf -> failwith (Printf.sprintf "Operator `%s` should have been eliminated already"
                                   (Ast.print_op op))
   | ProbeFunctionName i -> T.ProbeFunctionName i
-
-
+ 
 let rec translate_expr (e:A.expr) : ML T.expr =
   (match e.v with
    | Constant c -> T.Constant c
@@ -821,23 +820,24 @@ let rec translate_probe_action (a:A.probe_action) : ML (T.probe_action & T.decls
     T.Probe_action_atomic (translate_atomic a), []
   | A.Probe_action_var i ->
     T.Probe_action_var (translate_expr i), []
-  | A.Probe_action_simple f n ->
-    if None? f
-    then failwith "Probe action name should have already been resolved";
-    let Some f = f in
-    T.Probe_action_simple (translate_expr n) f, []
-  | A.Probe_action_seq hd tl ->
+  | A.Probe_action_seq d hd tl ->
     let hd, ds1 = translate_probe_action hd in
     let tl, ds2 = translate_probe_action tl in
-    T.Probe_action_seq hd tl, ds1@ds2
-  | A.Probe_action_let i a k ->
+    T.Probe_action_seq (translate_expr d) hd tl, ds1@ds2
+  | A.Probe_action_let d i a k ->
     let a = translate_atomic a in
     let tl, ds2 = translate_probe_action k in
-    T.Probe_action_let i a tl, ds2
+    T.Probe_action_let (translate_expr d) i a tl, ds2
   | A.Probe_action_ite e th el ->
     let th, ds1 = translate_probe_action th in
     let el, ds2 = translate_probe_action el in
     T.Probe_action_ite (translate_expr e) th el, ds1@ds2
+  | A.Probe_action_array len e ->
+    let len = translate_expr len in
+    let e, ds = translate_probe_action e in
+    T.Probe_action_array len e, ds
+  | A.Probe_action_copy_init_sz f ->
+    T.Probe_action_copy_init_sz f, []
 
 #push-options "--z3rlimit_factor 4"
 let translate_atomic_field (f:A.atomic_field) : ML (T.struct_field & T.decls) =
@@ -1440,13 +1440,12 @@ let translate_decl (env:global_env) (d:A.decl) : ML (list T.decl) =
     ds @ [with_comments (T.Extern_fn f ret params pure) (A.is_entrypoint d) false []]
 
   | ExternProbe f pq ->
-    let translate_qualifier (pq:option A.probe_qualifier) : ML T.probe_qualifier =
+    let translate_qualifier (pq:A.probe_qualifier) : ML T.probe_qualifier =
       match pq with
-      | None -> T.PQSimple
-      | Some A.PQWithOffsets -> T.PQWithOffsets
-      | Some A.PQInit -> T.PQInit
-      | Some (A.PQRead t) -> T.PQRead t
-      | Some (A.PQWrite t) -> T.PQWrite t
+      | A.PQWithOffsets -> T.PQWithOffsets
+      | A.PQInit -> T.PQInit
+      | A.PQRead t -> T.PQRead t
+      | A.PQWrite t -> T.PQWrite t
     in
     let pq = translate_qualifier pq in
     [with_comments (T.Extern_probe f pq) (A.is_entrypoint d) false []]

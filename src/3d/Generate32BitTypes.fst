@@ -29,9 +29,6 @@ open GlobalEnv
 type env_t = B.env & list ident 
 let should_specialize (e:env_t) (id:ident) : ML bool = 
   List.existsb (fun id' -> eq_idents id id') (snd e)
-let name32 (head_name:ident) : ident =
-  let gen = reserved_prefix ^ "specialized32_" ^ head_name.v.name in
-  {head_name with v = { head_name.v with name = gen }}
 
 let coercion_for_type (t:ident) : ML ident =
   name32 (GeneralizeProbes.simple_probe_function_for_type t)
@@ -83,16 +80,53 @@ let maybe_gen_l
   then true, l'
   else false, l
   
+let rec specialize_expr (en:env_t) (e:expr)
+: ML expr
+= match e.v with
+  | Constant _
+  | This -> e
+  | Static e -> { e with v = Static <| specialize_expr en e}
+  | Identifier id ->
+    if should_specialize en id 
+    then { e with v = Identifier (name32 id) }
+    else e
+  | App op exprs -> { e with v = App op (List.map (specialize_expr en) exprs) }
+
+let maybe_specialize_field_array (en:env_t) (fa:field_array_t)
+: ML (option field_array_t)
+= match fa with
+  | FieldArrayQualified (e, ByteArrayByteSize) -> Some <| FieldArrayQualified (specialize_expr en e, ByteArrayByteSize)
+  | FieldArrayQualified (e, ArrayByteSize) -> Some <| FieldArrayQualified (specialize_expr en e, ArrayByteSize)
+  | _ -> None
+
+let gen_atomic_field (e:env_t) (af:atomic_field)
+: ML (bool & atomic_field)
+= let b, ft =
+    match maybe_specialize_32 e af.v.field_type with
+    | None -> false, af.v.field_type
+    | Some t32 -> true, t32
+  in
+  let b', arr =
+    match maybe_specialize_field_array e af.v.field_array_opt with
+    | None -> false, af.v.field_array_opt
+    | Some fa -> true, fa
+  in
+  let b'', constr =
+    match af.v.field_constraint with
+    | None -> false, None
+    | Some constr -> true, Some (specialize_expr e constr)
+  in
+  let af32 = { af with v = { af.v with field_type = ft; field_probe=None; field_array_opt=arr; field_constraint=constr } } in
+  b||b'||b'', af32
+
+
 
 let rec gen_field (e:env_t) (f:field) 
 : ML (bool & field)
 = match f.v with
   | AtomicField af -> (
-    match maybe_specialize_32 e af.v.field_type with
-    | None -> false, f
-    | Some t32 ->
-      let af32 = { af with v = { af.v with field_type = t32; field_probe=None } } in
-      true, { f with v=AtomicField af32 }
+    let b, af' = gen_atomic_field e af in
+    b, { f with v=AtomicField af' }
   )
   | RecordField r i -> (
     let changed, r' = maybe_gen_l (gen_field e) r in
@@ -161,14 +195,13 @@ let rec gen_decl (env:env_t) (d:decl) : ML (option decl) =
 let gen_decls (e:env_t) (d: decl)
 : ML (list decl & env_t)
 = match d.d_decl.v with
-  | ProbeFunction id ps v (SimpleProbeFunction tn) -> (
-    
+  | CoerceProbeFunctionStub id ps (CoerceProbeFunctionPlaceholder tn) -> (
     let decl, _ = Binding.lookup_type_decl (fst e) tn in
     match gen_decl e decl with
     | None -> 
-      let c = ProbeFunction (name32 id) ps v (SimpleProbeFunction tn) in
+      let c = CoerceProbeFunctionStub id ps (CoerceProbeFunction(tn, tn)) in
       let c = mk_decl c d.d_decl.range [] false in
-      [d;c], e
+      [c], e
     | Some d' ->
       let src =
         match idents_of_decl d' with
@@ -176,15 +209,14 @@ let gen_decls (e:env_t) (d: decl)
         | [_; id] -> id
         | _ -> failwith "Unexpected number of names"
       in
-      let name = name32 id in
       let c =
         mk_decl 
-          (CoerceProbeFunctionStub (name32 id) ps (CoerceProbeFunction (src, tn)))
+          (CoerceProbeFunctionStub id ps (CoerceProbeFunction (src, tn)))
           d.d_decl.range 
           [] 
           false
       in
-      [d'; d; c], (fst e, tn :: snd e)
+      [d'; (* d; *) c], (fst e, tn :: snd e)
   )
   | _ ->
     [d], e
@@ -196,7 +228,7 @@ let has_32bit_coercion (e:B.env) (t32 t:typ) : ML (option ident) =
   | Type_app id _ _ _, Type_app id32 _ _ _ -> 
     Options.debug_print_string <|
       Printf.sprintf "Checking for coercion from %s to %s\n" (print_ident id32) (print_ident id);
-    GlobalEnv.find_probe_fn (B.global_env_of_env e) (CoerceProbeFunction (id32, id))
+    GlobalEnv.find_probe_fn (B.global_env_of_env e) t32.range (CoerceProbeFunction (id32, id))
   | _ ->
     None
 
@@ -212,4 +244,3 @@ let generate_32_bit_types (e:GlobalEnv.global_env) (d: list decl)
       d
   in
   List.rev ds
- 

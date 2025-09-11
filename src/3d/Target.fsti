@@ -158,15 +158,13 @@ type probe_action =
   | Probe_action_var :
       expr ->
       probe_action
-  | Probe_action_simple:
-      bytes_to_read : expr ->
-      probe_fn: A.ident ->
-      probe_action
   | Probe_action_seq:
+      detail:expr ->
       probe_action ->
       probe_action ->
       probe_action
   | Probe_action_let:
+      detail:expr ->
       i:A.ident ->
       m1: atomic_probe_action ->
       m2: probe_action ->
@@ -176,6 +174,13 @@ type probe_action =
       m1: probe_action ->
       m2: probe_action ->
       probe_action
+  | Probe_action_array:
+      len: expr ->
+      m: probe_action ->
+      probe_action
+  | Probe_action_copy_init_sz:
+      f:A.ident ->
+      probe_action 
   
 noeq
 type typ =
@@ -373,9 +378,7 @@ and output_expr = {
  * This decl will then be used to emit F* and C code for output types
  *)
 
-noeq
 type probe_qualifier =
-  | PQSimple
   | PQWithOffsets
   | PQInit
   | PQRead of A.integer_type
@@ -393,9 +396,7 @@ type decl' =
       probe_action ->
       decl'
   | Output_type: A.out_typ -> decl'  //output types specifications, we keep them if we need to print them to C
-
   | Output_type_expr : output_expr -> is_get:bool -> decl'  //is_get boolean indicates that the output expression appears in a getter position, i.e. in a type parameter, it is false when the output expression is an assignment action lhs
-
   | Extern_type : A.ident -> decl'
   | Extern_fn : A.ident -> typ -> list param -> pure:bool -> decl'
   | Extern_probe : A.ident -> probe_qualifier -> decl'
