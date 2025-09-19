@@ -15,6 +15,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
@@ -50,6 +53,5 @@ jobs:
         if: ${{ steps.checktrivial.outcome == 'success' }}
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.EVERPARSE_GITHUB_TOKEN }}
           branch: "hints-and-dist-main"
           title: "[CI] regenerate hints and dist"
