@@ -1,0 +1,6 @@
+[submodule "opt/everest"]
+	path = opt/everest
+	url = https://github.com/project-everest/everest
+[submodule "opt/opam-repository"]
+	path = opt/opam-repository
+	url = https://github.com/ocaml/opam-repository
