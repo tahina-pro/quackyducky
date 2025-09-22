@@ -25,7 +25,7 @@ $(CURDIR)/hacl-star:
 	mv $@.tmp $@
 
 $(EVERPARSE_PATH)/opt/karamel:
-	+$(MAKE) -C $(dir $@) -f git-clone.Makefile $(notdir $@)
+	+$(MAKE) -C $(dir $@) $(notdir $@)
 
 HEADERDEPS = ../../c/COSE_Format.h ../../c/COSE_EverCrypt.h $(EVERPARSE_SRC_PATH)/cbor/pulse/det/c/CBORDet.h
 
