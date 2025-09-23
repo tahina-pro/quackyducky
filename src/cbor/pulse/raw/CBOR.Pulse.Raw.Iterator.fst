@@ -70,6 +70,73 @@ ensures
   };
 }
 
+let perm_mul_comm (a b: perm) : Lemma
+  (a *. b == b *. a)
+= ()
+
+#restart-solver
+
+ghost
+fn cbor_raw_slice_iterator_match_fold_gen
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (a: S.slice elt_low)
+  (pm1: perm)
+  (sq: Seq.seq elt_low)
+  (pm2: perm)
+  (l: list elt_high)
+  (c': cbor_raw_slice_iterator elt_low)
+  (pm: perm)
+requires
+  pts_to a #pm1 sq **
+  PM.seq_list_match sq l (elt_match pm2) **
+  pure (
+    c'.s == a /\
+    c'.slice_perm == (pm1 /. 2.0R) /. pm /\
+    c'.payload_perm == pm2 /. pm
+  )
+ensures
+  cbor_raw_slice_iterator_match elt_match pm c' l **
+     trade
+       (cbor_raw_slice_iterator_match elt_match pm c' l)
+       (pts_to a #pm1 sq **
+         PM.seq_list_match sq l (elt_match pm2)
+       )
+{
+  PM.seq_list_match_length (elt_match pm2) sq l;
+  S.share a;
+  with _pm _sq .
+    rewrite pts_to a #_pm _sq as pts_to c'.s #(pm *. c'.slice_perm) sq;
+  rewrite (PM.seq_list_match sq l (elt_match pm2))
+    as (PM.seq_list_match sq l (elt_match (pm *. c'.payload_perm)));
+  fold (cbor_raw_slice_iterator_match elt_match pm c' l);
+  intro
+    (Trade.trade
+      (cbor_raw_slice_iterator_match elt_match pm c' l)
+      (pts_to a #pm1 sq **
+         PM.seq_list_match sq l (elt_match pm2)
+      )
+    )
+    #(pts_to a #(pm1 /. 2.0R) sq)
+    fn _
+  {
+    unfold (cbor_raw_slice_iterator_match elt_match pm c' l);
+    with _pm1 _pm2 _sq. assert (S.pts_to c'.s #_pm1 _sq ** PM.seq_list_match _sq l (elt_match _pm2));
+    assert (pure (_pm2 == pm *. c'.payload_perm)); // FIXME: WHY WHY WHY?
+    assert (pure (pm2 == c'.payload_perm *. pm)); // FIXME: WHY WHY WHY?
+    perm_mul_comm pm c'.payload_perm;
+    assert (pure (pm2 == pm *. c'.payload_perm)); // FIXME: WHY WHY WHY?
+    PM.seq_list_match_length (elt_match _pm2) _sq l;
+    rewrite (S.pts_to c'.s #_pm1 _sq) as S.pts_to a #_pm1 _sq;
+    S.gather a;
+    rewrite PM.seq_list_match #elt_low #elt_high _sq l (elt_match _pm2)
+      as PM.seq_list_match #elt_low #elt_high sq l (elt_match pm2);
+    assert (pure (perm_mul pm (Mkcbor_raw_slice_iterator?.slice_perm #elt_low c') == pm1 /. 2.0R));
+    assert (pure (pm1 /. 2.0R +. pm1 /. 2.0R == pm1));
+    ();
+  };
+}
+
 ghost
 fn cbor_raw_slice_iterator_match_fold
   (#elt_low #elt_high: Type0)
@@ -90,30 +157,7 @@ ensures
          PM.seq_list_match sq l (elt_match (pm `perm_mul` c.payload_perm))
        )
 {
-  S.share c.s;
-  half_mul pm c.slice_perm;
-  with _pm _sq .
-    rewrite pts_to c.s #_pm _sq as pts_to c'.s #_pm sq;
-  fold (cbor_raw_slice_iterator_match elt_match pm c' l);
-  intro
-    (Trade.trade
-      (cbor_raw_slice_iterator_match elt_match pm c' l)
-      (pts_to c.s #(pm `perm_mul` c.slice_perm) sq **
-         PM.seq_list_match sq l (elt_match (pm `perm_mul` c.payload_perm))
-      )
-    )
-    #(pts_to c.s #((pm `perm_mul` c.slice_perm) /. 2.0R) sq)
-    fn _
-  {
-    unfold (cbor_raw_slice_iterator_match elt_match pm c' l);
-    with _pm _sq.
-      rewrite S.pts_to c'.s #_pm (reveal _sq) as S.pts_to c.s #_pm _sq;
-    S.gather c.s;
-    with c v m.
-      assert PM.seq_list_match #elt_low #elt_high c v m;
-    rewrite each c as sq;
-    ();
-  };
+  cbor_raw_slice_iterator_match_fold_gen elt_match _ _ _ _ _ c' pm
 }
 
 inline_for_extraction
