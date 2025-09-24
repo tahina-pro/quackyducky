@@ -227,6 +227,26 @@ Run `make 3d`
 
 Run `make quackyducky`
 
+## Build a binary package
+
+To build a standalone native binary package on Linux or MacOS that
+would work similarly to a GitHub Releases binary package, run one of
+the following commands:
+
+* `make -f package.Makefile everparse` to get a directory called `everparse` containing native binaries for EverParse
+* `make -f package.Makefile package` to get a compressed archive thereof
+
+NOTE: These commands can also be run from Windows+Cygwin with opam
+installed, to obtain native binary packages for Windows (rather than
+Linux binaries with WSL2), but only from commits tagged with a GitHub
+Releases tag. (Such tagged EverParse commits contain sources of F\*
+that can natively build on Windows, which is not the case for the
+regular F\* repository.) In that case, you may need to install
+additional Cygwin packages by running
+`src/package/windows/install-cygwin-packages.sh` beforehand. Then, you
+can also run `make -f package.Makefile nuget` to build a NuGet
+package.
+
 # Advanced
 
 ## Writing F\* proofs
@@ -247,20 +267,26 @@ the instructions below.
 
 ### From the source repository
 
-You can run a custom Bash shell with `./shell.sh`
-
-This script will locally install EverParse dependencies and open a new
-Bash shell with appropriately populated environment variables for
-opam, OCaml, F\*, etc.
-
-Alternatively, if you are already in a Bash shell session, you can also
-directly populate its environment with `make deps && eval "$(make -s env)"`
-
-Then, from this shell, you can call Visual Studio Code and install the
+You can call Visual Studio Code and install the
 F\* VSCode Assistant extension to edit the F\* files present in the
 EverParse repository with full F\* editing features.
 
+The configuration files are using a custom F\* script, `fstar.sh`,
+that sets up the environment properly.
+
 NOTE: On Windows+WSL2, you also need to install the [WSL extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl), needed to make the Linux paths in the environment variables work.
+
+If you want to do more than just editing files in Visual Studio Code
+(e.g. run `make` in subdirectories of EverParse), you need to properly
+set up environment variables.
+
+You can run a custom Bash shell with `./shell.sh`. This script will
+locally install EverParse dependencies and open a new Bash shell with
+appropriately populated environment variables for opam, OCaml, F\*,
+etc.
+
+Alternatively, if you are already in a Bash shell session, you can also
+directly populate its environment with `make deps && eval "$(make -s env)"`
 
 ### From a Docker image
 
@@ -283,6 +309,26 @@ accessing the F\* files in the container:
    files in the container. The F\* VSCode Assistant extension is
    already installed for you.
 
+## Using different F\*, Karamel, Pulse clones in opt/
+
+EverParse clones F\*, Karamel and Pulse into the `opt/`
+subdirectory. If you want to create an EverParse branch with different
+clones (e.g. if you need to patch F\*, Karamel or Pulse):
+
+1. Change the relevant `*_repo` variables in `opt/Makefile` to point
+   to the repositories from which you clone.
+
+2. Run `make -C opt snapshot` to reflect this change in your clones.
+
+Then, whenever you make a change in your clones:
+
+1. Commit and push your changes.
+
+2. Run `make -C opt snapshot` to register your clone hashes.
+
+Then, in EverParse, `make` will automatically rebuild F\*, Karamel and
+Pulse from your clones with your patches.
+
 ## Using an existing opam root, F\*, etc.
 
 If you want to use existing dependencies instead of letting EverParse
@@ -293,20 +339,34 @@ variables:
   opam installation (the value of `OPAMROOT` if set, otherwise
   `$HOME/.opam`) instead of creating a local install
 
-* If you want to use your own F\*, set `FSTAR_EXE` to the full path of
-  your `fstar.exe` executable.
+* If you want to use your own F\*, first set
+  `EVERPARSE_USE_FSTAR_EXE=1`, then set `FSTAR_EXE` to the full path
+  of your `fstar.exe` executable (by default, `fstar.exe` via your
+  `PATH`.)
   
   NOTE: If you want to use EverCDDL, you cannot use a F\* binary
   package because EverCDDL has a F\* plugin that needs to be compiled
   with the very same OCaml environment as the one used to compile
-  F\*. This is why setting `FSTAR_EXE` will automatically set
+  F\*. This is why setting `EVERPARSE_USE_FSTAR_EXE` will automatically set
   `EVERPARSE_USE_OPAMROOT=1`.
   
-* If you want to use your own Karamel, set `KRML_HOME` to the full
-  path of your clone of the Karamel repository. This requires
-  `FSTAR_EXE` to be set.
+* If you want to use your own Karamel, first set
+  `EVERPARSE_USE_KRML_HOME=1`, then set `KRML_HOME` to the full path
+  of your clone of the Karamel repository. This will automatically set
+  `EVERPARSE_USE_FSTAR_HOME=1`, since the Karamel library must be
+  compiled with the same F\* as EverParse.
 
-* If you want to use your own Pulse, set `PULSE_HOME` to the full path
+* If you want to use your own Pulse, first set
+  `EVERPARSE_USE_PULSE_HOME=1`, then set `PULSE_HOME` to the full path
   of the directory where Pulse was compiled (in most cases, the `out/`
-  subdirectory of the Pulse clone.) This requires `FSTAR_EXE` to be
-  set.
+  subdirectory of the Pulse clone.) This will automatically set
+  `EVERPARSE_USE_FSTAR_HOME=1`, since Pulse must be compiled with the
+  same F\* as EverParse.
+
+As a shortcut, setting `EVERPARSE_USE_MY_DEPS=1` has the same effect
+as setting all of those environment variables to 1.
+
+NOTES: These settings are all ignored when building a binary package.
+
+NOTE: DO NOT use the clones from the opt/ subdirectory with
+`EVERPARSE_USE_*`

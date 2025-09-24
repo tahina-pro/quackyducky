@@ -26,7 +26,7 @@ $(CURDIR)/hacl-star:
 	mv $@.tmp $@
 
 $(EVERPARSE_PATH)/opt/karamel:
-	+$(MAKE) -C $(dir $@) -f git-clone.Makefile $(notdir $@)
+	+$(MAKE) -C $(dir $@) $(notdir $@)
 
 COSE_EVERCRYPT_O=../../c/COSE_EverCrypt.o
 COSE_FORMAT_O=../../c/COSE_Format.o
@@ -47,3 +47,9 @@ bench: bench.c common.c $(COSE_EVERCRYPT_O) $(COSE_FORMAT_O) $(CBORDET_O) $(HACL
 .PHONY: test
 test: signtest verifytest ../../.venv
 	../../.venv/bin/python test.py
+
+clean:
+	rm -f *.o signtest verifytest bench message.*
+	rm -rf hacl-star
+
+.PHONY: clean

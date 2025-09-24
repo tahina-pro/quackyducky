@@ -39,7 +39,10 @@ clean_out_files=\
 
 OTHER_HEADERS=TestFieldPtrBase.h AlignC.h
 
-all: batch-test batch-test-negative batch-cleanup-test inplace-hash-test modules tcpip extern output-types batch-interpret-test elf-test static funptr ifdefs probe iter z3-testgen-test exttype z3-testgen-probe-test specialize_test specialize_test2
+all: batch-test batch-test-negative batch-cleanup-test inplace-hash-test modules \
+	 tcpip extern output-types batch-interpret-test elf-test static funptr ifdefs \
+	 probe iter z3-testgen-test exttype z3-testgen-probe-test specialize_test specialize_test2 \
+	 specialize_tagged_union_array
 
 .PHONY: exttype
 
@@ -146,10 +149,16 @@ batch-cleanup-test:
 %.interpret: %.3d
 	$(3D) --batch $^
 
-clean:
-	rm -rf out.batch out.fail.batch out.cleanup out.elf out.inplace-hash out.pos test-cpp.exe out.batch-interpret out.z3-testgen
-	make -C specialize_test clean
-	make -C specialize_test2 clean
-	make -C probe clean
+%.clean:
+	make -C $(basename $@) clean
+
+.PHONY: %.clean
+
+clean-files:
+	rm -rf out.batch out.fail.batch out.cleanup out.elf out.inplace-hash out.pos test-cpp.exe out.batch-interpret out.z3-testgen *.out *.err
+
+.PHONY: clean-files
+
+clean: clean-files specialize_test.clean specialize_test2.clean probe.clean extern.clean exttype.clean funptr.clean ifdefs.clean iter/coarse.clean iter/fine.clean modules.clean output_types.clean static.clean tcpip.clean
 
 .PHONY: all batch-test batch-test-negative %.negtest clean batch-cleanup-test inplace-hash-test modules tcpip extern %.interpret batch-interpret-test static funptr ifdefs
