@@ -4,6 +4,7 @@ open CBOR.Spec.Util
 open CBOR.Pulse.Raw.Util
 open CBOR.Pulse.Raw.Iterator
 open Pulse.Lib.Slice open Pulse.Lib.Pervasives open Pulse.Lib.Trade
+include CBOR.Pulse.Raw.Iterator.Base
 
 module PM = Pulse.Lib.SeqMatch
 module A = Pulse.Lib.Array
@@ -118,13 +119,12 @@ fn cbor_raw_serialized_iterator_fold_with_perm
   (pm: perm)
   (l: list elt_high)
 requires
-  LP.pts_to_serialized (LP.serialize_nlist (glen) s) sl #(pm') l' ** pure (
-    Ghost.reveal c.glen == glen /\
-    c.s == sl /\
-    U64.v c.len <= Ghost.reveal c.glen /\
-    l == fst (List.Tot.splitAt (U64.v c.len) l') /\
-    pm' == pm *. c.p +. pm *. c.p
-  )
+  LP.pts_to_serialized (LP.serialize_nlist (glen) s) sl #(pm') l' ** 
+  pure (Ghost.reveal c.glen == glen) **
+  pure (c.s == sl) **
+  pure (U64.v c.len <= Ghost.reveal c.glen) **
+  pure (l == fst (List.Tot.splitAt (U64.v c.len) l')) **
+  pure (pm' == pm *. c.p +. pm *. c.p)
 ensures
   cbor_raw_serialized_iterator_match s pm c l **
   trade

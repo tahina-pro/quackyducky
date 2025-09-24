@@ -222,6 +222,7 @@ ensures
 noeq
 type cbor_raw_serialized_iterator = {
   s: A.ptr U8.t;
+  slen: SZ.t;
   p: perm;
   glen: Ghost.erased nat;
   len: U64.t;
