@@ -1,5 +1,6 @@
 module CBOR.Pulse.Raw.Format.Match.C
 open CBOR.Spec.Raw.Base
+open CBOR.Pulse.Raw.Util
 open Pulse.Lib.Pervasives
 
 module U8 = FStar.UInt8
@@ -176,3 +177,27 @@ val cbor_match_serialized_payload_tagged_copy
         (cbor_match_serialized_payload_tagged a' len 1.0R r)
         (exists* v' . pts_to a' v' ** pure (Seq.length v' == SZ.v len))
     )
+
+let cbor_match_serialized_array
+  (c: cbor_serialized)
+  (p: perm)
+  (r: raw_data_item { Array? r })
+: Tot slprop
+= cbor_match_serialized_payload_array c.cbor_serialized_ptr c.cbor_serialized_len (p `perm_mul` c.cbor_serialized_perm)  (Array?.v r) **
+  pure (c.cbor_serialized_header == Array?.len r)
+
+let cbor_match_serialized_map
+  (c: cbor_serialized)
+  (p: perm)
+  (r: raw_data_item { Map? r })
+: Tot slprop
+= cbor_match_serialized_payload_map c.cbor_serialized_ptr c.cbor_serialized_len (p `perm_mul` c.cbor_serialized_perm) (Map?.v r) **
+  pure (c.cbor_serialized_header == Map?.len r)
+
+let cbor_match_serialized_tagged
+  (c: cbor_serialized)
+  (p: perm)
+  (r: raw_data_item { Tagged? r })
+: Tot slprop
+= cbor_match_serialized_payload_tagged c.cbor_serialized_ptr c.cbor_serialized_len (p `perm_mul` c.cbor_serialized_perm) (Tagged?.v r) **
+  pure (c.cbor_serialized_header == Tagged?.tag r)
