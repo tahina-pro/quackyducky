@@ -56,13 +56,15 @@ ensures
        )
        (cbor_raw_arrayptr_iterator_match elt_match pm c l) **
     pure (
-      List.Tot.length l == U64.v c.len
+      List.Tot.length l == U64.v c.len /\
+      Seq.length sq == U64.v c.len
     )
 {
   unfold (cbor_raw_arrayptr_iterator_match elt_match pm c l);
   with sq . assert (pts_to c.s #(pm `perm_mul` c.slice_perm) sq **
      PM.seq_list_match sq l (elt_match (pm `perm_mul` c.payload_perm))
   );
+  PM.seq_list_match_length (elt_match (pm `perm_mul` c.payload_perm)) sq l;
   intro
     (Trade.trade
       (pts_to c.s #(pm `perm_mul` c.slice_perm) sq **
@@ -93,12 +95,10 @@ fn cbor_raw_arrayptr_iterator_match_fold
 requires
   pts_to a #pm1 sq **
   PM.seq_list_match sq l (elt_match pm2) **
-  pure (
-    c'.s == a /\
-    c'.slice_perm == (pm1 /. 2.0R) /. pm /\
-    c'.payload_perm == pm2 /. pm /\
-    List.Tot.length l == U64.v c'.len
-  )
+  pure (c'.s == a) **
+  pure (c'.slice_perm == (pm1 /. 2.0R) /. pm) **
+  pure (c'.payload_perm == pm2 /. pm) **
+  pure (List.Tot.length l == U64.v c'.len)
 ensures
   cbor_raw_arrayptr_iterator_match elt_match pm c' l **
      trade
@@ -216,5 +216,315 @@ ensures
   };
   SliceIter.cbor_raw_slice_iterator_match_fold_gen elt_match a _pm1 sq _pm2 l res pm;
   Trade.trans (SliceIter.cbor_raw_slice_iterator_match elt_match pm res l) _ _;
+  res
+}
+
+noeq
+type cbor_raw_serialized_iterator = {
+  s: A.ptr U8.t;
+  p: perm;
+  glen: Ghost.erased nat;
+  len: U64.t;
+}
+
+inline_for_extraction
+let cbor_raw_serialized_iterator_arrayptr_to_slice_t
+  (#elt_high: Type0)
+  (ser_match_arrayptr: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (ser_match_slice: perm -> SliceIter.cbor_raw_serialized_iterator -> list elt_high -> slprop)
+=
+  (a: cbor_raw_serialized_iterator) ->
+  (#pm: perm) ->
+  (#l: Ghost.erased (list elt_high)) ->
+  stt SliceIter.cbor_raw_serialized_iterator
+  (ser_match_arrayptr pm a l)
+  (fun res -> ser_match_slice pm res l **
+    Trade.trade
+      (ser_match_slice pm res l)
+      (ser_match_arrayptr pm a l)
+  )
+
+inline_for_extraction
+let cbor_raw_serialized_iterator_slice_to_arrayptr_t
+  (#elt_high: Type0)
+  (ser_match_arrayptr: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (ser_match_slice: perm -> SliceIter.cbor_raw_serialized_iterator -> list elt_high -> slprop)
+=
+  (a: SliceIter.cbor_raw_serialized_iterator) ->
+  (#pm: perm) ->
+  (#l: Ghost.erased (list elt_high)) ->
+  stt cbor_raw_serialized_iterator
+  (ser_match_slice pm a l)
+  (fun res -> ser_match_arrayptr pm res l **
+    Trade.trade
+      (ser_match_arrayptr pm res l)
+      (ser_match_slice pm a l)
+  )
+
+noeq
+type cbor_raw_iterator (elt: Type0) =
+| CBOR_Raw_Iterator_ArrayPtr of cbor_raw_arrayptr_iterator elt
+| CBOR_Raw_Iterator_Serialized of cbor_raw_serialized_iterator
+
+let cbor_raw_iterator_match
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (pm: perm)
+  (c: cbor_raw_iterator elt_low)
+  (l: list elt_high)
+: Tot slprop
+= match c with
+  | CBOR_Raw_Iterator_ArrayPtr c' -> cbor_raw_arrayptr_iterator_match elt_match pm c' l
+  | CBOR_Raw_Iterator_Serialized c' -> ser_match pm c' l
+
+#restart-solver
+
+let a_b_2_a (a b: perm) : Lemma
+  (perm_mul a b /. 2.0R /. a == b /. 2.0R)
+= ()
+
+#restart-solver
+
+let a_b_a (a b: perm) : Lemma
+  (perm_mul a b /. a == b)
+= ()
+
+inline_for_extraction
+fn cbor_raw_iterator_match_unfold
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (#ser_match_arrayptr: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (#ser_match_slice: perm -> SliceIter.cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (ser_match_arrayptr_to_slice: cbor_raw_serialized_iterator_arrayptr_to_slice_t ser_match_arrayptr ser_match_slice)
+  (pm: perm)
+  (c: cbor_raw_iterator elt_low)
+  (l: Ghost.erased (list elt_high))
+requires
+  cbor_raw_iterator_match elt_match ser_match_arrayptr pm c l
+returns res: SliceIter.cbor_raw_iterator elt_low
+ensures
+  SliceIter.cbor_raw_iterator_match elt_match ser_match_slice pm res l **
+  Trade.trade
+    (SliceIter.cbor_raw_iterator_match elt_match ser_match_slice pm res l)
+    (cbor_raw_iterator_match elt_match ser_match_arrayptr pm c l)
+{
+  match c {
+    CBOR_Raw_Iterator_ArrayPtr c' -> {
+      Trade.rewrite_with_trade
+        (cbor_raw_iterator_match elt_match ser_match_arrayptr pm c l)
+        (cbor_raw_arrayptr_iterator_match elt_match pm c' l);
+      cbor_raw_arrayptr_iterator_match_unfold elt_match pm c' l;
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match_arrayptr pm c l);
+      assume (pure (SZ.fits_u64));
+      let s = S.arrayptr_to_slice_intro_trade c'.s (SZ.uint64_to_sizet c'.len);
+      Trade.trans_hyp_l _ _ _ _;
+      S.pts_to_len s;
+      let s' : SliceIter.cbor_raw_slice_iterator elt_low = {
+        s = s;
+        sq = ();
+        slice_perm = c'.slice_perm /. 2.0R;
+        payload_perm = c'.payload_perm;
+      };
+      a_b_2_a pm c'.slice_perm;
+      a_b_a pm c'.payload_perm;
+      SliceIter.cbor_raw_slice_iterator_match_fold_gen elt_match s _ _ _ l s' pm;
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match_arrayptr pm c l);
+      let res : SliceIter.cbor_raw_iterator elt_low = SliceIter.CBOR_Raw_Iterator_Slice s';
+      Trade.rewrite_with_trade
+        (SliceIter.cbor_raw_slice_iterator_match elt_match pm s' l)
+        (SliceIter.cbor_raw_iterator_match elt_match ser_match_slice pm res l);
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match_arrayptr pm c l);
+      res
+    }
+    CBOR_Raw_Iterator_Serialized c' -> {
+      Trade.rewrite_with_trade
+        (cbor_raw_iterator_match elt_match ser_match_arrayptr pm c l)
+        (ser_match_arrayptr pm c' l);
+      let s = ser_match_arrayptr_to_slice c';
+      Trade.trans _ (ser_match_arrayptr pm c' l) _;
+      let res : SliceIter.cbor_raw_iterator elt_low = SliceIter.CBOR_Raw_Iterator_Serialized s;
+      Trade.rewrite_with_trade
+        (ser_match_slice pm s l)
+        (SliceIter.cbor_raw_iterator_match elt_match ser_match_slice pm res l);
+      Trade.trans _ (ser_match_slice pm s l) _;
+      res
+    }
+  }
+}
+
+#restart-solver
+
+inline_for_extraction
+fn cbor_raw_iterator_match_fold
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (#ser_match_arrayptr: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (#ser_match_slice: perm -> SliceIter.cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (ser_match_slice_to_arrayptr: cbor_raw_serialized_iterator_slice_to_arrayptr_t ser_match_arrayptr ser_match_slice)
+  (pm: perm)
+  (c: SliceIter.cbor_raw_iterator elt_low)
+  (l: Ghost.erased (list elt_high))
+requires
+  SliceIter.cbor_raw_iterator_match elt_match ser_match_slice pm c l
+returns res: cbor_raw_iterator elt_low
+ensures
+  cbor_raw_iterator_match elt_match ser_match_arrayptr pm res l **
+  Trade.trade
+    (cbor_raw_iterator_match elt_match ser_match_arrayptr pm res l)
+    (SliceIter.cbor_raw_iterator_match elt_match ser_match_slice pm c l)
+{
+  match c {
+    SliceIter.CBOR_Raw_Iterator_Slice c' -> {
+      Trade.rewrite_with_trade
+        (SliceIter.cbor_raw_iterator_match elt_match ser_match_slice pm c l)
+        (SliceIter.cbor_raw_slice_iterator_match elt_match pm c' l);
+      SliceIter.cbor_raw_slice_iterator_match_unfold elt_match pm c' l;
+      Trade.trans _ _ (SliceIter.cbor_raw_iterator_match elt_match ser_match_slice pm c l);
+      S.pts_to_len c'.s;
+      assume (pure (SZ.fits_u64));
+      let s = S.slice_to_arrayptr_intro_trade c'.s;
+      Trade.trans_hyp_l _ _ _ _;
+      let s' : cbor_raw_arrayptr_iterator elt_low = {
+        s = s;
+        len = SZ.sizet_to_uint64 (S.len c'.s);
+        slice_perm = c'.slice_perm /. 2.0R;
+        payload_perm = c'.payload_perm;
+      };
+      a_b_2_a pm c'.slice_perm;
+      a_b_a pm c'.payload_perm;
+      cbor_raw_arrayptr_iterator_match_fold elt_match s _ _ _ l s' pm;
+      Trade.trans _ _ (SliceIter.cbor_raw_iterator_match elt_match ser_match_slice pm c l);
+      let res : cbor_raw_iterator elt_low = CBOR_Raw_Iterator_ArrayPtr s';
+      Trade.rewrite_with_trade
+        (cbor_raw_arrayptr_iterator_match elt_match pm s' l)
+        (cbor_raw_iterator_match elt_match ser_match_arrayptr pm res l);
+      Trade.trans _ _ (SliceIter.cbor_raw_iterator_match elt_match ser_match_slice pm c l);
+      res
+    }
+    SliceIter.CBOR_Raw_Iterator_Serialized c' -> {
+      Trade.rewrite_with_trade
+        (SliceIter.cbor_raw_iterator_match elt_match ser_match_slice pm c l)
+        (ser_match_slice pm c' l);
+      let s = ser_match_slice_to_arrayptr c';
+      Trade.trans _ (ser_match_slice pm c' l) _;
+      let res : cbor_raw_iterator elt_low = CBOR_Raw_Iterator_Serialized s;
+      Trade.rewrite_with_trade
+        (ser_match_arrayptr pm s l)
+        (cbor_raw_iterator_match elt_match ser_match_arrayptr pm res l);
+      Trade.trans _ (ser_match_arrayptr pm s l) _;
+      res
+    }
+  }
+}
+
+inline_for_extraction
+fn cbor_raw_iterator_init_from_slice
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (#ser_match_arrayptr: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (#ser_match_slice: perm -> SliceIter.cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (ser_match_slice_to_arrayptr: cbor_raw_serialized_iterator_slice_to_arrayptr_t ser_match_arrayptr ser_match_slice) // unused
+: SliceIter.cbor_raw_iterator_init_from_slice_t #_ #_ #_ elt_match (cbor_raw_iterator_match elt_match ser_match_arrayptr)
+=
+  (a: S.slice elt_low)
+  (#pm: perm)
+  (#pm': perm)
+  (#l: Ghost.erased (list elt_high))
+  (#sq: Ghost.erased (Seq.seq elt_low))
+{
+  let i = SliceIter.cbor_raw_iterator_init_from_slice elt_match ser_match_slice a;
+  let res = cbor_raw_iterator_match_fold elt_match ser_match_slice_to_arrayptr _ i _;
+  Trade.trans (cbor_raw_iterator_match elt_match ser_match_arrayptr _ res l) _ _;
+  res
+}
+
+inline_for_extraction
+fn cbor_raw_iterator_is_empty
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (#ser_match_arrayptr: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (#ser_match_slice: perm -> SliceIter.cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (ser_match_arrayptr_to_slice: cbor_raw_serialized_iterator_arrayptr_to_slice_t ser_match_arrayptr ser_match_slice)
+  (phi: SliceIter.cbor_raw_serialized_iterator_is_empty_t ser_match_slice)
+: SliceIter.cbor_raw_iterator_is_empty_t #_ #_ (cbor_raw_iterator_match elt_match ser_match_arrayptr)
+=
+  (c: cbor_raw_iterator elt_low)
+  (#pm: perm)
+  (#r: Ghost.erased (list elt_high))
+{
+  let c' = cbor_raw_iterator_match_unfold elt_match ser_match_arrayptr_to_slice _ c _;
+  let res = SliceIter.cbor_raw_iterator_is_empty elt_match ser_match_slice phi c';
+  Trade.elim _ _;
+  res
+}
+
+inline_for_extraction
+fn cbor_raw_iterator_length
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (#ser_match_arrayptr: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (#ser_match_slice: perm -> SliceIter.cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (ser_match_arrayptr_to_slice: cbor_raw_serialized_iterator_arrayptr_to_slice_t ser_match_arrayptr ser_match_slice)
+  (phi: SliceIter.cbor_raw_serialized_iterator_length_t ser_match_slice)
+: SliceIter.cbor_raw_iterator_length_t #_ #_ (cbor_raw_iterator_match elt_match ser_match_arrayptr)
+=
+  (c: cbor_raw_iterator elt_low)
+  (#pm: perm)
+  (#r: Ghost.erased (list elt_high))
+{
+  let c' = cbor_raw_iterator_match_unfold elt_match ser_match_arrayptr_to_slice _ c _;
+  let res = SliceIter.cbor_raw_iterator_length elt_match ser_match_slice phi c';
+  Trade.elim _ _;
+  res
+}
+
+inline_for_extraction
+fn cbor_raw_iterator_next
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (#ser_match_arrayptr: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (#ser_match_slice: perm -> SliceIter.cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (ser_match_arrayptr_to_slice: cbor_raw_serialized_iterator_arrayptr_to_slice_t ser_match_arrayptr ser_match_slice)
+  (ser_match_slice_to_arrayptr: cbor_raw_serialized_iterator_slice_to_arrayptr_t ser_match_arrayptr ser_match_slice)
+  (phi: SliceIter.cbor_raw_serialized_iterator_next_t elt_match ser_match_slice)
+: SliceIter.cbor_raw_iterator_next_t #_ #_ #_ elt_match (cbor_raw_iterator_match elt_match ser_match_arrayptr)
+=
+  (pi: R.ref (cbor_raw_iterator elt_low))
+  (#pm: perm)
+  (#i1: Ghost.erased (cbor_raw_iterator elt_low))
+  (#l: Ghost.erased (list elt_high))
+{
+  let i = !pi;
+  let mut pi' = cbor_raw_iterator_match_unfold elt_match ser_match_arrayptr_to_slice _ i _;
+  let res = SliceIter.cbor_raw_iterator_next elt_match ser_match_slice phi pi';
+  Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match_arrayptr pm i1 l);
+  let i' = !pi';
+  pi := cbor_raw_iterator_match_fold elt_match ser_match_slice_to_arrayptr _ i' _;
+  Trade.trans_hyp_r _ _ _ _;
+  res
+}
+
+inline_for_extraction
+fn cbor_raw_iterator_truncate
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (#ser_match_arrayptr: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (#ser_match_slice: perm -> SliceIter.cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (ser_match_arrayptr_to_slice: cbor_raw_serialized_iterator_arrayptr_to_slice_t ser_match_arrayptr ser_match_slice)
+  (ser_match_slice_to_arrayptr: cbor_raw_serialized_iterator_slice_to_arrayptr_t ser_match_arrayptr ser_match_slice)
+  (phi: SliceIter.cbor_raw_serialized_iterator_truncate_t ser_match_slice)
+: SliceIter.cbor_raw_iterator_truncate_t #_ #_ (cbor_raw_iterator_match elt_match ser_match_arrayptr)
+=
+  (c: cbor_raw_iterator elt_low)
+  (len: U64.t)
+  (#pm: perm)
+  (#r: Ghost.erased (list elt_high))
+{
+  let s = cbor_raw_iterator_match_unfold elt_match ser_match_arrayptr_to_slice _ c _;
+  let s' = SliceIter.cbor_raw_iterator_truncate elt_match ser_match_slice phi s len;
+  Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match_arrayptr pm c r);
+  let res = cbor_raw_iterator_match_fold elt_match ser_match_slice_to_arrayptr _ s' _;
+  Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match_arrayptr pm c r);
   res
 }

@@ -50,12 +50,18 @@ ensures
        (pts_to c.s #(pm `perm_mul` c.slice_perm) sq **
          PM.seq_list_match sq l (elt_match (pm `perm_mul` c.payload_perm))
        )
-       (cbor_raw_slice_iterator_match elt_match pm c l)
+       (cbor_raw_slice_iterator_match elt_match pm c l) **
+     pure (
+      SZ.v (S.len c.s) == Seq.length sq /\
+      Seq.length sq == List.Tot.length l
+     )
 {
   unfold (cbor_raw_slice_iterator_match elt_match pm c l);
+  S.pts_to_len c.s;
   with sq . assert (pts_to c.s #(pm `perm_mul` c.slice_perm) sq **
      PM.seq_list_match sq l (elt_match (pm `perm_mul` c.payload_perm))
   );
+  PM.seq_list_match_length (elt_match (pm `perm_mul` c.payload_perm)) sq l;
   intro
     (Trade.trade
       (pts_to c.s #(pm `perm_mul` c.slice_perm) sq **
@@ -385,27 +391,44 @@ let cbor_raw_iterator_match
   | CBOR_Raw_Iterator_Serialized c' -> ser_match pm c' l
 
 inline_for_extraction
+let cbor_raw_iterator_init_from_slice_t
+  (#cbor_raw_iterator: Type0)
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (cbor_raw_iterator_match: perm -> cbor_raw_iterator -> list elt_high -> slprop)
+=
+  (a: S.slice elt_low) ->
+  (#pm: perm) ->
+  (#pm': perm) ->
+  (#l: Ghost.erased (list elt_high)) ->
+  (#sq: Ghost.erased (Seq.seq elt_low)) ->
+  stt cbor_raw_iterator
+  (requires
+  pts_to a #pm sq **
+  PM.seq_list_match sq l (elt_match pm') **
+  pure (FStar.UInt.fits (SZ.v (S.len a)) U64.n)
+  )
+  (ensures fun res -> exists* p .
+  cbor_raw_iterator_match p res l **
+     trade
+       (cbor_raw_iterator_match p res l)
+       (pts_to a #pm sq **
+         PM.seq_list_match sq l (elt_match pm')
+       )
+  )
+
+inline_for_extraction
 fn cbor_raw_iterator_init_from_slice
   (#elt_low #elt_high: Type0)
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+: cbor_raw_iterator_init_from_slice_t #_ #_ #_ elt_match (cbor_raw_iterator_match elt_match ser_match)
+=
   (a: S.slice elt_low)
   (#pm: perm)
   (#pm': perm)
   (#l: Ghost.erased (list elt_high))
   (#sq: Ghost.erased (Seq.seq elt_low))
-requires
-  pts_to a #pm sq **
-  PM.seq_list_match sq l (elt_match pm') **
-  pure (FStar.UInt.fits (SZ.v (S.len a)) U64.n)
-returns res: cbor_raw_iterator elt_low
-ensures exists* p .
-  cbor_raw_iterator_match elt_match ser_match p res l **
-     trade
-       (cbor_raw_iterator_match elt_match ser_match p res l)
-       (pts_to a #pm sq **
-         PM.seq_list_match sq l (elt_match pm')
-       )
 {
   let i = cbor_raw_slice_iterator_init elt_match a;
   with p . assert (cbor_raw_slice_iterator_match elt_match p i l);
@@ -418,18 +441,26 @@ ensures exists* p .
 }
 
 inline_for_extraction
-let cbor_raw_serialized_iterator_is_empty_t
-  (#elt_high: Type0)
-  (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
-=
-  (c: cbor_raw_serialized_iterator) ->
+let cbor_raw_iterator_is_empty_t
+  (#elt_high #cbor_raw_iterator: Type0)
+  (cbor_raw_iterator_match: perm -> cbor_raw_iterator -> list elt_high -> slprop)
+= (c: cbor_raw_iterator) ->
   (#pm: perm) ->
   (#r: Ghost.erased (list elt_high)) ->
   stt bool
-    (ser_match pm c r)
-    (fun res -> ser_match pm c r **
-      pure (res == Nil? r)
-    )
+  (requires
+    cbor_raw_iterator_match pm c r
+  )
+  (ensures fun res ->
+    cbor_raw_iterator_match pm c r **
+    pure (res == Nil? r)
+  )
+
+inline_for_extraction
+let cbor_raw_serialized_iterator_is_empty_t
+  (#elt_high: Type0)
+  (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+= cbor_raw_iterator_is_empty_t ser_match
 
 inline_for_extraction
 fn cbor_raw_iterator_is_empty
@@ -437,15 +468,11 @@ fn cbor_raw_iterator_is_empty
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
   (phi: cbor_raw_serialized_iterator_is_empty_t ser_match)
+: cbor_raw_iterator_is_empty_t #_ #_ (cbor_raw_iterator_match elt_match ser_match)
+=
   (c: cbor_raw_iterator elt_low)
   (#pm: perm)
   (#r: Ghost.erased (list elt_high))
-requires
-    cbor_raw_iterator_match elt_match ser_match pm c r
-returns res: bool
-ensures
-    cbor_raw_iterator_match elt_match ser_match pm c r **
-    pure (res == Nil? r)
 {
   match c {
     CBOR_Raw_Iterator_Slice c' -> {
@@ -468,18 +495,27 @@ ensures
 }
 
 inline_for_extraction
-let cbor_raw_serialized_iterator_length_t
-  (#elt_high: Type0)
-  (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+let cbor_raw_iterator_length_t
+  (#elt_high #cbor_raw_iterator: Type0)
+  (cbor_raw_iterator_match: perm -> cbor_raw_iterator -> list elt_high -> slprop)
 =
-  (c: cbor_raw_serialized_iterator) ->
+  (c: cbor_raw_iterator) ->
   (#pm: perm) ->
   (#r: Ghost.erased (list elt_high)) ->
   stt U64.t
-    (ser_match pm c r)
-    (fun res -> ser_match pm c r **
-      pure ((U64.v res <: nat) == List.Tot.length r)
-    )
+  (requires
+    cbor_raw_iterator_match pm c r
+  )
+  (ensures fun res ->
+    cbor_raw_iterator_match pm c r **
+    pure ((U64.v res <: nat) == List.Tot.length r)
+  )
+
+inline_for_extraction
+let cbor_raw_serialized_iterator_length_t
+  (#elt_high: Type0)
+  (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+= cbor_raw_iterator_length_t ser_match
 
 inline_for_extraction
 fn cbor_raw_iterator_length
@@ -487,15 +523,11 @@ fn cbor_raw_iterator_length
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
   (phi: cbor_raw_serialized_iterator_length_t ser_match)
+: cbor_raw_iterator_length_t #_ #_ (cbor_raw_iterator_match elt_match ser_match)
+=
   (c: cbor_raw_iterator elt_low)
   (#pm: perm)
   (#r: Ghost.erased (list elt_high))
-requires
-    cbor_raw_iterator_match elt_match ser_match pm c r
-returns res: U64.t
-ensures
-    cbor_raw_iterator_match elt_match ser_match pm c r **
-    pure ((U64.v res <: nat) == List.Tot.length r)
 {
   match c {
     CBOR_Raw_Iterator_Slice c' -> {
@@ -518,7 +550,34 @@ ensures
 }
 
 inline_for_extraction
-let cbor_raw_serialized_iterator_next_t
+let cbor_raw_iterator_next_t
+  (#cbor_raw_iterator: Type0)
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (cbor_raw_iterator_match: perm -> cbor_raw_iterator -> list elt_high -> slprop)
+=
+  (pi: R.ref (cbor_raw_iterator)) ->
+  (#pm: perm) ->
+  (#i: Ghost.erased cbor_raw_iterator) ->
+  (#l: Ghost.erased (list elt_high)) ->
+  stt elt_low
+  (
+    R.pts_to pi i **
+    cbor_raw_iterator_match pm i l **
+    pure (Cons? l)
+  )
+  (fun res -> exists* a p i' q .
+    elt_match p res a **
+    R.pts_to pi i' **
+    cbor_raw_iterator_match pm i' q **
+    trade
+      (elt_match p res a ** cbor_raw_iterator_match pm i' q)
+      (cbor_raw_iterator_match pm i l) **
+    pure (Ghost.reveal l == a :: q)
+  )
+
+inline_for_extraction
+let cbor_raw_serialized_iterator_next_t // TODO: use cbor_raw_iterator_next_t, maybe at the cost of an extra local mutable variable
   (#elt_low #elt_high: Type0)
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
@@ -561,24 +620,12 @@ fn cbor_raw_iterator_next
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
   (phi: cbor_raw_serialized_iterator_next_t elt_match ser_match)
+: cbor_raw_iterator_next_t #_ #_ #_ elt_match (cbor_raw_iterator_match elt_match ser_match)
+=
   (pi: R.ref (cbor_raw_iterator elt_low))
   (#pm: perm)
-  (#i0: Ghost.erased (cbor_raw_iterator elt_low))
+  (#i1: Ghost.erased (cbor_raw_iterator elt_low))
   (#l: Ghost.erased (list elt_high))
-requires
-    R.pts_to pi i0 **
-    cbor_raw_iterator_match elt_match ser_match pm i0 l **
-    pure (Cons? l)
-returns res: elt_low
-ensures
-  exists* a p i' q .
-    elt_match p res a **
-    R.pts_to pi i' **
-    cbor_raw_iterator_match elt_match ser_match pm i' q **
-    trade
-      (elt_match p res a ** cbor_raw_iterator_match elt_match ser_match pm i' q)
-      (cbor_raw_iterator_match elt_match ser_match pm i0 l) **
-    pure (Ghost.reveal l == a :: q)
 {
   let i0 = !pi;
   match i0 {
@@ -626,24 +673,31 @@ ensures
 }
 
 inline_for_extraction
-let cbor_raw_serialized_iterator_truncate_t
-  (#elt_high: Type0)
-  (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+let cbor_raw_iterator_truncate_t
+  (#elt_high #cbor_raw_iterator: Type0)
+  (cbor_raw_iterator_match: perm -> cbor_raw_iterator -> list elt_high -> slprop)
 =
-  (c: cbor_raw_serialized_iterator) ->
+  (c: cbor_raw_iterator) ->
   (len: U64.t) ->
   (#pm: perm) ->
   (#r: Ghost.erased (list elt_high)) ->
-  stt cbor_raw_serialized_iterator
-    (ser_match pm c r **
-      pure (U64.v len <= List.Tot.length r)
-    )
-    (fun res ->
-      ser_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)) **
-      Trade.trade
-        (ser_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)))
-        (ser_match pm c r)
-    )
+  stt cbor_raw_iterator
+  (requires
+    cbor_raw_iterator_match pm c r **
+    pure (U64.v len <= List.Tot.length r)
+  )
+  (ensures fun res ->
+    cbor_raw_iterator_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)) **
+    Trade.trade
+      (cbor_raw_iterator_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)))
+      (cbor_raw_iterator_match pm c r)
+  )
+
+inline_for_extraction
+let cbor_raw_serialized_iterator_truncate_t
+  (#elt_high: Type0)
+  (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+= cbor_raw_iterator_truncate_t ser_match
 
 inline_for_extraction
 fn cbor_raw_iterator_truncate
@@ -651,19 +705,12 @@ fn cbor_raw_iterator_truncate
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
   (phi: cbor_raw_serialized_iterator_truncate_t ser_match)
+: cbor_raw_iterator_truncate_t #_ #_ (cbor_raw_iterator_match elt_match ser_match)
+=
   (c: cbor_raw_iterator elt_low)
   (len: U64.t)
   (#pm: perm)
   (#r: Ghost.erased (list elt_high))
-requires
-    cbor_raw_iterator_match elt_match ser_match pm c r **
-    pure (U64.v len <= List.Tot.length r)
-returns res: cbor_raw_iterator elt_low
-ensures
-    cbor_raw_iterator_match elt_match ser_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)) **
-    Trade.trade
-      (cbor_raw_iterator_match elt_match ser_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)))
-      (cbor_raw_iterator_match elt_match ser_match pm c r)
 {
   match c {
     CBOR_Raw_Iterator_Slice c' -> {
