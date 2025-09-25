@@ -185,6 +185,116 @@ fn cbor_match_cases
   }
 }
 
+noeq
+type cbor_serialized_raw
+  (cbor_string: Type0)
+  (cbor_serialized: Type0)
+: Type0
+=
+| CBOR_SerializedCase_Int: v: cbor_int -> cbor_serialized_raw cbor_string cbor_serialized
+| CBOR_SerializedCase_Simple: v: simple_value -> cbor_serialized_raw cbor_string cbor_serialized
+| CBOR_SerializedCase_String: v: cbor_string -> cbor_serialized_raw cbor_string cbor_serialized
+| CBOR_SerializedCase_Serialized_Tagged: v: cbor_serialized -> cbor_serialized_raw cbor_string cbor_serialized
+| CBOR_SerializedCase_Serialized_Array: v: cbor_serialized -> cbor_serialized_raw cbor_string cbor_serialized
+| CBOR_SerializedCase_Serialized_Map: v: cbor_serialized -> cbor_serialized_raw cbor_string cbor_serialized
+
+let cbor_serialized_raw_match
+  (#cbor_string: Type0)
+  (#cbor_serialized: Type0)
+  (cbor_match_string: cbor_string -> perm -> (r: raw_data_item { String? r}) -> slprop)
+  (cbor_match_serialized_array: (cbor_serialized -> perm -> (r: raw_data_item { Array? r}) -> slprop))
+  (cbor_match_serialized_map: (cbor_serialized -> perm -> (r: raw_data_item { Map? r}) -> slprop))
+  (cbor_match_serialized_tagged: (cbor_serialized -> perm -> (r: raw_data_item { Tagged? r}) -> slprop))
+  (p: perm)
+  (c: cbor_serialized_raw cbor_string cbor_serialized)
+  (r: raw_data_item)
+: Tot slprop
+  (decreases r)
+= match c, r with
+  | CBOR_SerializedCase_Simple v, Simple _ -> cbor_match_simple v r
+  | CBOR_SerializedCase_Int v, Int64 _ _ -> cbor_match_int v r
+  | CBOR_SerializedCase_String v, String _ _ _ -> cbor_match_string v p r
+  | CBOR_SerializedCase_Serialized_Array v, Array _ _ -> cbor_match_serialized_array v p r
+  | CBOR_SerializedCase_Serialized_Map v, Map _ _ -> cbor_match_serialized_map v p r
+  | CBOR_SerializedCase_Serialized_Tagged v, Tagged _ _ -> cbor_match_serialized_tagged v p r
+  | _ -> pure False
+
+let cbor_serialized_raw_match_cases_pred
+  (#cbor_string: Type0)
+  (#cbor_serialized: Type0)
+  (c: cbor_serialized_raw cbor_string cbor_serialized)
+  (r: raw_data_item)
+: Tot bool
+= 
+    match c, r with
+    | CBOR_SerializedCase_Simple _, Simple _
+    | CBOR_SerializedCase_Int _, Int64 _ _
+    | CBOR_SerializedCase_String _, String _ _ _
+    | CBOR_SerializedCase_Serialized_Array _, Array _ _
+    | CBOR_SerializedCase_Serialized_Map _, Map _ _
+    | CBOR_SerializedCase_Serialized_Tagged _, Tagged _ _ ->
+      true
+    | _ -> false
+
+ghost
+fn cbor_serialized_raw_match_cases
+  (#cbor_string: Type0)
+  (#cbor_serialized: Type0)
+  (cbor_match_string: cbor_string -> perm -> (r: raw_data_item { String? r}) -> slprop)
+  (cbor_match_serialized_array: (cbor_serialized -> perm -> (r: raw_data_item { Array? r}) -> slprop))
+  (cbor_match_serialized_map: (cbor_serialized -> perm -> (r: raw_data_item { Map? r}) -> slprop))
+  (cbor_match_serialized_tagged: (cbor_serialized -> perm -> (r: raw_data_item { Tagged? r}) -> slprop))
+  (c: cbor_serialized_raw cbor_string cbor_serialized)
+  (#pm: perm)
+  (#r: raw_data_item)
+  requires cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm c r
+  ensures cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm c r ** pure (cbor_serialized_raw_match_cases_pred c r)
+{
+  if cbor_serialized_raw_match_cases_pred c r {
+    ()
+  } else {
+    rewrite (cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm c r) as (pure False);
+    rewrite emp as (cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm c r)
+  }
+}
+
+inline_for_extraction
+fn cbor_match_intro_serialized_raw
+  (#cbor_string: Type0)
+  (#cbor_array: (([@@@strictly_positive] t: Type0) -> Type0))
+  (#cbor_map: (([@@@strictly_positive] t: Type0) -> Type0))
+  (#cbor_serialized: Type0)
+  (cbor_match_string: cbor_string -> perm -> (r: raw_data_item { String? r}) -> slprop)
+  (cbor_match_array: (cbor_array (cbor_raw cbor_string cbor_array cbor_map cbor_serialized) -> perm -> (r: raw_data_item {Array? r}) -> (perm -> cbor_raw cbor_string cbor_array cbor_map cbor_serialized -> (r': raw_data_item {r' << r}) -> slprop) -> slprop))
+  (cbor_match_map0: (cbor_map (cbor_raw_map_entry cbor_string cbor_array cbor_map cbor_serialized) -> perm -> (r: raw_data_item { Map? r}) -> (perm -> cbor_raw_map_entry cbor_string cbor_array cbor_map cbor_serialized -> (r': (raw_data_item & raw_data_item) {r' << r}) -> slprop) -> slprop))
+  (cbor_match_serialized_array: (cbor_serialized -> perm -> (r: raw_data_item { Array? r}) -> slprop))
+  (cbor_match_serialized_map: (cbor_serialized -> perm -> (r: raw_data_item { Map? r}) -> slprop))
+  (cbor_match_serialized_tagged: (cbor_serialized -> perm -> (r: raw_data_item { Tagged? r}) -> slprop))
+  (c: cbor_serialized_raw cbor_string cbor_serialized)
+  (#pm: perm)
+  (#r: Ghost.erased raw_data_item)
+requires
+  cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm c r
+returns res: cbor_raw cbor_string cbor_array cbor_map cbor_serialized
+ensures
+  cbor_match cbor_match_string cbor_match_array cbor_match_map0 cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm res r **
+  Trade.trade
+    (cbor_match cbor_match_string cbor_match_array cbor_match_map0 cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm res r)
+    (cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm c r)
+{
+  let res : cbor_raw cbor_string cbor_array cbor_map cbor_serialized = (match c with
+  | CBOR_SerializedCase_Int i -> CBOR_Case_Int i
+  | CBOR_SerializedCase_Simple s -> CBOR_Case_Simple s
+  | CBOR_SerializedCase_String s -> CBOR_Case_String s
+  | CBOR_SerializedCase_Serialized_Array s -> CBOR_Case_Serialized_Array s
+  | CBOR_SerializedCase_Serialized_Map s -> CBOR_Case_Serialized_Map s
+  | CBOR_SerializedCase_Serialized_Tagged s -> CBOR_Case_Serialized_Tagged s );
+  Trade.rewrite_with_trade
+    (cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm c r)
+    (cbor_match cbor_match_string cbor_match_array cbor_match_map0 cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm res r);
+  res
+}
+
 ghost
 fn cbor_match_int_intro_trade_aux
   (q: slprop)
@@ -243,6 +353,30 @@ fn cbor_match_int_intro
   fold (cbor_match cbor_match_string cbor_match_array cbor_match_map0 cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R (CBOR_Case_Int resi) (Int64 typ i));
   res
 }
+
+inline_for_extraction
+fn cbor_serialized_raw_match_int_intro_trade
+  (#cbor_string: Type0)
+  (#cbor_serialized: Type0)
+  (cbor_match_string: cbor_string -> perm -> (r: raw_data_item { String? r}) -> slprop)
+  (cbor_match_serialized_array: (cbor_serialized -> perm -> (r: raw_data_item { Array? r}) -> slprop))
+  (cbor_match_serialized_map: (cbor_serialized -> perm -> (r: raw_data_item { Map? r}) -> slprop))
+  (cbor_match_serialized_tagged: (cbor_serialized -> perm -> (r: raw_data_item { Tagged? r}) -> slprop))
+  (q: slprop)
+  (typ: major_type_uint64_or_neg_int64)
+  (i: raw_uint64)
+  requires q
+  returns res: cbor_serialized_raw cbor_string cbor_serialized
+  ensures cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R res (Int64 typ i) ** trade (cbor_serialized_raw_match  cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R res (Int64 typ i)) q
+{
+  let resi = cbor_match_int_intro_aux typ i;
+  cbor_match_int_intro_trade_aux q resi (Int64 typ i);
+  let res : cbor_serialized_raw cbor_string cbor_serialized = CBOR_SerializedCase_Int resi;
+  Trade.rewrite_with_trade (cbor_match_int resi (Int64 typ i)) (cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R res (Int64 typ i));
+  Trade.trans _ _ q;
+  res
+}
+
 
 inline_for_extraction
 fn cbor_match_int_intro_trade
@@ -407,6 +541,28 @@ fn cbor_match_simple_intro
 }
 
 inline_for_extraction
+fn cbor_serialized_raw_match_simple_intro_trade
+  (#cbor_string: Type0)
+  (#cbor_serialized: Type0)
+  (cbor_match_string: cbor_string -> perm -> (r: raw_data_item { String? r}) -> slprop)
+  (cbor_match_serialized_array: (cbor_serialized -> perm -> (r: raw_data_item { Array? r}) -> slprop))
+  (cbor_match_serialized_map: (cbor_serialized -> perm -> (r: raw_data_item { Map? r}) -> slprop))
+  (cbor_match_serialized_tagged: (cbor_serialized -> perm -> (r: raw_data_item { Tagged? r}) -> slprop))
+  (q: slprop)
+  (i: simple_value)
+  requires q
+  returns res: cbor_serialized_raw cbor_string cbor_serialized
+  ensures cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R res (Simple i) ** trade (cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R res (Simple i)) q
+{
+  cbor_match_simple_intro_trade_aux q i (Simple i);
+  fold (cbor_match_simple i (Simple i));
+  let res: cbor_serialized_raw cbor_string cbor_serialized = CBOR_SerializedCase_Simple i;
+  Trade.rewrite_with_trade (cbor_match_simple i (Simple i)) (cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R res (Simple i));
+  Trade.trans _ _ q;
+  res
+}
+
+inline_for_extraction
 fn cbor_match_simple_intro_trade
   (#cbor_string: Type0)
   (#cbor_array: (([@@@strictly_positive] t: Type0) -> Type0))
@@ -516,6 +672,46 @@ let cbor_match_string_intro_aux_t
       r == String typ len (Ghost.reveal v)
     )
   )
+
+inline_for_extraction
+fn cbor_serialized_raw_match_string_intro
+  (#cbor_string: Type0)
+  (#cbor_serialized: Type0)
+  (#cbor_match_string: cbor_string -> perm -> (r: raw_data_item { String? r}) -> slprop)
+  (cbor_match_string_intro_aux: cbor_match_string_intro_aux_t cbor_match_string)
+  (cbor_match_serialized_array: (cbor_serialized -> perm -> (r: raw_data_item { Array? r}) -> slprop))
+  (cbor_match_serialized_map: (cbor_serialized -> perm -> (r: raw_data_item { Map? r}) -> slprop))
+  (cbor_match_serialized_tagged: (cbor_serialized -> perm -> (r: raw_data_item { Tagged? r}) -> slprop))
+  (typ: major_type_byte_string_or_text_string)
+  (len: raw_uint64)
+  (input: S.slice U8.t)
+  (#pm: perm)
+  (#v: Ghost.erased (Seq.seq U8.t))
+  requires
+    pts_to input #pm v ** pure (
+      (typ == cbor_major_type_text_string ==> CBOR.Spec.API.UTF8.correct v) /\
+      Seq.length v == U64.v len.value
+    )
+  returns c: cbor_serialized_raw cbor_string cbor_serialized
+  ensures exists* r .
+    cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R c r **
+    trade (cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R c r) (pts_to input #pm v) **
+    pure (
+      Seq.length v == U64.v len.value /\
+      (typ == cbor_major_type_text_string ==> CBOR.Spec.API.UTF8.correct v) /\
+      r == String typ len (Ghost.reveal v)
+    )
+{
+  S.pts_to_len input;
+  let ress = cbor_match_string_intro_aux typ len input;
+  with r . assert (cbor_match_string ress 1.0R (Ghost.reveal r));
+  let res: cbor_serialized_raw cbor_string cbor_serialized = CBOR_SerializedCase_String ress;
+  Trade.rewrite_with_trade
+    (cbor_match_string ress 1.0R r)
+    (cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R res r);
+  Trade.trans _ _ (pts_to input #pm v);
+  res
+}
 
 inline_for_extraction
 fn cbor_match_string_intro
@@ -1274,77 +1470,4 @@ fn cbor_match_map_intro
     (cbor_match cbor_match_string cbor_match_array cbor_match_map0 cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R res (Map len r));
   Trade.trans (cbor_match cbor_match_string cbor_match_array cbor_match_map0 cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged 1.0R res (Map len r)) _ _;
   res
-}
-
-noeq
-type cbor_serialized_raw
-  (cbor_string: Type0)
-  (cbor_serialized: Type0)
-: Type0
-=
-| CBOR_SerializedCase_Int: v: cbor_int -> cbor_serialized_raw cbor_string cbor_serialized
-| CBOR_SerializedCase_Simple: v: simple_value -> cbor_serialized_raw cbor_string cbor_serialized
-| CBOR_SerializedCase_String: v: cbor_string -> cbor_serialized_raw cbor_string cbor_serialized
-| CBOR_SerializedCase_Serialized_Tagged: v: cbor_serialized -> cbor_serialized_raw cbor_string cbor_serialized
-| CBOR_SerializedCase_Serialized_Array: v: cbor_serialized -> cbor_serialized_raw cbor_string cbor_serialized
-| CBOR_SerializedCase_Serialized_Map: v: cbor_serialized -> cbor_serialized_raw cbor_string cbor_serialized
-
-let cbor_serialized_raw_match
-  (#cbor_string: Type0)
-  (#cbor_serialized: Type0)
-  (cbor_match_string: cbor_string -> perm -> (r: raw_data_item { String? r}) -> slprop)
-  (cbor_match_serialized_array: (cbor_serialized -> perm -> (r: raw_data_item { Array? r}) -> slprop))
-  (cbor_match_serialized_map: (cbor_serialized -> perm -> (r: raw_data_item { Map? r}) -> slprop))
-  (cbor_match_serialized_tagged: (cbor_serialized -> perm -> (r: raw_data_item { Tagged? r}) -> slprop))
-  (p: perm)
-  (c: cbor_serialized_raw cbor_string cbor_serialized)
-  (r: raw_data_item)
-: Tot slprop
-  (decreases r)
-= match c, r with
-  | CBOR_SerializedCase_Simple v, Simple _ -> cbor_match_simple v r
-  | CBOR_SerializedCase_Int v, Int64 _ _ -> cbor_match_int v r
-  | CBOR_SerializedCase_String v, String _ _ _ -> cbor_match_string v p r
-  | CBOR_SerializedCase_Serialized_Array v, Array _ _ -> cbor_match_serialized_array v p r
-  | CBOR_SerializedCase_Serialized_Map v, Map _ _ -> cbor_match_serialized_map v p r
-  | CBOR_SerializedCase_Serialized_Tagged v, Tagged _ _ -> cbor_match_serialized_tagged v p r
-  | _ -> pure False
-
-let cbor_serialized_raw_match_cases_pred
-  (#cbor_string: Type0)
-  (#cbor_serialized: Type0)
-  (c: cbor_serialized_raw cbor_string cbor_serialized)
-  (r: raw_data_item)
-: Tot bool
-= 
-    match c, r with
-    | CBOR_SerializedCase_Simple _, Simple _
-    | CBOR_SerializedCase_Int _, Int64 _ _
-    | CBOR_SerializedCase_String _, String _ _ _
-    | CBOR_SerializedCase_Serialized_Array _, Array _ _
-    | CBOR_SerializedCase_Serialized_Map _, Map _ _
-    | CBOR_SerializedCase_Serialized_Tagged _, Tagged _ _ ->
-      true
-    | _ -> false
-
-ghost
-fn cbor_serialized_raw_match_cases
-  (#cbor_string: Type0)
-  (#cbor_serialized: Type0)
-  (cbor_match_string: cbor_string -> perm -> (r: raw_data_item { String? r}) -> slprop)
-  (cbor_match_serialized_array: (cbor_serialized -> perm -> (r: raw_data_item { Array? r}) -> slprop))
-  (cbor_match_serialized_map: (cbor_serialized -> perm -> (r: raw_data_item { Map? r}) -> slprop))
-  (cbor_match_serialized_tagged: (cbor_serialized -> perm -> (r: raw_data_item { Tagged? r}) -> slprop))
-  (c: cbor_serialized_raw cbor_string cbor_serialized)
-  (#pm: perm)
-  (#r: raw_data_item)
-  requires cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm c r
-  ensures cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm c r ** pure (cbor_serialized_raw_match_cases_pred c r)
-{
-  if cbor_serialized_raw_match_cases_pred c r {
-    ()
-  } else {
-    rewrite (cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm c r) as (pure False);
-    rewrite emp as (cbor_serialized_raw_match cbor_match_string cbor_match_serialized_array cbor_match_serialized_map cbor_match_serialized_tagged pm c r)
-  }
 }
