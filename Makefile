@@ -17,6 +17,15 @@ include nofstar.Makefile
 
 include deps.Makefile
 
+ifneq ($(OS),Windows_NT)
+package-subset: cddl
+endif
+
+# Disable COSE on MacOS because we don't know how to link with OpenSSL
+ifneq ($(OS),Darwin)
+all: cose
+endif
+
 ifeq (,$(NO_PULSE))
 all: cddl cbor-interface
 endif
@@ -74,11 +83,9 @@ lowparse-unit-test: lowparse
 	+$(MAKE) -C tests/lowparse
 
 3d-unit-test: 3d $(NEED_Z3_TESTGEN)
-ifneq ($(OS),Darwin)
 	+$(MAKE) -C src/3d test
-endif
 
-3d-doc-test: 3d
+3d-doc-test: 3d $(NEED_Z3_TESTGEN)
 	+$(MAKE) -C doc 3d-test
 
 3d-test: 3d-unit-test 3d-doc-test
@@ -103,7 +110,18 @@ lowparse-test: lowparse-unit-test lowparse-bitfields-test lowparse-pulse-test
 quackyducky-test: quackyducky
 	+$(MAKE) -C tests
 
-test: all lowparse-test quackyducky-test 3d-test asn1-test cbor-test cddl-test cose-test
+test: all lowparse-test quackyducky-test asn1-test cbor-test cddl-test
+
+# Disable 3d-unit-test on MacOS because there is a loop in Makefiles
+# Disable 3d-doc-test on MacOS because sphinx is not available
+ifneq ($(OS),Darwin)
+test: 3d-test
+endif
+
+# Disable COSE tests on MacOS because we don't know how to link with OpenSSL
+ifneq ($(OS),Darwin)
+test: cose-test
+endif
 
 submodules:
 	$(MAKE) -C $(EVERPARSE_OPT_PATH) submodules
@@ -235,7 +253,7 @@ ci: test 3d-doc-ci
 
 .PHONY: 3d-doc-ci
 
-3d-doc-snapshot: 3d
+3d-doc-snapshot: 3d $(NEED_Z3_TESTGEN)
 	+$(MAKE) -C doc 3d-snapshot
 
 .PHONY: 3d-doc-snapshot

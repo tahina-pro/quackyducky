@@ -1,10 +1,11 @@
 # Note: no postlude added to these tests.
 
+all: all-c
+all: all-build
+all: all-run
+
 .NOTINTERMEDIATE:
 .DELETE_ON_ERROR:
-
-all: all-c
-all: all-run
 
 ODIR := _output
 
@@ -15,6 +16,12 @@ ALL_C_FILES = $(patsubst %.cddl,$(ODIR)/%.c,$(ALL_CDDLS))
 
 RUN += $(patsubst Test_%.c,%,$(wildcard Test_*.c))
 RUN += $(patsubst Test_%.cpp,%,$(wildcard Test_*.cpp))
+
+ifeq (1,$(ADMIT))
+CDDL_ADMIT := --admit
+else
+CDDL_ADMIT :=
+endif
 
 .PHONY: all-fst
 all-fst: $(ALL_FSTS)
@@ -28,7 +35,7 @@ all-c: $(ALL_C_FILES)
 EVERPARSE_SRC_PATH = $(realpath ../../..)
 
 $(ODIR)/%.fst: %.cddl
-	$(EVERPARSE_SRC_PATH)/../bin/cddl.exe $^ --mname "$(patsubst %.cddl,%,$<)" --odir $(ODIR) --fstar_only
+	$(EVERPARSE_SRC_PATH)/../bin/cddl.exe $^ --mname "$(patsubst %.cddl,%,$<)" --odir $(ODIR) --fstar_only $(CDDL_ADMIT)
 
 $(ODIR)/%.o: $(ODIR)/%.c
 	$(CC) -O3 -I $(EVERPARSE_SRC_PATH)/cbor/pulse/det/c -I _output --std=gnu2x $(CFLAGS) -c $< -o $@
@@ -109,8 +116,7 @@ QCBOR:
 	cd $@.tmp && git checkout 83c4af09d3752afa64ae66e2a3382192bf682541
 	mv $@.tmp $@
 
-QCBOR/libqcbor.a: QCBOR
-	$(MAKE) -C QCBOR
+include qcbor.Makefile
 
 tinycbor:
 	rm -rf $@.tmp
@@ -145,6 +151,9 @@ run-qcbor_bench: qcbor_bench
 	./$<
 
 # all: run
+
+.PHONY: all-build
+all-build: $(patsubst %,$(ODIR)/Test_%.exe,$(RUN))
 
 .PHONY: all-run
 all-run: $(patsubst %,%.run,$(RUN))
