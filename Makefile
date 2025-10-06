@@ -58,6 +58,8 @@ ifeq (1,$(ADMIT_CBOR_CDDL))
 $(filter src/cbor/% src/cddl/%,$(ALL_CHECKED_FILES)): ADMIT := 1
 endif
 
+lowparse: foobar
+
 lowparse: $(filter-out src/lowparse/pulse/%,$(filter src/lowparse/%,$(ALL_CHECKED_FILES)))
 
 ifeq (,$(NO_PULSE))
