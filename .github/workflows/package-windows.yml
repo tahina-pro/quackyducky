@@ -62,6 +62,7 @@ jobs:
           eval $(opam env)
           export FSTAR_TAG=
           # ^ no tag in source package
+          env
           make -skj$(nproc) package-src ADMIT=1
 
       - name: Save
