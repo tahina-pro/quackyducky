@@ -27,6 +27,30 @@ let check_loop (x: (string * (state * int))) : bool =
      false
     end
 
+let name_stack : string list ref = ref []
+
+(*
+let with_name_stack s (f: 'a parser) : 'a parser = f
+*)
+
+let with_name_stack s (f: 'a parser) : 'a parser =
+  concat (ret ()) (fun _ ->
+      let name_stack' = !name_stack in
+      name_stack := s :: name_stack';
+      List.iter (fun s -> print_string (s ^ " ")) (List.rev !name_stack);
+      print_newline ();
+      choice
+        (concat f (fun res ->
+             name_stack := name_stack';
+             ret res
+        ))
+        (concat (ret ()) (fun _ ->
+             print_endline "FAIL";
+             name_stack := name_stack';
+             fail
+        ))
+    )
+
 let debug
       (name: string)
       (f: 'a parser)
@@ -36,7 +60,7 @@ let debug
       (concat (get_full_state ()) (fun state ->
            if check_loop (name, state)
            then fail
-           else concat f (fun res ->
+           else concat (with_name_stack name f) (fun res ->
                     Hashtbl.remove loop_detector (name, state);
                     ret res
                   )
