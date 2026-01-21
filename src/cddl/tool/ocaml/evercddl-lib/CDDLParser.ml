@@ -128,12 +128,12 @@ let dollar : symbol = terminal "dollar" (function DOLLAR -> Some () | _ -> None)
 let question = terminal "question" (function QUESTION -> Some () | _ -> None)
 let eof = terminal "eof" (function EOF -> Some () | _ -> None)
 
-let s = debug "s" (choice (nonempty_s) (ret ()))
+let s = (choice (nonempty_s) (ret ()))
 
 let id = debug "id"
   (choices [
     concat raw_id (fun s -> ret (Regular, s));
-    concat dollar (fun _ -> concat raw_id (fun s -> ret (SocketType, s)));
+    debug "id_choice2" (concat dollar (fun _ -> concat raw_id (fun s -> ret (SocketType, s))));
     concat dollardollar (fun _ -> concat raw_id (fun s -> ret (SocketGroup, s)));
   ])
 
@@ -201,11 +201,11 @@ let groupname = debug "groupname"
 
 let assignt ((k, x): (id_kind * string)) = debug "assignt"
   (choice
-    (concat eq (fun _ ->
+    (debug "assignt_choice1" (concat eq (fun _ ->
       if k = Regular
       then ret (fun (t: typ) (l: (string * CDDL_Spec_AST_Base.decl) list) -> (x, CDDL_Spec_AST_Base.DType t) :: l)
       else fail
-    ))
+    )))
     (concat slasheq (fun _ ->
       if k = SocketType
       then ret (fun (t: typ) (l: (string * CDDL_Spec_AST_Base.decl) list) ->
@@ -220,11 +220,11 @@ let assignt ((k, x): (id_kind * string)) = debug "assignt"
 
 let assigng ((k, x) : (id_kind * string)) = debug "assignt"
   (choice
-    (concat eq (fun _ ->
+    (debug "assigng_choice1" (concat eq (fun _ ->
       if k = Regular
       then ret (fun (t: group) (l: (string * CDDL_Spec_AST_Base.decl) list) -> (x, CDDL_Spec_AST_Base.DGroup t) :: l)
       else fail
-    ))
+    )))
     (concat slashslasheq (fun _ ->
       if k = SocketGroup
       then ret (fun (t: group) (l: (string * CDDL_Spec_AST_Base.decl) list) ->
@@ -290,7 +290,7 @@ let occur = debug "occur" (
 
 let option_occur = debug "option_occur" (
   choice
-    (concat occur (fun x -> concat s (fun _ -> ret x)))
+    (debug "option_occur_choice1" (concat occur (fun x -> concat s (fun _ -> ret x))))
     (ret (fun (x: group) -> x))
 )
 
@@ -325,7 +325,7 @@ let rec type_ () = debug "type" (
 
 and type_tail () = debug "type_tail" (
   choice
-    (concat s (fun _ -> concat slash (fun _ -> concat s (fun _ -> concat (type1 ()) (fun xl -> concat (type_tail ()) (fun xr -> ret (fun (x: typ) -> CDDL_Spec_AST_Elab_Base.mk_TChoice x (xr xl))))))))
+    (debug "type_tail_choice1" (concat s (fun _ -> concat slash (fun _ -> concat s (fun _ -> concat (type1 ()) (fun xl -> concat (type_tail ()) (fun xr -> ret (fun (x: typ) -> CDDL_Spec_AST_Elab_Base.mk_TChoice x (xr xl)))))))))
     (ret (fun (x: typ) -> x))
 )
 
@@ -334,7 +334,7 @@ and type1 () = debug "type1" (concat (type2 ()) (fun t -> concat (type1_tail ())
 and type1_tail () =
   debug "type1_tail"
     (choice
-      (concat s (fun _ -> concat rangeop_or_ctlop (fun f -> concat s (fun _ -> concat (type2 ()) (fun t2 -> ret (fun t1 -> f t1 t2))))))
+      (debug "type1_tail_choice1" (concat s (fun _ -> concat rangeop_or_ctlop (fun f -> concat s (fun _ -> concat (type2 ()) (fun t2 -> ret (fun t1 -> f t1 t2)))))))
       (ret (fun t -> t))
     )
 
@@ -343,20 +343,20 @@ and type2 () = debug "type2" (
     [
       concat value (fun x -> ret (TElem (ELiteral x)));
       concat typename (fun (_, x) -> (* option(genericarg) *) ret (TDef x));
-      concat lparen (fun _ -> concat s (fun _ -> concat (type_ ()) (fun x -> concat s (fun _ -> concat rparen (fun _ -> ret x)))));
-      concat lbrace (fun _ -> concat s (fun _ -> concat (group ()) (fun x -> concat s (fun _ -> concat rbrace (fun _ -> ret (TMap x))))));
-      concat lbrack (fun _ -> concat s (fun _ -> concat (group ()) (fun x -> concat s (fun _ -> concat rbrack (fun _ -> ret (TArray x))))));
+      debug "type2_choice3" (concat lparen (fun _ -> concat s (fun _ -> concat (type_ ()) (fun x -> concat s (fun _ -> concat rparen (fun _ -> ret x))))));
+      debug "type2_choice4" (concat lbrace (fun _ -> concat s (fun _ -> concat (group ()) (fun x -> concat s (fun _ -> concat rbrace (fun _ -> ret (TMap x)))))));
+      debug "type2_choice5" (concat lbrack (fun _ -> concat s (fun _ -> concat (group ()) (fun x -> concat s (fun _ -> concat rbrack (fun _ -> ret (TArray x)))))));
 (* TODO: "~" s typename option(genericarg) *)
 (* TODO: "&" s "(" s group s ")" *)
-      concat amp (fun _ -> concat s (fun _ -> concat lparen (fun _ -> concat s (fun _ -> concat bareword (fun (_, name) -> concat s (fun _ -> concat colon (fun _ -> concat s (fun _ -> concat (type_ ()) (fun ty -> concat s (fun _ -> concat rparen (fun _ -> ret (TNamed (name, ty)))))))))))));
+      debug "type2_choice6" (concat amp (fun _ -> concat s (fun _ -> concat lparen (fun _ -> concat s (fun _ -> concat bareword (fun (_, name) -> concat s (fun _ -> concat colon (fun _ -> concat s (fun _ -> concat (type_ ()) (fun ty -> concat s (fun _ -> concat rparen (fun _ -> ret (TNamed (name, ty))))))))))))));
 (* TODO: "&" s groupname option(genericarg) *)
-      concat pound6 (fun _ -> concat (option tag) (fun tag -> concat lparen (fun _ -> concat s (fun _ -> concat (type_ ()) (fun x -> concat s (fun _ -> concat rparen (fun _ -> ret (TTagged (tag, x)))))))));
+      debug "type2_choice7" (concat pound6 (fun _ -> concat (option tag) (fun tag -> concat lparen (fun _ -> concat s (fun _ -> concat (type_ ()) (fun x -> concat s (fun _ -> concat rparen (fun _ -> ret (TTagged (tag, x))))))))));
 (* TODO: generalize "#"DIGIT option(tag) *)
       concat pound0 (fun _ -> ret (TElem EUInt));
       concat pound1 (fun _ -> ret (TElem ENInt));
       concat pound2 (fun _ -> ret (TElem EByteString));
       concat pound3 (fun _ -> ret (TElem ETextString));
-      concat pound7 (fun _ -> concat (option tag) (fun tag -> ret (match tag with None -> TElem ESimple | Some v -> TElem (ELiteral (LSimple v)))));
+      debug "type2_choice12" (concat pound7 (fun _ -> concat (option tag) (fun tag -> ret (match tag with None -> TElem ESimple | Some v -> TElem (ELiteral (LSimple v))))));
       concat pound (fun _ -> ret (TElem EAny));
     ]
 )
@@ -367,13 +367,13 @@ and group () = debug "group" (
 
 and group_tail () = debug "group_tail" (
   choice
-    (concat s (fun _ -> concat slashslash (fun _ -> concat s (fun _ -> concat (grpchoice ()) (fun a -> concat (group_tail ()) (fun q -> ret (fun (x: group) -> CDDL_Spec_AST_Driver.mk_GChoice x (q a))))))))
+    (debug "group_tail_choice1" (concat s (fun _ -> concat slashslash (fun _ -> concat s (fun _ -> concat (grpchoice ()) (fun a -> concat (group_tail ()) (fun q -> ret (fun (x: group) -> CDDL_Spec_AST_Driver.mk_GChoice x (q a)))))))))
     (ret (fun (x: group) -> x))
 )
 
 and grpchoice () = debug "grpchoice" (
   choice
-    (concat (grpent ()) (fun a -> concat optcom (fun _ -> concat (grpchoice ()) (fun q -> ret (CDDL_Spec_AST_Driver.mk_GConcat a q)))))
+    (debug "grpchoice_choice1" (concat (grpent ()) (fun a -> concat optcom (fun _ -> concat (grpchoice ()) (fun q -> ret (CDDL_Spec_AST_Driver.mk_GConcat a q))))))
     (ret GNop)
 )
 
@@ -387,15 +387,15 @@ and group0 () = debug "group0" (
 
 and group0_tail () = debug "group0_tail" (
   choice
-    (concat s (fun _ -> concat slashslash (fun _ -> concat s (fun _ -> concat (grpent ()) (fun a -> concat (group0_tail ()) (fun q -> ret (fun (x: group) -> GChoice (x, q a))))))))
+    (debug "group0_tail_choice1" (concat s (fun _ -> concat slashslash (fun _ -> concat s (fun _ -> concat (grpent ()) (fun a -> concat (group0_tail ()) (fun q -> ret (fun (x: group) -> GChoice (x, q a)))))))))
     (ret (fun (x: group) -> x))
 )
 
 and grpent () = debug "grpent" (
   choices
     [
-      concat option_occur (fun f -> concat (option_memberkey ()) (fun g -> concat (type_ ()) (fun x -> ret (f (g x)))));
-      concat option_occur (fun f -> concat groupname (* option(genericarg) *) (fun (_, g) -> ret (f (GDef g))));
+      debug "grpent_choice1" (concat option_occur (fun f -> concat (option_memberkey ()) (fun g -> concat (type_ ()) (fun x -> ret (f (g x))))));
+      debug "grpent_choice2" (concat option_occur (fun f -> concat groupname (* option(genericarg) *) (fun (_, g) -> ret (f (GDef g)))));
       concat option_occur (fun f -> concat lparen (fun _ -> concat s (fun _ -> concat (group ()) (fun g -> concat s (fun _ -> concat rparen (fun _ -> ret (f g)))))));
     ]
 )
@@ -409,8 +409,8 @@ and option_memberkey () = debug "option_memberkey" (
 and memberkey () = debug "memberkey" (
   choices
     [
-      concat (type1 ()) (fun key -> concat s (fun _ -> concat memberkey_cut (fun cut -> concat arrow (fun _ -> ret (fun x -> GElem (cut, key, x))))));
-      concat bareword (fun (k, key) -> if k <> Regular then fail else concat s (fun _ -> concat colon (fun _ -> ret (fun x -> GElem (true, TElem (ELiteral (LTextString (key))), x)))));
+      debug "memberkey_choice1" (concat (type1 ()) (fun key -> concat s (fun _ -> concat memberkey_cut (fun cut -> concat arrow (fun _ -> ret (fun x -> GElem (cut, key, x)))))));
+      debug "memberkey_choice2" (concat bareword (fun (k, key) -> if k <> Regular then fail else concat s (fun _ -> concat colon (fun _ -> ret (fun x -> GElem (true, TElem (ELiteral (LTextString (key))), x))))));
       concat value (fun key -> concat s (fun _ -> concat colon (fun _ -> ret (fun x -> (GElem (true, TElem (ELiteral key), x))))));
     ]
 )
@@ -427,6 +427,6 @@ and cddl_item () : unit parser = debug "cddl_item" (
 and rule () : unit parser =
   debug "rule"
     (choice
-       (concat typename (* option(genericparm) *) (fun name -> concat s (fun _ -> concat (assignt name) (fun f -> concat s (fun _ -> concat (type_ ()) (fun t -> concat (get_state ()) (fun env -> let env' = { env with result = f t env.result } in set_state env')))))))
+       (debug "rule_choice1" (concat typename (* option(genericparm) *) (fun name -> concat s (fun _ -> concat (assignt name) (fun f -> concat s (fun _ -> concat (type_ ()) (fun t -> concat (get_state ()) (fun env -> let env' = { env with result = f t env.result } in set_state env'))))))))
        (concat groupname (* option(genericparm) *) (fun name -> concat s (fun _ -> concat (assigng name) (fun f -> concat s (fun _ -> concat (group0 ()) (fun t -> concat (get_state ()) (fun env -> let env' = { env with result = f t env.result } in set_state env')))))))
     )
