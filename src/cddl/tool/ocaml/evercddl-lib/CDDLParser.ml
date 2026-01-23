@@ -320,14 +320,11 @@ let rangeop_or_ctlop =
     )
 
 let rec type_ () = debug "type" (
-  concat (type1 ()) (fun x -> concat (type_tail ()) (fun xs -> ret (xs x)))
-)
-
-and type_tail () = debug "type_tail" (
-  choice
-    (debug "type_tail_choice1" (concat s (fun _ -> concat slash (fun _ -> concat s (fun _ -> concat (type1 ()) (fun xl -> concat (type_tail ()) (fun xr -> ret (fun (x: typ) -> CDDL_Spec_AST_Elab_Base.mk_TChoice x (xr xl)))))))))
-    (ret (fun (x: typ) -> x))
-)
+  concat (type1 ()) (fun x ->
+      concat (fold_left
+              (concat s (fun _ -> concat slash (fun _ -> concat s (fun _ -> concat (type1 ()) (fun t1 -> ret (fun t -> CDDL_Spec_AST_Elab_Base.mk_TChoice t t1)))))))
+                     (fun f -> ret (f x))
+))
 
 and type1 () = debug "type1" (concat (type2 ()) (fun t -> concat (type1_tail ()) (fun f -> ret (f t))))
 
@@ -417,11 +414,7 @@ and memberkey () = debug "memberkey" (
 
 let rec cddl () : cddl_t parser = debug_start "cddl" (
                                       (* rev needed because assignment operators cons definitions in the reverse order of their parsing *)
-  concat s (fun _ -> concat (nonempty_unit_fold_left (cddl_item ())) (fun l -> concat eof (fun _ -> get_state ())))
-)
-
-and cddl_item () : unit parser = debug "cddl_item" (
-  concat (rule ()) (fun _ -> s)
+  concat s (fun _ -> concat (nonempty_unit_fold_left (concat (rule ()) (fun _ -> s))) (fun l -> concat eof (fun _ -> get_state ())))
 )
 
 and rule () : unit parser =
