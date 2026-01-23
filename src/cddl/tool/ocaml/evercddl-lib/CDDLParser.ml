@@ -428,5 +428,5 @@ and rule () : unit parser =
   debug "rule"
     (choice
        (debug "rule_choice1" (concat typename (* option(genericparm) *) (fun name -> concat s (fun _ -> concat (assignt name) (fun f -> concat s (fun _ -> concat (type_ ()) (fun t -> concat (get_state ()) (fun env -> let env' = { env with result = f t env.result } in set_state env'))))))))
-       (concat groupname (* option(genericparm) *) (fun name -> concat s (fun _ -> concat (assigng name) (fun f -> concat s (fun _ -> concat (group0 ()) (fun t -> concat (get_state ()) (fun env -> let env' = { env with result = f t env.result } in set_state env')))))))
+       (concat groupname (* option(genericparm) *) (fun name -> concat s (fun _ -> concat (assigng name) (fun f -> concat s (fun _ -> concat (grpent ()) (fun t -> concat (get_state ()) (fun env -> let env' = { env with result = f t env.result } in set_state env')))))))
     )
