@@ -354,6 +354,7 @@ let _ =
         "-no-prefix"; "CBOR.Pulse.API.Det.C";
         "-no-prefix"; "CBOR.Pulse.API.Det.Type";
         "-no-prefix"; "CBOR.Spec.Constants";
+        "-no-prefix"; "CDDL.Pulse.MapGroup"; (* work around some Karamel bug? *)
         "-bundle"; "CBOR.Spec.Constants+CBOR.Pulse.API.Det.Type+CBOR.Pulse.API.Det.C=CBOR.\\*[rename=CBORDetAPI]";
 	"-bundle"; (!mname ^ "=\\*");
 	"-add-include"; "\"CBORDetAbstract.h\"";
