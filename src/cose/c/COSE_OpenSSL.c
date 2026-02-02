@@ -102,7 +102,7 @@ bstr COSE_OpenSSL_sign1(EVP_PKEY *signing_key,
     free(sig_structure.elt);
 
     COSE_Format_cose_sign1 c = {
-        .protected = protected_headers_,
+        .protected0 = protected_headers_,
         .unprotected = unprotected_headers,
         .payload = { .tag = COSE_Format_Inl, .case_Inl = payload },
         .signature = sig,
@@ -143,7 +143,7 @@ bstr COSE_OpenSSL_verify1(EVP_PKEY *signing_key, bstr aad, bstr msg) {
     bstr sig = parsed_msg.v.fst.signature;
     
     COSE_Format_empty_or_serialized_map protected_headers =
-        parsed_msg.v.fst.protected;
+        parsed_msg.v.fst.protected0;
     // TODO check algorithm
   
     bstr sig_structure = mk_sig_structure(protected_headers, aad, payload);
