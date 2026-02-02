@@ -212,7 +212,7 @@ COSE_EverCrypt_sign1(
   outbuf_sz =
     COSE_Format_serialize_cose_sign1_tagged((
         (COSE_Format_cose_sign1){
-          .protected = phdr,
+          .protected0 = phdr,
           .unprotected = uhdr,
           .payload = { .tag = COSE_Format_Inl, { .case_Inl = payload } },
           .signature = Pulse_Lib_Slice_from_array__uint8_t(sigbuf, (size_t)64U)
@@ -368,7 +368,7 @@ COSE_EverCrypt_verify1(
           ite =
             KRML_EABORT(Pulse_Lib_Slice_slice__uint8_t,
               "unreachable (pattern matches are exhaustive in F*)");
-        ite0 = COSE_EverCrypt_verify_sig(pubkey, x.protected, aad, ite, sig_);
+        ite0 = COSE_EverCrypt_verify_sig(pubkey, x.protected0, aad, ite, sig_);
       }
       else
         ite0 = false;

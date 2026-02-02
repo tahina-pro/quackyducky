@@ -1819,7 +1819,7 @@ FStar_Pervasives_either__COSE_Format_bstr_COSE_Format_nil;
 
 typedef struct COSE_Format_cose_sign1_s
 {
-  COSE_Format_empty_or_serialized_map protected;
+  COSE_Format_empty_or_serialized_map protected0;
   COSE_Format_header_map unprotected;
   FStar_Pervasives_either__COSE_Format_bstr_COSE_Format_nil payload;
   Pulse_Lib_Slice_slice__uint8_t signature;
@@ -1899,7 +1899,7 @@ bool COSE_Format_validate_cose_signature(cbor_det_t c);
 
 typedef struct COSE_Format_cose_signature_s
 {
-  COSE_Format_empty_or_serialized_map protected;
+  COSE_Format_empty_or_serialized_map protected0;
   COSE_Format_header_map unprotected;
   Pulse_Lib_Slice_slice__uint8_t signature;
 }
@@ -1994,7 +1994,7 @@ FStar_Pervasives_either__CDDL_Pulse_Types_slice_COSE_Format_aux_env41_type_1_CDD
 
 typedef struct COSE_Format_cose_sign_s
 {
-  COSE_Format_empty_or_serialized_map protected;
+  COSE_Format_empty_or_serialized_map protected0;
   COSE_Format_header_map unprotected;
   FStar_Pervasives_either__COSE_Format_bstr_COSE_Format_nil payload;
   FStar_Pervasives_either__CDDL_Pulse_Types_slice_COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t_CBOR_Pulse_API_Det_Type_cbor_det_array_iterator_t_COSE_Format_aux_env41_type_1

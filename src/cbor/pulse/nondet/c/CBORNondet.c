@@ -298,6 +298,22 @@ static bool CBOR_Pulse_Raw_Util_eq_Some_0sz(FStar_Pervasives_Native_option__size
     return false;
 }
 
+static CBOR_Spec_Raw_Base_raw_uint64 CBOR_Spec_Raw_Optimal_mk_raw_uint64(uint64_t x)
+{
+  uint8_t ite;
+  if (x <= (uint64_t)MAX_SIMPLE_VALUE_ADDITIONAL_INFO)
+    ite = 0U;
+  else if (x < 256ULL)
+    ite = 1U;
+  else if (x < 65536ULL)
+    ite = 2U;
+  else if (x < 4294967296ULL)
+    ite = 3U;
+  else
+    ite = 4U;
+  return ((CBOR_Spec_Raw_Base_raw_uint64){ .size = ite, .value = x });
+}
+
 static cbor_string CBOR_Pulse_Raw_Match_cbor_string_reset_perm(cbor_string c)
 {
   return
@@ -416,22 +432,6 @@ static cbor_raw CBOR_Pulse_Raw_Match_cbor_raw_reset_perm_tot(cbor_raw c)
       );
   else
     return c;
-}
-
-static CBOR_Spec_Raw_Base_raw_uint64 CBOR_Spec_Raw_Optimal_mk_raw_uint64(uint64_t x)
-{
-  uint8_t ite;
-  if (x <= (uint64_t)MAX_SIMPLE_VALUE_ADDITIONAL_INFO)
-    ite = 0U;
-  else if (x < 256ULL)
-    ite = 1U;
-  else if (x < 65536ULL)
-    ite = 2U;
-  else if (x < 4294967296ULL)
-    ite = 3U;
-  else
-    ite = 4U;
-  return ((CBOR_Spec_Raw_Base_raw_uint64){ .size = ite, .value = x });
 }
 
 static int16_t CBOR_Pulse_Raw_Compare_Bytes_impl_uint8_compare(uint8_t x1, uint8_t x2)
@@ -849,7 +849,7 @@ CBOR_Pulse_Raw_EverParse_Format_jump_header(
   else if (x.additional_info == CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_LONG_ARGUMENT_64_BITS)
     return off1 + (size_t)8U;
   else
-    return off1 + (size_t)0U;
+    return off1;
 }
 
 static bool
@@ -1118,7 +1118,7 @@ CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(
     if (b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING || b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING)
       off1 = off10 + (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(x.fst, x.snd);
     else
-      off1 = off10 + (size_t)0U;
+      off1 = off10;
     poffset = off1;
     K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
     scrut = Pulse_Lib_Slice_split__uint8_t(input, off);
@@ -2941,7 +2941,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Gen_impl_check_map_depth_aux(
     CBOR_Spec_Raw_EverParse_initial_byte_t b = h.fst;
     size_t ite;
     if (b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING || b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING)
-      ite = (size_t)0U + (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h.fst, h.snd);
+      ite = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h.fst, h.snd);
     else
       ite = (size_t)0U;
     K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
@@ -3355,9 +3355,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                       b0.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                         b0.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                     )
-                      ite0 =
-                        (size_t)0U +
-                          (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
+                      ite0 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
                     else
                       ite0 = (size_t)0U;
                     K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
@@ -3383,9 +3381,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                       b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                         b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                     )
-                      ite1 =
-                        (size_t)0U +
-                          (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
+                      ite1 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
                     else
                       ite1 = (size_t)0U;
                     K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
@@ -3609,8 +3605,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                             b0.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                         )
                           ite0 =
-                            (size_t)0U +
-                              (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
+                            (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
                         else
                           ite0 = (size_t)0U;
                         K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
@@ -3637,8 +3632,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                             b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                         )
                           ite1 =
-                            (size_t)0U +
-                              (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
+                            (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
                         else
                           ite1 = (size_t)0U;
                         K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
@@ -3928,9 +3922,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                         b0.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                           b0.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                       )
-                        ite0 =
-                          (size_t)0U +
-                            (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
+                        ite0 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
                       else
                         ite0 = (size_t)0U;
                       K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
@@ -3956,9 +3948,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                         b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                           b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                       )
-                        ite1 =
-                          (size_t)0U +
-                            (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
+                        ite1 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
                       else
                         ite1 = (size_t)0U;
                       K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
@@ -4182,8 +4172,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                               b0.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                           )
                             ite0 =
-                              (size_t)0U +
-                                (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
+                              (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
                           else
                             ite0 = (size_t)0U;
                           K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
@@ -4210,8 +4199,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                               b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                           )
                             ite1 =
-                              (size_t)0U +
-                                (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
+                              (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
                           else
                             ite1 = (size_t)0U;
                           K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
@@ -4457,7 +4445,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_list_basic(
               b0.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                 b0.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
             )
-              ite0 = (size_t)0U + (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h1.fst, h1.snd);
+              ite0 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h1.fst, h1.snd);
             else
               ite0 = (size_t)0U;
             K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
@@ -4482,7 +4470,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_list_basic(
               b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                 b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
             )
-              ite1 = (size_t)0U + (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h2.fst, h2.snd);
+              ite1 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h2.fst, h2.snd);
             else
               ite1 = (size_t)0U;
             K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
@@ -4952,7 +4940,7 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_valid_basic(
       (b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING || b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING)
         ite = off1 + (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(x.fst, x.snd);
       else
-        ite = off1 + (size_t)0U;
+        ite = off1;
       K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
       scrut2 = Pulse_Lib_Slice_split__uint8_t(pi, ite);
       K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
