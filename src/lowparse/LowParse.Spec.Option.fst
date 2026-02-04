@@ -10,6 +10,7 @@ let parse_option_kind (k: parser_kind) : Tot parser_kind = {
   parser_kind_low = 0;
   parser_kind_high = k.parser_kind_high;
   parser_kind_subkind = None;
+  parser_kind_injective = k.parser_kind_injective;
 }
 
 let parse_option_bare (#k: parser_kind) (#t: Type) (p: parser k t) : Tot (bare_parser (option t)) =

@@ -43,7 +43,7 @@ let parse_seq'
   (#k: parser_kind)
   (#t: Type)
   (p: parser k t)
-: Tot (parser PL.parse_list_kind (Seq.seq t))
+: Tot (parser (PL.parse_list_kind k.parser_kind_injective) (Seq.seq t))
 = seq_of_list_inj t;
   parse_synth (PL.parse_list p) (Seq.seq_of_list)
 
@@ -80,7 +80,7 @@ let parse_seq
   (#k: parser_kind)
   (#t: Type)
   (p: parser k t)
-: Tot (parser PL.parse_list_kind (Seq.seq t))
+: Tot (parser (PL.parse_list_kind k.parser_kind_injective) (Seq.seq t))
 = Classical.forall_intro (parse_seq_aux_correct p);
   injective_ext (parse_seq' p) (parse_seq_aux p);
   no_lookahead_ext (parse_seq' p) (parse_seq_aux p);

@@ -486,6 +486,7 @@ let and_then_kind
 	then k1.parser_kind_subkind
 	else None
       end;
+    parser_kind_injective = k1.parser_kind_injective && k2.parser_kind_injective;
   }
 
 let and_then_no_lookahead

@@ -55,7 +55,7 @@ let parse_list_bare_injective
 let parse_list #k #t p =
   parse_list_bare_injective p;
   parse_list_bare_consumes_all p;
-  parser_kind_prop_equiv parse_list_kind (parse_list_bare p);
+  parser_kind_prop_equiv (parse_list_kind k.parser_kind_injective) (parse_list_bare p);
   parse_list_bare p
 
 let parse_list_eq
@@ -127,7 +127,7 @@ let rec tot_parse_list_aux
 	| _ -> None
 
 let tot_parse_list #k #t p =
-  parser_kind_prop_ext parse_list_kind (parse_list #k p) (tot_parse_list_aux p);
+  parser_kind_prop_ext (parse_list_kind k.parser_kind_injective) (parse_list #k p) (tot_parse_list_aux p);
   tot_parse_list_aux p
 
 let bare_serialize_list_correct

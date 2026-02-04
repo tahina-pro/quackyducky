@@ -577,6 +577,7 @@ let parse_vlgen_alt_payload_kind : parser_kind = {
   parser_kind_high = None;
   parser_kind_subkind = Some ParserStrong;
   parser_kind_metadata = None;
+  parser_kind_injective = false;
 }
 
 let parse_vlgen_alt_body_t

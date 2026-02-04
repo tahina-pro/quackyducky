@@ -90,9 +90,10 @@ let fldata_to_array_inj
 
 inline_for_extraction
 let parse_array_kind'
+  (injective: bool)
   (array_byte_size: nat)
 : Tot parser_kind
-= parse_fldata_kind array_byte_size parse_list_kind
+= parse_fldata_kind array_byte_size (parse_list_kind injective)
 
 let parse_array'
   (#k: parser_kind)
@@ -101,7 +102,7 @@ let parse_array'
   (s: serializer p)
   (array_byte_size: nat)
   (elem_count: nat)
-: Pure (parser (parse_array_kind' array_byte_size) (array t elem_count))
+: Pure (parser (parse_array_kind' k.parser_kind_injective array_byte_size) (array t elem_count))
   (requires (
     fldata_array_precond k array_byte_size elem_count == true
   ))
@@ -132,7 +133,7 @@ let parse_array_total_constant_size
   parse_synth_eq (parse_fldata_strong (serialize_list _ s) array_byte_size) (fldata_to_array s array_byte_size elem_count u) x;
   let x' = Seq.slice x 0 array_byte_size in
   parse_list_total_constant_size p elem_count x';
-  parser_kind_prop_equiv parse_list_kind (parse_list p)
+  parser_kind_prop_equiv (parse_list_kind k.parser_kind_injective) (parse_list p)
 
 inline_for_extraction
 let parse_array_kind
@@ -146,7 +147,7 @@ let parse_array_kind
   then
     total_constant_size_parser_kind array_byte_size
   else
-    parse_array_kind' array_byte_size
+    parse_array_kind' k.parser_kind_injective array_byte_size
 
 let parse_array_kind_correct
   (#k: parser_kind)
@@ -415,10 +416,11 @@ let vldata_to_vlarray_inj
 
 inline_for_extraction
 let parse_vlarray_kind
+  (injective: bool)
   (array_byte_size_min: nat)
   (array_byte_size_max: nat { array_byte_size_min <= array_byte_size_max /\ array_byte_size_max > 0 /\ array_byte_size_max < 4294967296 } )
 : Tot parser_kind
-= parse_bounded_vldata_strong_kind array_byte_size_min array_byte_size_max (log256' array_byte_size_max) parse_list_kind
+= parse_bounded_vldata_strong_kind array_byte_size_min array_byte_size_max (log256' array_byte_size_max) (parse_list_kind injective)
 
 let parse_vlarray
   (array_byte_size_min: nat)
@@ -432,7 +434,7 @@ let parse_vlarray
   (u: unit {
     vldata_vlarray_precond array_byte_size_min array_byte_size_max p elem_count_min elem_count_max == true  
   })
-: Tot (parser (parse_vlarray_kind array_byte_size_min array_byte_size_max) (vlarray t elem_count_min elem_count_max))
+: Tot (parser (parse_vlarray_kind k.parser_kind_injective array_byte_size_min array_byte_size_max) (vlarray t elem_count_min elem_count_max))
 = vldata_to_vlarray_inj array_byte_size_min array_byte_size_max s elem_count_min elem_count_max u;
   parse_bounded_vldata_strong array_byte_size_min array_byte_size_max (serialize_list _ s)
   `parse_synth`
@@ -477,7 +479,7 @@ let parse_vlarray_eq_some
   vldata_to_vlarray_inj array_byte_size_min array_byte_size_max s elem_count_min elem_count_max ();
   parse_synth_eq (parse_bounded_vldata_strong array_byte_size_min array_byte_size_max (serialize_list _ s)) (vldata_to_vlarray array_byte_size_min array_byte_size_max s elem_count_min elem_count_max ()) input;
   parse_vldata_gen_eq (log256' array_byte_size_max) (in_bounds array_byte_size_min array_byte_size_max) (parse_list p) input;
-  parser_kind_prop_equiv parse_list_kind (parse_list p)
+  parser_kind_prop_equiv (parse_list_kind k.parser_kind_injective) (parse_list p)
 
 let vlarray_to_vldata_correct
   (array_byte_size_min: nat)

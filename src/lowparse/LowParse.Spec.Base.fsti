@@ -296,6 +296,7 @@ type parser_kind' = {
   parser_kind_high: option nat;
   parser_kind_subkind: option parser_subkind;
   parser_kind_metadata: parser_kind_metadata_t;
+  parser_kind_injective: bool;
 }
 
 let parser_kind = (x: parser_kind' {
@@ -311,6 +312,7 @@ let strong_parser_kind (lo hi: nat) (md: parser_kind_metadata_t) : Pure parser_k
     parser_kind_high = Some hi;
     parser_kind_subkind = Some ParserStrong;
     parser_kind_metadata = md;
+    parser_kind_injective = true;
   }
 
 inline_for_extraction
@@ -329,7 +331,7 @@ let parser_kind_metadata_prop (#t: Type) (k: parser_kind) (f: bare_parser t) : G
   | Some ParserKindMetadataFail -> parser_always_fails f
 
 let parser_kind_prop' (#t: Type) (k: parser_kind) (f: bare_parser t) : GTot Type0 =
-  injective f /\
+  (k.parser_kind_injective ==> injective f) /\
   (Some? k.parser_kind_subkind ==> parser_subkind_prop (Some?.v k.parser_kind_subkind) f) /\
   parses_at_least k.parser_kind_low f /\
   (Some? k.parser_kind_high ==> (parses_at_most (Some?.v k.parser_kind_high) f)) /\
@@ -416,7 +418,8 @@ let is_weaker_than
   (Some? k1.parser_kind_high ==> (
     Some? k2.parser_kind_high /\
     Some?.v k2.parser_kind_high <= Some?.v k1.parser_kind_high
-  ))))
+  )))) /\
+  (k1.parser_kind_injective ==> k2.parser_kind_injective)
   
 val is_weaker_than_correct
   (k1: parser_kind)
@@ -514,6 +517,7 @@ let glb
     parser_kind_high = k1.parser_kind_high;
     parser_kind_subkind = k1.parser_kind_subkind;
     parser_kind_metadata = (match k1.parser_kind_metadata with Some ParserKindMetadataFail -> Some ParserKindMetadataFail | _ -> None);
+    parser_kind_injective = false;
   }
   | Some ParserKindMetadataFail, _ ->
   {
@@ -521,6 +525,7 @@ let glb
     parser_kind_high = k2.parser_kind_high;
     parser_kind_subkind = k2.parser_kind_subkind;
     parser_kind_metadata = None;
+    parser_kind_injective = false;
   }
   | _ ->
   {
@@ -533,7 +538,8 @@ let glb
       else None
     );
     parser_kind_metadata = if k1.parser_kind_metadata = k2.parser_kind_metadata then k1.parser_kind_metadata else None;
-    parser_kind_subkind = if k1.parser_kind_subkind = k2.parser_kind_subkind then k1.parser_kind_subkind else None
+    parser_kind_subkind = if k1.parser_kind_subkind = k2.parser_kind_subkind then k1.parser_kind_subkind else None;
+    parser_kind_injective = k1.parser_kind_injective && k2.parser_kind_injective;
   }
 #pop-options
 #pop-options
@@ -553,6 +559,7 @@ let default_parser_kind : (x: parser_kind {
     parser_kind_high = None;
     parser_kind_metadata = None;
     parser_kind_subkind = None;
+    parser_kind_injective = false;
   } in
   x
 #pop-options
