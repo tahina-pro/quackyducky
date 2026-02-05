@@ -397,60 +397,32 @@ let and_then_no_lookahead_on
   : Lemma
     (requires (
       no_lookahead p /\
-      injective p /\
       (forall (x: t) . no_lookahead (p' x))
     ))
     (ensures (no_lookahead_on (and_then_bare p p') x x'))
 =
-    let f = and_then_bare p p' in
-    match f x with
-    | Some v -> 
-      let (y, off) = v in
-      let off : nat = off in
-      let (off_x : consumed_length x ) = off in
-      if off <= Seq.length x'
-      then
-	let (off_x' : consumed_length x') = off in
-	let g () : Lemma
-	  (requires (Seq.slice x' 0 off_x' == Seq.slice x 0 off_x))
-	  (ensures (
-	    Some? (f x') /\ (
-	    let (Some v') = f x' in
-	    let (y', off') = v' in
-	    y == y'
-	  )))
-	= assert (Some? (p x));
-	  let (Some (y1, off1)) = p x in
-	  assert (off1 <= off);
-	  assert (off1 <= Seq.length x');
-	  assert (Seq.slice x' 0 off1 == Seq.slice (Seq.slice x' 0 off_x') 0 off1);
-	  assert (Seq.slice x' 0 off1 == Seq.slice x 0 off1);
-	  assert (no_lookahead_on p x x');
-	  assert (Some? (p x'));
-	  let (Some v1') = p x' in
-	  let (y1', off1') = v1' in
-	  assert (y1 == y1');
-	  assert (injective_precond p x x');
-	  assert ((off1 <: nat) == (off1' <: nat));
-	  let x2 : bytes = Seq.slice x off1 (Seq.length x) in
-	  let x2' : bytes = Seq.slice x' off1 (Seq.length x') in
-	  let p2 = p' y1 in
-	  assert (Some? (p2 x2));
-	  let (Some (y2, off2)) = p2 x2 in
-	  assert (off == off1 + off2);
-	  assert (off2 <= Seq.length x2);
-	  assert (off2 <= Seq.length x2');
-	  assert (Seq.slice x2' 0 off2 == Seq.slice (Seq.slice x' 0 off_x') off1 (off1 + off2));
-	  assert (Seq.slice x2' 0 off2 == Seq.slice x2 0 off2);
-	  assert (no_lookahead_on p2 x2 x2');
-	  assert (Some? (p2 x2'));
-	  let (Some v2') = p2 x2' in
-	  let (y2', _) = v2' in
-	  assert (y2 == y2')
-	in
-	Classical.move_requires g ()
-      else ()
-    | _ -> ()
+  let f = and_then_bare p p' in
+  let prf ()
+    : Lemma
+      (requires no_lookahead_on_precond f x x')
+      (ensures no_lookahead_on_postcond f x x')
+    =
+    let Some (_, off0) = and_then_bare p p' x in
+    let Some (y, off) = parse p x in
+    assert (Seq.slice (Seq.slice x 0 off0) 0 off == Seq.slice (Seq.slice x' 0 off0) 0 off);
+    assert (no_lookahead_on p x x');
+    assert (no_lookahead_on_postcond p x x');
+    assert (parse p x' == Some (y, off));
+    let w = Seq.slice x off (Seq.length x) in
+    let w' = Seq.slice x' off (Seq.length x') in
+    let Some (z, off2) = parse (p' y) w in
+    assert (Seq.slice w 0 off2 == Seq.slice (Seq.slice x 0 off0) off (off + off2));
+    assert (Seq.slice w' 0 off2 == Seq.slice (Seq.slice x' 0 off0) off (off + off2));
+    assert (Seq.slice w 0 off2 == Seq.slice w' 0 off2);
+    assert (no_lookahead_on (p' y) w w');
+    ()
+  in
+  Classical.move_requires prf ()
 
 inline_for_extraction
 let and_then_metadata
@@ -497,9 +469,6 @@ let and_then_no_lookahead
   (#t':Type)
   (p': (t -> Tot (parser k' t')))
 : Lemma
-  (requires (
-    and_then_cases_injective p'
-  ))
   (ensures ((k.parser_kind_subkind == Some ParserStrong /\ k'.parser_kind_subkind == Some ParserStrong) ==> no_lookahead (and_then_bare p p')))
 = parser_kind_prop_equiv k p;
   Classical.forall_intro (fun (x: t) -> parser_kind_prop_equiv k' (p' x));
@@ -518,16 +487,15 @@ let and_then_correct
   (p': (t -> Tot (parser k' t')))
 : Lemma
   (requires (
-    and_then_cases_injective p'
+    (k.parser_kind_injective /\ k'.parser_kind_injective) ==> and_then_cases_injective p'
   ))
   (ensures (
-    injective (and_then_bare p p') /\
     parser_kind_prop (and_then_kind k k') (and_then_bare p p')
   ))
 = parser_kind_prop_equiv k p;
   Classical.forall_intro (fun x -> parser_kind_prop_equiv k' (p' x));
   parser_kind_prop_equiv (and_then_kind k k') (and_then_bare p p');
-  and_then_injective p p';
+  Classical.move_requires (and_then_injective p) p';
   and_then_no_lookahead p p'
 
 val and_then
@@ -539,7 +507,7 @@ val and_then
   (p': (t -> Tot (parser k' t')))
 : Pure (parser (and_then_kind k k') t')
   (requires (
-    and_then_cases_injective p'
+    (k.parser_kind_injective /\ k'.parser_kind_injective) ==> and_then_cases_injective p'
   ))
   (ensures (fun _ -> True))
 
@@ -552,7 +520,7 @@ val and_then_eq
   (p': (t -> Tot (parser k' t')))
   (input: bytes)
 : Lemma
-  (requires (and_then_cases_injective p'))
+  (requires ((k.parser_kind_injective /\ k'.parser_kind_injective) ==> and_then_cases_injective p'))
   (ensures (parse (and_then p p') input == and_then_bare p p' input))
 
 val tot_and_then
@@ -564,7 +532,7 @@ val tot_and_then
   (p': (t -> Tot (tot_parser k' t')))
 : Pure (tot_parser (and_then_kind k k') t')
   (requires (
-    and_then_cases_injective p'
+    (k.parser_kind_injective /\ k'.parser_kind_injective) ==> and_then_cases_injective p'
   ))
   (ensures (fun y ->
     forall x . parse y x == parse (and_then #k p #k' p') x
@@ -1957,7 +1925,8 @@ let bare_parse_strengthen_injective
   (p2: t1 -> GTot Type0)
   (prf: parse_strengthen_prf p1 p2)
 : Lemma
-  (injective (bare_parse_strengthen p1 p2 prf))
+  (requires injective p1)
+  (ensures injective (bare_parse_strengthen p1 p2 prf))
 = parser_kind_prop_equiv k p1;
   let p' : bare_parser (x: t1 { p2 x } ) = bare_parse_strengthen p1 p2 prf in
   assert (forall (b1 b2: bytes) . injective_precond p' b1 b2 ==> injective_precond p1 b1 b2);
@@ -1970,11 +1939,11 @@ let bare_parse_strengthen_correct
   (p2: t1 -> GTot Type0)
   (prf: parse_strengthen_prf p1 p2)
 : Lemma
-  (injective (bare_parse_strengthen p1 p2 prf) /\
+  (
   parser_kind_prop k (bare_parse_strengthen p1 p2 prf))
 = parser_kind_prop_equiv k p1;
   bare_parse_strengthen_no_lookahead p1 p2 prf;
-  bare_parse_strengthen_injective p1 p2 prf;
+  Classical.move_requires (bare_parse_strengthen_injective p1 p2) prf;
   parser_kind_prop_equiv k (bare_parse_strengthen p1 p2 prf);
   ()
 
@@ -2111,6 +2080,7 @@ let parse_filter_kind (k: parser_kind) : Tot parser_kind =
       | _ -> None
       end;
     parser_kind_subkind = k.parser_kind_subkind;
+    parser_kind_injective = k.parser_kind_injective;
   }
 
 // unfold

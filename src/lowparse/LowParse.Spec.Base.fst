@@ -39,14 +39,7 @@ let parse_injective
   (p: parser k t)
   (input1: bytes)
   (input2: bytes)
-: Lemma
-  (requires (
-    injective_precond p input1 input2
-  ))
-  (ensures (
-    injective_postcond p input1 input2
-  ))
-= ()
+= parser_kind_prop_equiv k p
 
 let parse_strong_prefix
   (#k: parser_kind)
@@ -78,9 +71,6 @@ let serializer_correct_implies_complete
   (#t: Type)
   (p: parser k t)
   (f: bare_serializer t)
-: Lemma
-  (requires (serializer_correct p f))
-  (ensures (serializer_complete p f))
 = let prf
     (s: bytes)
   : Lemma
@@ -90,7 +80,8 @@ let serializer_correct_implies_complete
       let (Some (x, len)) = parse p s in
       f x == Seq.slice s 0 len
     )))
-  = let (Some (x, len)) = parse p s in
+  = parser_kind_prop_equiv k p;
+    let (Some (x, len)) = parse p s in
     assert (injective_precond p (f x) s);
     assert (injective_postcond p (f x) s)
   in

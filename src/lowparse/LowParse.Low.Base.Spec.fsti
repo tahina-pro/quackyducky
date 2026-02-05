@@ -858,6 +858,7 @@ let valid_exact_ext_elim
   (pos2' : U32.t)
 : Lemma
   (requires (
+    k.parser_kind_injective /\
     valid_exact p h1 s1 pos1 pos1' /\
     valid_exact p h2 s2 pos2 pos2' /\
     contents_exact p h1 s1 pos1 pos1' == contents_exact p h2 s2 pos2 pos2'
@@ -921,6 +922,7 @@ let valid_ext_elim
   (requires (
     valid p h1 s1 pos1 /\
     valid p h2 s2 pos2 /\
+    k.parser_kind_injective /\
     k.parser_kind_subkind == Some ParserStrong /\
     contents p h1 s1 pos1 == contents p h2 s2 pos2
   ))

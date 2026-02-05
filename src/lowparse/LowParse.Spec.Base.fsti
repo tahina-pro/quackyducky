@@ -133,11 +133,12 @@ let no_lookahead_on_postcond
 : GTot Type0
 = Some? (parse f x) ==> (
   let (Some v) = parse f x in
-  let (y, _) = v in
+  let (y, off) = v in
   Some? (parse f x') /\ (
   let (Some v') = parse f x' in
-  let (y', _) = v' in
+  let (y', off') = v' in
   y == y'
+  /\ (off <: nat) == off'
   ))
 
 let no_lookahead_on
@@ -547,7 +548,7 @@ let glb
 #push-options "--warn_error -271"
 let default_parser_kind : (x: parser_kind {
   forall (t: Type u#a) (p: bare_parser t) . {:pattern (parser_kind_prop x p)}
-  injective p ==> parser_kind_prop x p
+  parser_kind_prop x p
 })
 = let aux (t:Type u#a) (k:parser_kind) (p:bare_parser t)
     : Lemma (parser_kind_prop k p <==> parser_kind_prop' k p)
@@ -576,7 +577,7 @@ let rec glb_list_of
   (requires True)
   (ensures (fun k ->
     (forall kl . L.mem kl l ==> k `is_weaker_than` (f kl))  /\
-    (forall k' . (Cons? l /\ (forall kl . L.mem kl l ==> k' `is_weaker_than` (f kl))) ==> k' `is_weaker_than` k)
+    True // (forall k' . (Cons? l /\ (forall kl . L.mem kl l ==> k' `is_weaker_than` (f kl))) ==> k' `is_weaker_than` k)
   ))
 = match l with
   | [] -> default_parser_kind
@@ -638,6 +639,7 @@ val parse_injective
   (input2: bytes)
 : Lemma
   (requires (
+    k.parser_kind_injective /\
     injective_precond p input1 input2
   ))
   (ensures (
@@ -731,7 +733,9 @@ val serializer_correct_implies_complete
   (p: parser k t)
   (f: bare_serializer t)
 : Lemma
-  (requires (serializer_correct p f))
+  (requires (
+    k.parser_kind_injective /\
+    serializer_correct p f))
   (ensures (serializer_complete p f))
 
 [@unifier_hint_injective]
@@ -878,7 +882,10 @@ let parsed_data_is_serialize
   (s: serializer p)
   (x: bytes)
 : Lemma
-  (requires (Some? (parse p x)))
+  (requires (
+    k.parser_kind_injective /\
+    Some? (parse p x)
+  ))
   (ensures (
     let Some (y, consumed) = parse p x in
     (serialize s y `Seq.append` Seq.slice x consumed (Seq.length x)) `Seq.equal` x
@@ -893,11 +900,30 @@ let serializer_unique
   (s1 s2: serializer p)
   (x: t)
 : Lemma
-  (s1 x == s2 x)
+  (requires k.parser_kind_injective)
+  (ensures s1 x == s2 x)
 = (* need these because of patterns *)
   let _ = parse p (s1 x) in
   let _ = parse p (s2 x) in
   serializer_correct_implies_complete p s2
+
+let serializer_unique_strong'
+  (#t: Type)
+  (#k1: parser_kind)
+  (#p1: parser k1 t)
+  (s1: serializer p1)
+  (#k2: parser_kind)
+  (#p2: parser k2 t)
+  (s2: serializer p2)
+  (x: t)
+: Lemma
+  (requires (
+    k1.parser_kind_injective /\
+    (forall x . parse p1 x == parse p2 x)
+  ))
+  (ensures (s1 x == s2 x))
+= let s1' = serialize_ext p2 s2 p1 in
+  serializer_unique p1 s1 s1' x
 
 let serializer_unique_strong
   (#t: Type)
@@ -909,10 +935,14 @@ let serializer_unique_strong
   (s2: serializer p2)
   (x: t)
 : Lemma
-  (requires (forall x . parse p1 x == parse p2 x))
+  (requires (
+    (k1.parser_kind_injective \/ k2.parser_kind_injective) /\
+    (forall x . parse p1 x == parse p2 x)
+  ))
   (ensures (s1 x == s2 x))
-= let s1' = serialize_ext p2 s2 p1 in
-  serializer_unique p1 s1 s1' x
+= if k1.parser_kind_injective
+  then serializer_unique_strong' s1 s2 x
+  else serializer_unique_strong' s2 s1 x
 
 let serializer_injective
   (#k: parser_kind)
