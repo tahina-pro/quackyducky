@@ -9,31 +9,26 @@ This skill is used when:
 - Debugging separation logic proof failures
 - Checking resource management correctness
 
-## Core Operations
+## Initial environment setup
+```bash
+exec <EVERPARSE_HOME>/shell.sh
+```
+where `<EVERPARSE_HOME>` is the path to the root of this repository.
+This command substitutes the current shell with a shell that has
+the environment fully set up, including making `z3-4.13.3`, `fstar.exe` and `krml`
+reachable from the `PATH`, and setting up the location of Pulse in the
+`PULSE_HOME` environment variable.
 
-PULSE_HOME is usually located adjacent to the FStar directory.
+## Core Operations
 
 ### Basic Verification
 ```bash
-# Verify Pulse file (--include <PULSE_HOME>/out/lib/pulse is required)
-fstar.exe --include <PULSE_HOME>/out/lib/pulse Module.fst
-
-# With include paths for Pulse library
-fstar.exe --include <PULSE_HOME>/out/lib/pulse --include out/lib/pulse --include lib/pulse/lib Module.fst
+# Verify Pulse file (--include $PULSE_HOME/out/lib/pulse is required)
+fstar.exe --include $PULSE_HOME/out/lib/pulse Module.fst
 
 # Verify interface first, then implementation
-fstar.exe --include <PULSE_HOME>/out/lib/pulse --include paths... Module.fsti
-fstar.exe --include <PULSE_HOME>/out/lib/pulse --include paths... Module.fst
-```
-
-### Building with Pulse Repository
-```bash
-# In pulse repository root
-make -j4
-
-# Or verify specific file
-cd /path/to/pulse
-fstar.exe --include out/lib/pulse --include lib/pulse/lib lib/pulse/lib/Module.fst
+fstar.exe --include $PULSE_HOME/out/lib/pulse --include paths... Module.fsti
+fstar.exe --include $PULSE_HOME/out/lib/pulse --include paths... Module.fst
 ```
 
 ## Pulse-Specific Errors

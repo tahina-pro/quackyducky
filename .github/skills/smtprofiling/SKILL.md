@@ -9,6 +9,16 @@ This skill is used when:
 - Debugging verification failures and proof performance
 - Especially when proofs require high rlimits or fail unpredictably
 
+## Initial environment setup
+```bash
+exec <EVERPARSE_HOME>/shell.sh
+```
+where `<EVERPARSE_HOME>` is the path to the root of this repository.
+This command substitutes the current shell with a shell that has
+the environment fully set up, including making `z3-4.13.3`, `fstar.exe` and `krml`
+reachable from the `PATH`, and setting up the location of Pulse in the
+`PULSE_HOME` environment variable.
+
 ## Core Operations
 
 ### Collect an .smt2 file for problematic proof

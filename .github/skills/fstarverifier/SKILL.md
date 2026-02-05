@@ -9,6 +9,16 @@ This skill is used when:
 - Debugging verification failures
 - Checking proof completeness
 
+## Initial environment setup
+```bash
+exec <EVERPARSE_HOME>/shell.sh
+```
+where `<EVERPARSE_HOME>` is the path to the root of this repository.
+This command substitutes the current shell with a shell that has
+the environment fully set up, including making `z3-4.13.3`, `fstar.exe` and `krml`
+reachable from the `PATH`, and setting up the location of Pulse in the
+`PULSE_HOME` environment variable.
+
 ## Core Operations
 
 ### Basic Verification
@@ -17,10 +27,10 @@ This skill is used when:
 fstar.exe Module.fst
 
 # With Pulse extension
-fstar.exe --include <PULSE_HOME>/out/lib/pulse Module.fst
+fstar.exe --include $PULSE_HOME/out/lib/pulse Module.fst
 
 # With include paths
-fstar.exe --include <PULSE_HOME>/out/lib/pulse --include path/to/lib Module.fst
+fstar.exe --include $PULSE_HOME/out/lib/pulse --include path/to/lib Module.fst
 ```
 
 ### Diagnostic Options
@@ -38,7 +48,7 @@ fstar.exe --log_queries Module.fst
 fstar.exe --z3refresh Module.fst
 
 # Combined debugging
-fstar.exe --include <PULSE_HOME>/out/lib/pulse --query_stats --split_queries always --z3refresh Module.fst
+fstar.exe --include $PULSE_HOME/out/lib/pulse --query_stats --split_queries always --z3refresh Module.fst
 ```
 
 ### Resource Limits
@@ -113,11 +123,10 @@ fstar.exe --include <PULSE_HOME>/out/lib/pulse --query_stats --split_queries alw
 
 ## Additional resources
 
-Find the directory PoP-in-FStar on the local machine, or locate it
-here: https://github.com/FStarLang/PoP-in-FStar
+https://github.com/FStarLang/PoP-in-FStar
 
 This contains the sources to the Proof-oriented Programming in F* 
 book. You can search through the book for various explanations, 
 tips and common patterns.
 
-Also look at FStar/ulib, FStar/doc, FStar/examples for sample code.
+Also look at `opt/FStar/ulib`, `opt/FStar/doc`, `opt/FStar/examples` for sample code.
