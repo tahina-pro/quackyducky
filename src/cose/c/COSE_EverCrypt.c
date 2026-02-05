@@ -105,14 +105,14 @@ K___COSE_Format_label_COSE_Format_values COSE_EverCrypt_dummy_map_val(void)
     );
 }
 
-static Pulse_Lib_Slice_slice___COSE_Format_label___COSE_Format_values_
+static Pulse_Lib_Slice_slice__K___COSE_Format_label_COSE_Format_values
 from_array___COSE_Format_label___COSE_Format_values_(
   K___COSE_Format_label_COSE_Format_values *a,
   size_t alen
 )
 {
   return
-    ((Pulse_Lib_Slice_slice___COSE_Format_label___COSE_Format_values_){ .elt = a, .len = alen });
+    ((Pulse_Lib_Slice_slice__K___COSE_Format_label_COSE_Format_values){ .elt = a, .len = alen });
 }
 
 COSE_Format_empty_or_serialized_map
@@ -212,7 +212,7 @@ COSE_EverCrypt_sign1(
   outbuf_sz =
     COSE_Format_serialize_cose_sign1_tagged((
         (COSE_Format_cose_sign1){
-          .protected = phdr,
+          .protected0 = phdr,
           .unprotected = uhdr,
           .payload = { .tag = COSE_Format_Inl, { .case_Inl = payload } },
           .signature = Pulse_Lib_Slice_from_array__uint8_t(sigbuf, (size_t)64U)
@@ -328,25 +328,25 @@ uu___is_Inl__COSE_Format_bstr_COSE_Format_nil(
     return false;
 }
 
-FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice_uint8_t
+FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice__uint8_t
 COSE_EverCrypt_verify1(
   uint8_t *pubkey,
   Pulse_Lib_Slice_slice__uint8_t aad,
   Pulse_Lib_Slice_slice__uint8_t msg
 )
 {
-  FStar_Pervasives_Native_option___COSE_Format_cose_sign1_tagged___Pulse_Lib_Slice_slice_uint8_t_
+  FStar_Pervasives_Native_option__K___COSE_Format_cose_sign1_tagged_Pulse_Lib_Slice_slice__uint8_t
   scrut0 = COSE_Format_validate_and_parse_cose_sign1_tagged(msg);
   if (scrut0.tag == FStar_Pervasives_Native_None)
     return
       (
-        (FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice_uint8_t){
+        (FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice__uint8_t){
           .tag = FStar_Pervasives_Native_None
         }
       );
   else if (scrut0.tag == FStar_Pervasives_Native_Some)
   {
-    K___COSE_Format_cose_sign1_tagged_Pulse_Lib_Slice_slice_uint8_t res1 = scrut0.v;
+    K___COSE_Format_cose_sign1_tagged_Pulse_Lib_Slice_slice__uint8_t res1 = scrut0.v;
     COSE_Format_cose_sign1 x = res1.fst;
     Pulse_Lib_Slice_slice__uint8_t rem = res1.snd;
     if
@@ -368,7 +368,7 @@ COSE_EverCrypt_verify1(
           ite =
             KRML_EABORT(Pulse_Lib_Slice_slice__uint8_t,
               "unreachable (pattern matches are exhaustive in F*)");
-        ite0 = COSE_EverCrypt_verify_sig(pubkey, x.protected, aad, ite, sig_);
+        ite0 = COSE_EverCrypt_verify_sig(pubkey, x.protected0, aad, ite, sig_);
       }
       else
         ite0 = false;
@@ -384,7 +384,7 @@ COSE_EverCrypt_verify1(
               "unreachable (pattern matches are exhaustive in F*)");
         return
           (
-            (FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice_uint8_t){
+            (FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice__uint8_t){
               .tag = FStar_Pervasives_Native_Some,
               .v = ite
             }
@@ -393,7 +393,7 @@ COSE_EverCrypt_verify1(
       else
         return
           (
-            (FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice_uint8_t){
+            (FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice__uint8_t){
               .tag = FStar_Pervasives_Native_None
             }
           );
@@ -401,7 +401,7 @@ COSE_EverCrypt_verify1(
     else
       return
         (
-          (FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice_uint8_t){
+          (FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice__uint8_t){
             .tag = FStar_Pervasives_Native_None
           }
         );
@@ -416,7 +416,7 @@ COSE_EverCrypt_verify1(
   }
 }
 
-FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice_uint8_t
+FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice__uint8_t
 COSE_EverCrypt_verify1_simple(uint8_t *pubkey, Pulse_Lib_Slice_slice__uint8_t msg)
 {
   uint8_t buf[0U];

@@ -4556,7 +4556,7 @@ pub enum option__COSE_Format_bstr <'a>
 }
 
 #[derive(PartialEq, Clone, Copy)]
-pub enum option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int <'a>
+pub enum option__COSE_Format_aux_env29_type_1_ugly <'a>
 {
     None,
     Some { v: aux_env29_type_1_ugly <'a> }
@@ -4564,7 +4564,7 @@ pub enum option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct
-array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
 <'a>
 {
     pub cddl_array_iterator_contents:
@@ -4582,35 +4582,35 @@ array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum
-either__CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1
+either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
 <'a>
 {
     Inl { v: &'a [aux_env29_type_1 <'a>] },
     Inr
     {
         v:
-        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
         <'a>
     }
 }
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum
-option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1
+option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
 <'a>
 {
     None,
     Some
     {
         v:
-        either__CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1
+        either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
         <'a>
     }
 }
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct
-map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
 <'a>
 {
     pub cddl_map_iterator_contents:
@@ -4626,14 +4626,14 @@ map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum
-either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
 <'a>
 {
     Inl { v: &'a [(label <'a>, crate::cbordetveraux::cbor_raw <'a>)] },
     Inr
     {
         v:
-        map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+        map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
         <'a>
     }
 }
@@ -4643,13 +4643,13 @@ pub struct cose_key_generic <'a>
 {
     pub intkey1: aux_env29_type_1_ugly <'a>,
     pub intkey2: option__COSE_Format_bstr <'a>,
-    pub intkey3: option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int <'a>,
+    pub intkey3: option__COSE_Format_aux_env29_type_1_ugly <'a>,
     pub intkey4:
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
     <'a>,
     pub intkey5: option__COSE_Format_bstr <'a>,
     pub _x0:
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     <'a>
 }
 
@@ -4662,13 +4662,13 @@ pub fn uu___is_Mkcose_key_generic0(projectee: cose_key_generic) -> bool
 fn cose_key_generic_right <'a>(
     x6:
     (((((aux_env29_type_1_ugly <'a>, option__COSE_Format_bstr <'a>),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int
+    option__COSE_Format_aux_env29_type_1_ugly
     <'a>),
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
     <'a>),
     option__COSE_Format_bstr
     <'a>),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     <'a>)
 ) ->
     cose_key_generic
@@ -4684,28 +4684,27 @@ fn cose_key_generic_right <'a>(
 
 fn cose_key_generic_left <'a>(x13: cose_key_generic <'a>) ->
     (((((aux_env29_type_1_ugly <'a>, option__COSE_Format_bstr <'a>),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int
+    option__COSE_Format_aux_env29_type_1_ugly
     <'a>),
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
     <'a>),
     option__COSE_Format_bstr
     <'a>),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     <'a>)
 {
     let x21: aux_env29_type_1_ugly = x13.intkey1;
     let x22: option__COSE_Format_bstr = x13.intkey2;
-    let x23: option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int =
-        x13.intkey3;
+    let x23: option__COSE_Format_aux_env29_type_1_ugly = x13.intkey3;
     let
     x24:
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
     =
         x13.intkey4;
     let x25: option__COSE_Format_bstr = x13.intkey5;
     let
     x26:
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     =
         x13._x0;
     (((((x21,x22),x23),x24),x25),x26)
@@ -4837,7 +4836,7 @@ parse_cose_key_generic
               },
             _ => panic!("Incomplete pattern matching")
         };
-    let w20: option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int =
+    let w20: option__COSE_Format_aux_env29_type_1_ugly =
         if crate::cbordetveraux::uu___is_MGOK(test10)
         {
             let mty2: crate::cbordetver::cbor_det_int_kind =
@@ -4873,15 +4872,13 @@ parse_cose_key_generic
                       },
                     _ => panic!("Incomplete pattern matching")
                 };
-            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int::Some
-            { v: w11 }
+            option__COSE_Format_aux_env29_type_1_ugly::Some { v: w11 }
         }
         else
-        { option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int::None };
+        { option__COSE_Format_aux_env29_type_1_ugly::None };
     let
     w11:
-    ((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int)
+    ((aux_env29_type_1_ugly, option__COSE_Format_bstr), option__COSE_Format_aux_env29_type_1_ugly)
     =
         (w10,w20);
     let dummy1: [u64; 1] = [0u64; 1usize];
@@ -5006,7 +5003,7 @@ parse_cose_key_generic
         };
     let
     w21:
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
     =
         if crate::cbordetveraux::uu___is_MGOK(test11)
         {
@@ -5026,7 +5023,7 @@ parse_cose_key_generic
             let _letpattern5: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
             let
             w110:
-            either__CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1
+            either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
             =
                 match _letpattern5
                 {
@@ -5046,31 +5043,37 @@ parse_cose_key_generic
                               };
                           let
                           i:
-                          array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+                          array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
                           =
-                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
                               {
                                   cddl_array_iterator_contents: ar,
-                                  cddl_array_iterator_impl_validate: aux_env29_validate_1,
+                                  cddl_array_iterator_impl_validate:
+                                  aux_env29_validate_1
+                                  as
+                                  fn
+                                  (&mut
+                                  [crate::cbordetveraux::cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw])
+                                  ->
+                                  bool,
                                   cddl_array_iterator_impl_parse: aux_env29_parse_1
                               };
-                          either__CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1::Inr
+                          either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1::Inr
                           { v: i }
                       },
                     _ => panic!("Incomplete pattern matching")
                 };
-            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1::Some
+            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1::Some
             { v: w110 }
         }
         else
         {
-            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1::None
+            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1::None
         };
     let
     w12:
-    (((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1)
+    (((aux_env29_type_1_ugly, option__COSE_Format_bstr), option__COSE_Format_aux_env29_type_1_ugly),
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1)
     =
         (w11,w21);
     let dummy2: [u64; 1] = [0u64; 1usize];
@@ -5132,8 +5135,8 @@ parse_cose_key_generic
     let
     w13:
     ((((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1),
+    option__COSE_Format_aux_env29_type_1_ugly),
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1),
     option__COSE_Format_bstr)
     =
         (w12,w22);
@@ -5148,30 +5151,33 @@ parse_cose_key_generic
         };
     let
     rres:
-    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     =
-        map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+        map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
         {
             cddl_map_iterator_contents: i,
-            cddl_map_iterator_impl_validate1: validate_label,
+            cddl_map_iterator_impl_validate1:
+            validate_label as fn (crate::cbordetveraux::cbor_raw) -> bool,
             cddl_map_iterator_impl_parse1: parse_label,
-            cddl_map_iterator_impl_validate_ex: aux_env29_map_constraint_2,
-            cddl_map_iterator_impl_validate2: validate_values,
+            cddl_map_iterator_impl_validate_ex:
+            aux_env29_map_constraint_2 as fn (crate::cbordetveraux::cbor_map_entry) -> bool,
+            cddl_map_iterator_impl_validate2:
+            validate_values as fn (crate::cbordetveraux::cbor_raw) -> bool,
             cddl_map_iterator_impl_parse2: parse_values
         };
     let
     w23:
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     =
-        either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values::Inr
+        either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values::Inr
         { v: rres };
     let
     res1:
     (((((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1),
+    option__COSE_Format_aux_env29_type_1_ugly),
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1),
     option__COSE_Format_bstr),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values)
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values)
     =
         (w13,w23);
     cose_key_generic_right(res1)
@@ -5187,10 +5193,10 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
     let
     c·:
     (((((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1),
+    option__COSE_Format_aux_env29_type_1_ugly),
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1),
     option__COSE_Format_bstr),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values)
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values)
     =
         cose_key_generic_left(c);
     let mut pcount: [u64; 1] = [0u64; 1usize];
@@ -5198,10 +5204,10 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
     let
     _letpattern:
     (((((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1),
+    option__COSE_Format_aux_env29_type_1_ugly),
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1),
     option__COSE_Format_bstr),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values)
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values)
     =
         c·;
     let res: bool =
@@ -5209,21 +5215,21 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
             let
             c1:
             ((((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
-            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1),
+            option__COSE_Format_aux_env29_type_1_ugly),
+            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1),
             option__COSE_Format_bstr)
             =
                 _letpattern.0;
             let
             c2:
-            either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+            either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
             =
                 _letpattern.1;
             let
             _letpattern1:
             ((((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
-            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1),
+            option__COSE_Format_aux_env29_type_1_ugly),
+            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1),
             option__COSE_Format_bstr)
             =
                 c1;
@@ -5232,16 +5238,16 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                     let
                     c11:
                     (((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-                    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
-                    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1)
+                    option__COSE_Format_aux_env29_type_1_ugly),
+                    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1)
                     =
                         _letpattern1.0;
                     let c21: option__COSE_Format_bstr = _letpattern1.1;
                     let
                     _letpattern2:
                     (((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-                    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
-                    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1)
+                    option__COSE_Format_aux_env29_type_1_ugly),
+                    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1)
                     =
                         c11;
                     let res1: bool =
@@ -5249,28 +5255,25 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                             let
                             c12:
                             ((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-                            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int)
+                            option__COSE_Format_aux_env29_type_1_ugly)
                             =
                                 _letpattern2.0;
                             let
                             c22:
-                            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1
+                            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
                             =
                                 _letpattern2.1;
                             let
                             _letpattern3:
                             ((aux_env29_type_1_ugly, option__COSE_Format_bstr),
-                            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int)
+                            option__COSE_Format_aux_env29_type_1_ugly)
                             =
                                 c12;
                             let res1: bool =
                                 {
                                     let c13: (aux_env29_type_1_ugly, option__COSE_Format_bstr) =
                                         _letpattern3.0;
-                                    let
-                                    c23:
-                                    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int
-                                    =
+                                    let c23: option__COSE_Format_aux_env29_type_1_ugly =
                                         _letpattern3.1;
                                     let
                                     _letpattern4: (aux_env29_type_1_ugly, option__COSE_Format_bstr)
@@ -5478,7 +5481,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                                     {
                                         match c23
                                         {
-                                            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int::Some
+                                            option__COSE_Format_aux_env29_type_1_ugly::Some
                                             { v: c14 }
                                             =>
                                               {
@@ -5574,8 +5577,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                                                   else
                                                   { false }
                                               },
-                                            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int::None
-                                            => true,
+                                            option__COSE_Format_aux_env29_type_1_ugly::None => true,
                                             _ => panic!("Incomplete pattern matching")
                                         }
                                     }
@@ -5586,7 +5588,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                             {
                                 match c22
                                 {
-                                    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1::Some
+                                    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1::Some
                                     { v: c13 }
                                     =>
                                       {
@@ -5626,7 +5628,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                                                   let res0: bool =
                                                       match c13
                                                       {
-                                                          either__CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1::Inl
+                                                          either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1::Inl
                                                           { v: c14 }
                                                           =>
                                                             if c14.len() == 0usize
@@ -5682,7 +5684,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                                                                 };
                                                                 (&pres)[0]
                                                             },
-                                                          either__CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1::Inr
+                                                          either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1::Inr
                                                           { v: c23 }
                                                           =>
                                                             {
@@ -5697,7 +5699,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                                                                     let
                                                                     mut
                                                                     pc:
-                                                                    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1;
+                                                                    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1;
                                                                     1]
                                                                     =
                                                                         [c23; 1usize];
@@ -5709,7 +5711,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                                                                         {
                                                                             let
                                                                             c30:
-                                                                            array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+                                                                            array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
                                                                             =
                                                                                 (&pc)[0];
                                                                             let em1: bool =
@@ -5725,7 +5727,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                                                                     {
                                                                         let
                                                                         i:
-                                                                        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+                                                                        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
                                                                         =
                                                                             (&pc)[0];
                                                                         let len0: u64 =
@@ -5758,9 +5760,9 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                                                                             );
                                                                         let
                                                                         j:
-                                                                        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+                                                                        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
                                                                         =
-                                                                            array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+                                                                            array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
                                                                             {
                                                                                 cddl_array_iterator_contents:
                                                                                 ji,
@@ -5799,7 +5801,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                                                                             {
                                                                                 let
                                                                                 c30:
-                                                                                array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+                                                                                array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
                                                                                 =
                                                                                     (&pc)[0];
                                                                                 let em1: bool =
@@ -5861,7 +5863,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                                           else
                                           { false }
                                       },
-                                    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env29_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env29_type_1::None
+                                    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1::None
                                     => true,
                                     _ => panic!("Incomplete pattern matching")
                                 }
@@ -5945,7 +5947,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
             {
                 match c2
                 {
-                    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values::Inl
+                    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values::Inl
                     { v: c11 }
                     =>
                       {
@@ -5984,13 +5986,13 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                           };
                           (&pres)[0]
                       },
-                    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values::Inr
+                    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values::Inr
                     { v: c21 }
                     =>
                       {
                           let
                           pc:
-                          [map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values;
+                          [map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values;
                           1]
                           =
                               [c21; 1usize];
@@ -6001,7 +6003,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                               {
                                   let
                                   c3:
-                                  map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+                                  map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
                                   =
                                       (&pc)[0];
                                   let
@@ -6084,7 +6086,7 @@ serialize_cose_key_generic(c: cose_key_generic, out: &mut [u8]) ->
                                   {
                                       let
                                       c3:
-                                      map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+                                      map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
                                       =
                                           (&pc)[0];
                                       let
@@ -6225,7 +6227,7 @@ pub fn validate_and_parse_cose_key_generic <'a>(s: &'a [u8]) ->
 
 pub fn is_empty_iterate_array_aux_env29_type_1(
     i:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
 ) ->
     bool
 { crate::cbordetver::cbor_det_array_iterator_is_empty(i.cddl_array_iterator_contents) }
@@ -6233,7 +6235,7 @@ pub fn is_empty_iterate_array_aux_env29_type_1(
 pub fn next_iterate_array_aux_env29_type_1 <'a>(
     pi:
     &'a mut
-    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
     <'a>]
 ) ->
     aux_env29_type_1
@@ -6241,7 +6243,7 @@ pub fn next_iterate_array_aux_env29_type_1 <'a>(
 {
     let
     i:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
     =
         pi[0];
     let len0: u64 =
@@ -6254,9 +6256,9 @@ pub fn next_iterate_array_aux_env29_type_1 <'a>(
     let len1: u64 = crate::cbordetver::cbor_det_array_iterator_length(ji);
     let
     j:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
     =
-        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
+        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
         {
             cddl_array_iterator_contents: ji,
             cddl_array_iterator_impl_validate: i.cddl_array_iterator_impl_validate,
@@ -6273,7 +6275,7 @@ pub fn next_iterate_array_aux_env29_type_1 <'a>(
 
 pub fn is_empty_iterate_map_label_and_values(
     i:
-    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
 ) ->
     bool
 {
@@ -6329,14 +6331,14 @@ pub fn is_empty_iterate_map_label_and_values(
 pub fn next_iterate_map_label_and_values <'a>(
     pi:
     &'a mut
-    [map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+    [map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     <'a>]
 ) ->
     (label <'a>, crate::cbordetveraux::cbor_raw <'a>)
 {
     let
     i:
-    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     =
         pi[0];
     let mut pj: [crate::cbordetveraux::cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry; 1] =
@@ -6388,9 +6390,9 @@ pub fn next_iterate_map_label_and_values <'a>(
     let j: crate::cbordetveraux::cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry = (&pj)[0];
     let
     i·:
-    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     =
-        map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+        map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
         {
             cddl_map_iterator_contents: j,
             cddl_map_iterator_impl_validate1: i.cddl_map_iterator_impl_validate1,
@@ -6555,7 +6557,7 @@ pub fn validate_cose_keyset(c: crate::cbordetveraux::cbor_raw) -> bool
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct
-array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
 <'a>
 {
     pub cddl_array_iterator_contents:
@@ -6572,13 +6574,15 @@ array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type
 }
 
 #[derive(PartialEq, Clone, Copy)]
-enum cose_keyset_ugly <'a>
+enum
+either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+<'a>
 {
     Inl { v: &'a [cose_key_generic <'a>] },
     Inr
     {
         v:
-        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
         <'a>
     }
 }
@@ -6597,7 +6601,7 @@ pub enum cose_keyset <'a>
     Mkcose_keyset1
     {
         _x0:
-        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
         <'a>
     }
 }
@@ -6608,22 +6612,38 @@ pub fn uu___is_Mkcose_keyset0(projectee: cose_keyset) -> bool
 pub fn uu___is_Mkcose_keyset1(projectee: cose_keyset) -> bool
 { match projectee { cose_keyset::Mkcose_keyset1 { .. } => true, _ => false } }
 
-fn cose_keyset_right <'a>(x2: cose_keyset_ugly <'a>) -> cose_keyset <'a>
+fn cose_keyset_right <'a>(
+    x2:
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+    <'a>
+) ->
+    cose_keyset
+    <'a>
 {
     match x2
     {
-        cose_keyset_ugly::Inl { v: x3 } => cose_keyset::Mkcose_keyset0 { _x0: x3 },
-        cose_keyset_ugly::Inr { v: x4 } => cose_keyset::Mkcose_keyset1 { _x0: x4 },
+        either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1::Inl
+        { v: x3 }
+        => cose_keyset::Mkcose_keyset0 { _x0: x3 },
+        either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1::Inr
+        { v: x4 }
+        => cose_keyset::Mkcose_keyset1 { _x0: x4 },
         _ => panic!("Incomplete pattern matching")
     }
 }
 
-fn cose_keyset_left <'a>(x7: cose_keyset <'a>) -> cose_keyset_ugly <'a>
+fn cose_keyset_left <'a>(x7: cose_keyset <'a>) ->
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+    <'a>
 {
     match x7
     {
-        cose_keyset::Mkcose_keyset0 { _x0: x10 } => cose_keyset_ugly::Inl { v: x10 },
-        cose_keyset::Mkcose_keyset1 { _x0: x12 } => cose_keyset_ugly::Inr { v: x12 },
+        cose_keyset::Mkcose_keyset0 { _x0: x10 } =>
+          either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1::Inl
+          { v: x10 },
+        cose_keyset::Mkcose_keyset1 { _x0: x12 } =>
+          either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1::Inr
+          { v: x12 },
         _ => panic!("Incomplete pattern matching")
     }
 }
@@ -6648,15 +6668,26 @@ parse_cose_keyset
         };
     let
     i:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
     =
-        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
         {
             cddl_array_iterator_contents: ar,
-            cddl_array_iterator_impl_validate: aux_env30_validate_1,
+            cddl_array_iterator_impl_validate:
+            aux_env30_validate_1
+            as
+            fn
+            (&mut [crate::cbordetveraux::cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw])
+            ->
+            bool,
             cddl_array_iterator_impl_parse: aux_env30_parse_1
         };
-    let res1: cose_keyset_ugly = cose_keyset_ugly::Inr { v: i };
+    let
+    res1:
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+    =
+        either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1::Inr
+        { v: i };
     cose_keyset_right(res1)
 }
 
@@ -6667,13 +6698,19 @@ pub fn
 serialize_cose_keyset(c: cose_keyset, out: &mut [u8]) ->
     usize
 {
-    let c·: cose_keyset_ugly = cose_keyset_left(c);
+    let
+    c·:
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+    =
+        cose_keyset_left(c);
     let mut pcount: [u64; 1] = [0u64; 1usize];
     let mut psize: [usize; 1] = [0usize; 1usize];
     let res: bool =
         match c·
         {
-            cose_keyset_ugly::Inl { v: c1 } =>
+            either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1::Inl
+            { v: c1 }
+            =>
               if c1.len() == 0usize
               { false }
               else
@@ -6716,7 +6753,9 @@ serialize_cose_keyset(c: cose_keyset, out: &mut [u8]) ->
                   };
                   (&pres)[0]
               },
-            cose_keyset_ugly::Inr { v: c2 } =>
+            either__CDDL_Pulse_Types_slice__COSE_Format_aux_env30_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1::Inr
+            { v: c2 }
+            =>
               {
                   let em: bool =
                       crate::cbordetver::cbor_det_array_iterator_is_empty(
@@ -6729,7 +6768,7 @@ serialize_cose_keyset(c: cose_keyset, out: &mut [u8]) ->
                       let
                       mut
                       pc:
-                      [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1;
+                      [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1;
                       1]
                       =
                           [c2; 1usize];
@@ -6740,7 +6779,7 @@ serialize_cose_keyset(c: cose_keyset, out: &mut [u8]) ->
                           {
                               let
                               c1:
-                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
                               =
                                   (&pc)[0];
                               let em1: bool =
@@ -6756,7 +6795,7 @@ serialize_cose_keyset(c: cose_keyset, out: &mut [u8]) ->
                       {
                           let
                           i:
-                          array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+                          array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
                           =
                               (&pc)[0];
                           let len0: u64 =
@@ -6778,9 +6817,9 @@ serialize_cose_keyset(c: cose_keyset, out: &mut [u8]) ->
                           let len1: u64 = crate::cbordetver::cbor_det_array_iterator_length(ji);
                           let
                           j:
-                          array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+                          array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
                           =
-                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
                               {
                                   cddl_array_iterator_contents: ji,
                                   cddl_array_iterator_impl_validate:
@@ -6804,7 +6843,7 @@ serialize_cose_keyset(c: cose_keyset, out: &mut [u8]) ->
                               {
                                   let
                                   c1:
-                                  array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+                                  array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
                                   =
                                       (&pc)[0];
                                   let em1: bool =
@@ -6875,7 +6914,7 @@ pub fn validate_and_parse_cose_keyset <'a>(s: &'a [u8]) ->
 
 pub fn is_empty_iterate_array_aux_env30_type_1(
     i:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
 ) ->
     bool
 { crate::cbordetver::cbor_det_array_iterator_is_empty(i.cddl_array_iterator_contents) }
@@ -6883,7 +6922,7 @@ pub fn is_empty_iterate_array_aux_env30_type_1(
 pub fn next_iterate_array_aux_env30_type_1 <'a>(
     pi:
     &'a mut
-    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
     <'a>]
 ) ->
     cose_key_generic
@@ -6891,7 +6930,7 @@ pub fn next_iterate_array_aux_env30_type_1 <'a>(
 {
     let
     i:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
     =
         pi[0];
     let len0: u64 =
@@ -6904,9 +6943,9 @@ pub fn next_iterate_array_aux_env30_type_1 <'a>(
     let len1: u64 = crate::cbordetver::cbor_det_array_iterator_length(ji);
     let
     j:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
     =
-        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
+        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env30_type_1
         {
             cddl_array_iterator_contents: ji,
             cddl_array_iterator_impl_validate: i.cddl_array_iterator_impl_validate,
@@ -7570,7 +7609,7 @@ pub struct cose_key_okp <'a>
     pub intkeyneg2: option__COSE_Format_bstr <'a>,
     pub intkeyneg4: option__COSE_Format_bstr <'a>,
     pub _x0:
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     <'a>
 }
 
@@ -7583,7 +7622,7 @@ pub fn uu___is_Mkcose_key_okp0(projectee: cose_key_okp) -> bool
 fn cose_key_okp_right <'a>(
     x5:
     (((((), label_ugly <'a>), option__COSE_Format_bstr <'a>), option__COSE_Format_bstr <'a>),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     <'a>)
 ) ->
     cose_key_okp
@@ -7598,7 +7637,7 @@ fn cose_key_okp_right <'a>(
 
 fn cose_key_okp_left <'a>(x11: cose_key_okp <'a>) ->
     (((((), label_ugly <'a>), option__COSE_Format_bstr <'a>), option__COSE_Format_bstr <'a>),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     <'a>)
 {
     let x19: label_ugly = x11.intkeyneg1;
@@ -7606,7 +7645,7 @@ fn cose_key_okp_left <'a>(x11: cose_key_okp <'a>) ->
     let x21: option__COSE_Format_bstr = x11.intkeyneg4;
     let
     x22:
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     =
         x11._x0;
     (((((),x19),x20),x21),x22)
@@ -7828,27 +7867,30 @@ parse_cose_key_okp
         };
     let
     rres:
-    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     =
-        map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+        map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
         {
             cddl_map_iterator_contents: i,
-            cddl_map_iterator_impl_validate1: validate_label,
+            cddl_map_iterator_impl_validate1:
+            validate_label as fn (crate::cbordetveraux::cbor_raw) -> bool,
             cddl_map_iterator_impl_parse1: parse_label,
-            cddl_map_iterator_impl_validate_ex: aux_env31_map_constraint_1,
-            cddl_map_iterator_impl_validate2: validate_values,
+            cddl_map_iterator_impl_validate_ex:
+            aux_env31_map_constraint_1 as fn (crate::cbordetveraux::cbor_map_entry) -> bool,
+            cddl_map_iterator_impl_validate2:
+            validate_values as fn (crate::cbordetveraux::cbor_raw) -> bool,
             cddl_map_iterator_impl_parse2: parse_values
         };
     let
     w22:
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     =
-        either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values::Inr
+        either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values::Inr
         { v: rres };
     let
     res1:
     (((((), label_ugly), option__COSE_Format_bstr), option__COSE_Format_bstr),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values)
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values)
     =
         (w11,w22);
     cose_key_okp_right(res1)
@@ -7864,7 +7906,7 @@ serialize_cose_key_okp(c: cose_key_okp, out: &mut [u8]) ->
     let
     c·:
     (((((), label_ugly), option__COSE_Format_bstr), option__COSE_Format_bstr),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values)
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values)
     =
         cose_key_okp_left(c);
     let mut pcount: [u64; 1] = [0u64; 1usize];
@@ -7872,7 +7914,7 @@ serialize_cose_key_okp(c: cose_key_okp, out: &mut [u8]) ->
     let
     _letpattern:
     (((((), label_ugly), option__COSE_Format_bstr), option__COSE_Format_bstr),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values)
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values)
     =
         c·;
     let res: bool =
@@ -7881,7 +7923,7 @@ serialize_cose_key_okp(c: cose_key_okp, out: &mut [u8]) ->
                 _letpattern.0;
             let
             c2:
-            either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+            either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
             =
                 _letpattern.1;
             let
@@ -8224,7 +8266,7 @@ serialize_cose_key_okp(c: cose_key_okp, out: &mut [u8]) ->
             {
                 match c2
                 {
-                    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values::Inl
+                    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values::Inl
                     { v: c11 }
                     =>
                       {
@@ -8263,13 +8305,13 @@ serialize_cose_key_okp(c: cose_key_okp, out: &mut [u8]) ->
                           };
                           (&pres)[0]
                       },
-                    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values::Inr
+                    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values::Inr
                     { v: c21 }
                     =>
                       {
                           let
                           pc:
-                          [map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values;
+                          [map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values;
                           1]
                           =
                               [c21; 1usize];
@@ -8280,7 +8322,7 @@ serialize_cose_key_okp(c: cose_key_okp, out: &mut [u8]) ->
                               {
                                   let
                                   c3:
-                                  map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+                                  map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
                                   =
                                       (&pc)[0];
                                   let
@@ -8363,7 +8405,7 @@ serialize_cose_key_okp(c: cose_key_okp, out: &mut [u8]) ->
                                   {
                                       let
                                       c3:
-                                      map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+                                      map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
                                       =
                                           (&pc)[0];
                                       let
@@ -10164,7 +10206,7 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
 }
 
 #[derive(PartialEq, Clone, Copy)]
-pub enum option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr <'a>
+pub enum option__COSE_Format_label_ugly <'a>
 {
     None,
     Some { v: label_ugly <'a> }
@@ -10172,7 +10214,7 @@ pub enum option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct
-array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
 <'a>
 {
     pub cddl_array_iterator_contents:
@@ -10186,28 +10228,28 @@ array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum
-either__CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1
+either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
 <'a>
 {
     Inl { v: &'a [label <'a>] },
     Inr
     {
         v:
-        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
         <'a>
     }
 }
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum
-option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1
+option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
 <'a>
 {
     None,
     Some
     {
         v:
-        either__CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1
+        either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
         <'a>
     }
 }
@@ -10221,7 +10263,7 @@ pub enum option__COSE_Format_everparsenomatch
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum
-either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·
+either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·
 <'a>
 {
     Inl { v: (&'a [u8], option__COSE_Format_everparsenomatch) },
@@ -10230,14 +10272,14 @@ either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_ever
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum
-either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·
+either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·
 <'a>
 {
     Inl { v: (&'a [u8], option__COSE_Format_everparsenomatch) },
     Inr
     {
         v:
-        either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·
+        either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·
         <'a>
     }
 }
@@ -10245,17 +10287,17 @@ either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_ever
 #[derive(PartialEq, Clone, Copy)]
 pub struct header_map <'a>
 {
-    pub intkey1: option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr <'a>,
+    pub intkey1: option__COSE_Format_label_ugly <'a>,
     pub intkey2:
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
     <'a>,
-    pub intkey3: option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int <'a>,
+    pub intkey3: option__COSE_Format_aux_env29_type_1_ugly <'a>,
     pub intkey4: option__COSE_Format_bstr <'a>,
     pub _x0:
-    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·
+    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·
     <'a>,
     pub _x1:
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     <'a>
 }
 
@@ -10267,17 +10309,17 @@ pub fn uu___is_Mkheader_map0(projectee: header_map) -> bool
 
 fn header_map_right <'a>(
     x6:
-    (((((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr
+    (((((option__COSE_Format_label_ugly
     <'a>,
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
     <'a>),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int
+    option__COSE_Format_aux_env29_type_1_ugly
     <'a>),
     option__COSE_Format_bstr
     <'a>),
-    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·
+    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·
     <'a>),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     <'a>)
 ) ->
     header_map
@@ -10291,37 +10333,35 @@ fn header_map_right <'a>(
 }
 
 fn header_map_left <'a>(x13: header_map <'a>) ->
-    (((((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr
+    (((((option__COSE_Format_label_ugly
     <'a>,
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
     <'a>),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int
+    option__COSE_Format_aux_env29_type_1_ugly
     <'a>),
     option__COSE_Format_bstr
     <'a>),
-    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·
+    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·
     <'a>),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     <'a>)
 {
-    let x21: option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr =
-        x13.intkey1;
+    let x21: option__COSE_Format_label_ugly = x13.intkey1;
     let
     x22:
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
     =
         x13.intkey2;
-    let x23: option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int =
-        x13.intkey3;
+    let x23: option__COSE_Format_aux_env29_type_1_ugly = x13.intkey3;
     let x24: option__COSE_Format_bstr = x13.intkey4;
     let
     x25:
-    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·
+    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·
     =
         x13._x0;
     let
     x26:
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     =
         x13._x1;
     (((((x21,x22),x23),x24),x25),x26)
@@ -10365,7 +10405,7 @@ parse_header_map
               },
             _ => panic!("Incomplete pattern matching")
         };
-    let w1: option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr =
+    let w1: option__COSE_Format_label_ugly =
         if crate::cbordetveraux::uu___is_MGOK(test1)
         {
             let mty0: crate::cbordetver::cbor_det_int_kind =
@@ -10401,11 +10441,10 @@ parse_header_map
                       },
                     _ => panic!("Incomplete pattern matching")
                 };
-            option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr::Some
-            { v: w1 }
+            option__COSE_Format_label_ugly::Some { v: w1 }
         }
         else
-        { option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr::None };
+        { option__COSE_Format_label_ugly::None };
     let dummy0: [u64; 1] = [0u64; 1usize];
     crate::lowstar::ignore::ignore::<&[u64]>(&dummy0);
     let mty0: crate::cbordetver::cbor_det_int_kind = crate::cbordetver::cbor_det_int_kind::UInt64;
@@ -10526,7 +10565,7 @@ parse_header_map
         };
     let
     w2:
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
     =
         if crate::cbordetveraux::uu___is_MGOK(test10)
         {
@@ -10546,7 +10585,7 @@ parse_header_map
             let _letpattern2: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
             let
             w11:
-            either__CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1
+            either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
             =
                 match _letpattern2
                 {
@@ -10566,30 +10605,37 @@ parse_header_map
                               };
                           let
                           i:
-                          array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+                          array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
                           =
-                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
                               {
                                   cddl_array_iterator_contents: ar,
-                                  cddl_array_iterator_impl_validate: aux_env34_validate_1,
+                                  cddl_array_iterator_impl_validate:
+                                  aux_env34_validate_1
+                                  as
+                                  fn
+                                  (&mut
+                                  [crate::cbordetveraux::cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw])
+                                  ->
+                                  bool,
                                   cddl_array_iterator_impl_parse: aux_env34_parse_1
                               };
-                          either__CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1::Inr
+                          either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1::Inr
                           { v: i }
                       },
                     _ => panic!("Incomplete pattern matching")
                 };
-            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1::Some
+            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1::Some
             { v: w11 }
         }
         else
         {
-            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1::None
+            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1::None
         };
     let
     w10:
-    (option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1)
+    (option__COSE_Format_label_ugly,
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1)
     =
         (w1,w2);
     let dummy1: [u64; 1] = [0u64; 1usize];
@@ -10621,7 +10667,7 @@ parse_header_map
               },
             _ => panic!("Incomplete pattern matching")
         };
-    let w20: option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int =
+    let w20: option__COSE_Format_aux_env29_type_1_ugly =
         if crate::cbordetveraux::uu___is_MGOK(test11)
         {
             let mty2: crate::cbordetver::cbor_det_int_kind =
@@ -10657,16 +10703,15 @@ parse_header_map
                       },
                     _ => panic!("Incomplete pattern matching")
                 };
-            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int::Some
-            { v: w11 }
+            option__COSE_Format_aux_env29_type_1_ugly::Some { v: w11 }
         }
         else
-        { option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int::None };
+        { option__COSE_Format_aux_env29_type_1_ugly::None };
     let
     w11:
-    ((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int)
+    ((option__COSE_Format_label_ugly,
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+    option__COSE_Format_aux_env29_type_1_ugly)
     =
         (w10,w20);
     let dummy2: [u64; 1] = [0u64; 1usize];
@@ -10727,9 +10772,9 @@ parse_header_map
         { option__COSE_Format_bstr::None };
     let
     w12:
-    (((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
+    (((option__COSE_Format_label_ugly,
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+    option__COSE_Format_aux_env29_type_1_ugly),
     option__COSE_Format_bstr)
     =
         (w11,w21);
@@ -10817,7 +10862,7 @@ parse_header_map
         };
     let
     w22:
-    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·
+    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·
     =
         if crate::cbordetveraux::uu___is_MGOK(test13)
         {
@@ -10903,7 +10948,7 @@ parse_header_map
                 else
                 { option__COSE_Format_everparsenomatch::None };
             let w111: (&[u8], option__COSE_Format_everparsenomatch) = (w110,w22);
-            either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·::Inl
+            either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·::Inl
             { v: w111 }
         }
         else
@@ -10996,7 +11041,7 @@ parse_header_map
                 };
             let
             w22:
-            either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·
+            either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·
             =
                 if crate::cbordetveraux::uu___is_MGOK(test110)
                 {
@@ -11090,7 +11135,7 @@ parse_header_map
                         else
                         { option__COSE_Format_everparsenomatch::None };
                     let w111: (&[u8], option__COSE_Format_everparsenomatch) = (w110,w22);
-                    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·::Inl
+                    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·::Inl
                     { v: w111 }
                 }
                 else
@@ -11232,19 +11277,19 @@ parse_header_map
                     (option__COSE_Format_everparsenomatch, option__COSE_Format_everparsenomatch)
                     =
                         (w110,w22);
-                    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·::Inr
+                    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·::Inr
                     { v: w23 }
                 };
-            either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·::Inr
+            either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·::Inr
             { v: w22 }
         };
     let
     w13:
-    ((((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
+    ((((option__COSE_Format_label_ugly,
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+    option__COSE_Format_aux_env29_type_1_ugly),
     option__COSE_Format_bstr),
-    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·)
+    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·)
     =
         (w12,w22);
     let v1: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
@@ -11258,31 +11303,34 @@ parse_header_map
         };
     let
     rres:
-    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+    map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     =
-        map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+        map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
         {
             cddl_map_iterator_contents: i,
-            cddl_map_iterator_impl_validate1: validate_label,
+            cddl_map_iterator_impl_validate1:
+            validate_label as fn (crate::cbordetveraux::cbor_raw) -> bool,
             cddl_map_iterator_impl_parse1: parse_label,
-            cddl_map_iterator_impl_validate_ex: aux_env34_map_constraint_2,
-            cddl_map_iterator_impl_validate2: validate_values,
+            cddl_map_iterator_impl_validate_ex:
+            aux_env34_map_constraint_2 as fn (crate::cbordetveraux::cbor_map_entry) -> bool,
+            cddl_map_iterator_impl_validate2:
+            validate_values as fn (crate::cbordetveraux::cbor_raw) -> bool,
             cddl_map_iterator_impl_parse2: parse_values
         };
     let
     w23:
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
     =
-        either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values::Inr
+        either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values::Inr
         { v: rres };
     let
     res10:
-    (((((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
+    (((((option__COSE_Format_label_ugly,
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+    option__COSE_Format_aux_env29_type_1_ugly),
     option__COSE_Format_bstr),
-    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values)
+    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·),
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values)
     =
         (w13,w23);
     header_map_right(res10)
@@ -11297,71 +11345,71 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
 {
     let
     c·:
-    (((((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
+    (((((option__COSE_Format_label_ugly,
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+    option__COSE_Format_aux_env29_type_1_ugly),
     option__COSE_Format_bstr),
-    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values)
+    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·),
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values)
     =
         header_map_left(c);
     let mut pcount: [u64; 1] = [0u64; 1usize];
     let mut psize: [usize; 1] = [0usize; 1usize];
     let
     _letpattern:
-    (((((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
+    (((((option__COSE_Format_label_ugly,
+    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+    option__COSE_Format_aux_env29_type_1_ugly),
     option__COSE_Format_bstr),
-    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·),
-    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values)
+    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·),
+    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values)
     =
         c·;
     let res: bool =
         {
             let
             c1:
-            ((((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
+            ((((option__COSE_Format_label_ugly,
+            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+            option__COSE_Format_aux_env29_type_1_ugly),
             option__COSE_Format_bstr),
-            either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·)
+            either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·)
             =
                 _letpattern.0;
             let
             c2:
-            either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values
+            either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
             =
                 _letpattern.1;
             let
             _letpattern1:
-            ((((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
+            ((((option__COSE_Format_label_ugly,
+            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+            option__COSE_Format_aux_env29_type_1_ugly),
             option__COSE_Format_bstr),
-            either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·)
+            either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·)
             =
                 c1;
             let res1: bool =
                 {
                     let
                     c11:
-                    (((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-                    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-                    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
+                    (((option__COSE_Format_label_ugly,
+                    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+                    option__COSE_Format_aux_env29_type_1_ugly),
                     option__COSE_Format_bstr)
                     =
                         _letpattern1.0;
                     let
                     c21:
-                    either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·
+                    either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·
                     =
                         _letpattern1.1;
                     let
                     _letpattern2:
-                    (((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-                    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-                    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int),
+                    (((option__COSE_Format_label_ugly,
+                    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+                    option__COSE_Format_aux_env29_type_1_ugly),
                     option__COSE_Format_bstr)
                     =
                         c11;
@@ -11369,54 +11417,48 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                         {
                             let
                             c12:
-                            ((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-                            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-                            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int)
+                            ((option__COSE_Format_label_ugly,
+                            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+                            option__COSE_Format_aux_env29_type_1_ugly)
                             =
                                 _letpattern2.0;
                             let c22: option__COSE_Format_bstr = _letpattern2.1;
                             let
                             _letpattern3:
-                            ((option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-                            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1),
-                            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int)
+                            ((option__COSE_Format_label_ugly,
+                            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1),
+                            option__COSE_Format_aux_env29_type_1_ugly)
                             =
                                 c12;
                             let res1: bool =
                                 {
                                     let
                                     c13:
-                                    (option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-                                    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1)
+                                    (option__COSE_Format_label_ugly,
+                                    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1)
                                     =
                                         _letpattern3.0;
-                                    let
-                                    c23:
-                                    option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int
-                                    =
+                                    let c23: option__COSE_Format_aux_env29_type_1_ugly =
                                         _letpattern3.1;
                                     let
                                     _letpattern4:
-                                    (option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr,
-                                    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1)
+                                    (option__COSE_Format_label_ugly,
+                                    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1)
                                     =
                                         c13;
                                     let res1: bool =
                                         {
-                                            let
-                                            c14:
-                                            option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr
-                                            =
+                                            let c14: option__COSE_Format_label_ugly =
                                                 _letpattern4.0;
                                             let
                                             c24:
-                                            option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1
+                                            option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
                                             =
                                                 _letpattern4.1;
                                             let res1: bool =
                                                 match c14
                                                 {
-                                                    option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr::Some
+                                                    option__COSE_Format_label_ugly::Some
                                                     { v: c15 }
                                                     =>
                                                       {
@@ -11532,15 +11574,14 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                                           else
                                                           { false }
                                                       },
-                                                    option__FStar_Pervasives_either·COSE_Format_evercddl_int·COSE_Format_tstr::None
-                                                    => true,
+                                                    option__COSE_Format_label_ugly::None => true,
                                                     _ => panic!("Incomplete pattern matching")
                                                 };
                                             if res1
                                             {
                                                 match c24
                                                 {
-                                                    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1::Some
+                                                    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1::Some
                                                     { v: c15 }
                                                     =>
                                                       {
@@ -11606,7 +11647,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                                                   let res0: bool =
                                                                       match c15
                                                                       {
-                                                                          either__CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1::Inl
+                                                                          either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1::Inl
                                                                           { v: c16 }
                                                                           =>
                                                                             if c16.len() == 0usize
@@ -11688,7 +11729,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                                                                 };
                                                                                 (&pres)[0]
                                                                             },
-                                                                          either__CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1::Inr
+                                                                          either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1::Inr
                                                                           { v: c25 }
                                                                           =>
                                                                             {
@@ -11703,7 +11744,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                                                                     let
                                                                                     mut
                                                                                     pc:
-                                                                                    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1;
+                                                                                    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1;
                                                                                     1]
                                                                                     =
                                                                                         [c25;
@@ -11724,7 +11765,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                                                                         {
                                                                                             let
                                                                                             c30:
-                                                                                            array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+                                                                                            array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
                                                                                             =
                                                                                                 (&pc)[0];
                                                                                             let
@@ -11743,7 +11784,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                                                                     {
                                                                                         let
                                                                                         i:
-                                                                                        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+                                                                                        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
                                                                                         =
                                                                                             (&pc)[0];
                                                                                         let
@@ -11783,9 +11824,9 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                                                                             );
                                                                                         let
                                                                                         j:
-                                                                                        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+                                                                                        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
                                                                                         =
-                                                                                            array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+                                                                                            array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
                                                                                             {
                                                                                                 cddl_array_iterator_contents:
                                                                                                 ji,
@@ -11840,7 +11881,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                                                                             {
                                                                                                 let
                                                                                                 c30:
-                                                                                                array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+                                                                                                array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
                                                                                                 =
                                                                                                     (&pc)[0];
                                                                                                 let
@@ -11920,7 +11961,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                                           else
                                                           { false }
                                                       },
-                                                    option__FStar_Pervasives_either·CDDL_Pulse_Types_slice·COSE_Format_aux_env34_type_1·CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env34_type_1::None
+                                                    option__FStar_Pervasives_either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1::None
                                                     => true,
                                                     _ => panic!("Incomplete pattern matching")
                                                 }
@@ -11932,7 +11973,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                     {
                                         match c23
                                         {
-                                            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int::Some
+                                            option__COSE_Format_aux_env29_type_1_ugly::Some
                                             { v: c14 }
                                             =>
                                               {
@@ -12028,8 +12069,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                                   else
                                                   { false }
                                               },
-                                            option__FStar_Pervasives_either·COSE_Format_tstr·COSE_Format_evercddl_int::None
-                                            => true,
+                                            option__COSE_Format_aux_env29_type_1_ugly::None => true,
                                             _ => panic!("Incomplete pattern matching")
                                         }
                                     }
@@ -12116,7 +12156,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                     {
                         match c21
                         {
-                            either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·::Inl
+                            either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·::Inl
                             { v: c12 }
                             =>
                               {
@@ -12273,12 +12313,12 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                   else
                                   { false }
                               },
-                            either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_FStar_Pervasives_either··COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·::Inr
+                            either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_FStar_Pervasives_either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·::Inr
                             { v: c22 }
                             =>
                               match c22
                               {
-                                  either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·::Inl
+                                  either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·::Inl
                                   { v: c12 }
                                   =>
                                     {
@@ -12453,7 +12493,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                         else
                                         { false }
                                     },
-                                  either__·COSE_Format_bstr···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option·COSE_Format_everparsenomatch···FStar_Pervasives_Native_option·COSE_Format_everparsenomatch·::Inr
+                                  either__·COSE_Format_bstr···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·_·FStar_Pervasives_Native_option__COSE_Format_everparsenomatch···FStar_Pervasives_Native_option__COSE_Format_everparsenomatch·::Inr
                                   { v: c23 }
                                   =>
                                     {
@@ -12676,7 +12716,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
             {
                 match c2
                 {
-                    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values::Inl
+                    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values::Inl
                     { v: c11 }
                     =>
                       {
@@ -12715,13 +12755,13 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                           };
                           (&pres)[0]
                       },
-                    either__CDDL_Pulse_Types_slice··COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t·CBOR_Pulse_Raw_Type_cbor_raw·CBOR_Pulse_Raw_Type_cbor_map_entry·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry·COSE_Format_label·COSE_Format_values::Inr
+                    either__CDDL_Pulse_Types_slice__·COSE_Format_label···COSE_Format_values·_CDDL_Pulse_Parse_MapGroup_map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values::Inr
                     { v: c21 }
                     =>
                       {
                           let
                           pc:
-                          [map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values;
+                          [map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values;
                           1]
                           =
                               [c21; 1usize];
@@ -12732,7 +12772,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                               {
                                   let
                                   c3:
-                                  map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+                                  map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
                                   =
                                       (&pc)[0];
                                   let
@@ -12815,7 +12855,7 @@ serialize_header_map(c: header_map, out: &mut [u8]) ->
                                   {
                                       let
                                       c3:
-                                      map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
+                                      map_iterator_t__CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_map_entry_CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_COSE_Format_label_COSE_Format_values
                                       =
                                           (&pc)[0];
                                       let
@@ -12956,7 +12996,7 @@ pub fn validate_and_parse_header_map <'a>(s: &'a [u8]) ->
 
 pub fn is_empty_iterate_array_aux_env34_type_1(
     i:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
 ) ->
     bool
 { crate::cbordetver::cbor_det_array_iterator_is_empty(i.cddl_array_iterator_contents) }
@@ -12964,7 +13004,7 @@ pub fn is_empty_iterate_array_aux_env34_type_1(
 pub fn next_iterate_array_aux_env34_type_1 <'a>(
     pi:
     &'a mut
-    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
     <'a>]
 ) ->
     label
@@ -12972,7 +13012,7 @@ pub fn next_iterate_array_aux_env34_type_1 <'a>(
 {
     let
     i:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
     =
         pi[0];
     let len0: u64 =
@@ -12985,9 +13025,9 @@ pub fn next_iterate_array_aux_env34_type_1 <'a>(
     let len1: u64 = crate::cbordetver::cbor_det_array_iterator_length(ji);
     let
     j:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
     =
-        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
+        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
         {
             cddl_array_iterator_contents: ji,
             cddl_array_iterator_impl_validate: i.cddl_array_iterator_impl_validate,
@@ -13064,7 +13104,7 @@ pub fn validate_empty_or_serialized_map(c: crate::cbordetveraux::cbor_raw) -> bo
 }
 
 #[derive(PartialEq, Clone, Copy)]
-enum empty_or_serialized_map_ugly <'a>
+enum either__COSE_Format_header_map_COSE_Format_tstr_ugly <'a>
 {
     Inl { v: header_map <'a> },
     Inr { v: &'a [u8] }
@@ -13096,30 +13136,32 @@ pub fn uu___is_Mkempty_or_serialized_map1(projectee: empty_or_serialized_map) ->
     { empty_or_serialized_map::Mkempty_or_serialized_map1 { .. } => true, _ => false }
 }
 
-fn empty_or_serialized_map_right <'a>(x2: empty_or_serialized_map_ugly <'a>) ->
+fn empty_or_serialized_map_right <'a>(
+    x2: either__COSE_Format_header_map_COSE_Format_tstr_ugly <'a>
+) ->
     empty_or_serialized_map
     <'a>
 {
     match x2
     {
-        empty_or_serialized_map_ugly::Inl { v: x3 } =>
+        either__COSE_Format_header_map_COSE_Format_tstr_ugly::Inl { v: x3 } =>
           empty_or_serialized_map::Mkempty_or_serialized_map0 { _x0: x3 },
-        empty_or_serialized_map_ugly::Inr { v: x4 } =>
+        either__COSE_Format_header_map_COSE_Format_tstr_ugly::Inr { v: x4 } =>
           empty_or_serialized_map::Mkempty_or_serialized_map1 { _x0: x4 },
         _ => panic!("Incomplete pattern matching")
     }
 }
 
 fn empty_or_serialized_map_left <'a>(x7: empty_or_serialized_map <'a>) ->
-    empty_or_serialized_map_ugly
+    either__COSE_Format_header_map_COSE_Format_tstr_ugly
     <'a>
 {
     match x7
     {
         empty_or_serialized_map::Mkempty_or_serialized_map0 { _x0: x10 } =>
-          empty_or_serialized_map_ugly::Inl { v: x10 },
+          either__COSE_Format_header_map_COSE_Format_tstr_ugly::Inl { v: x10 },
         empty_or_serialized_map::Mkempty_or_serialized_map1 { _x0: x12 } =>
-          empty_or_serialized_map_ugly::Inr { v: x12 },
+          either__COSE_Format_header_map_COSE_Format_tstr_ugly::Inr { v: x12 },
         _ => panic!("Incomplete pattern matching")
     }
 }
@@ -13180,7 +13222,7 @@ parse_empty_or_serialized_map
         }
         else
         { false };
-    let res1: empty_or_serialized_map_ugly =
+    let res1: either__COSE_Format_header_map_COSE_Format_tstr_ugly =
         if test0
         {
             let v1: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
@@ -13209,7 +13251,7 @@ parse_empty_or_serialized_map
                       },
                     _ => panic!("Incomplete pattern matching")
                 };
-            empty_or_serialized_map_ugly::Inl { v: res }
+            either__COSE_Format_header_map_COSE_Format_tstr_ugly::Inl { v: res }
         }
         else
         {
@@ -13222,7 +13264,7 @@ parse_empty_or_serialized_map
                     _ => panic!("Incomplete pattern matching")
                 };
             let res: &[u8] = s;
-            empty_or_serialized_map_ugly::Inr { v: res }
+            either__COSE_Format_header_map_COSE_Format_tstr_ugly::Inr { v: res }
         };
     empty_or_serialized_map_right(res1)
 }
@@ -13234,10 +13276,11 @@ pub fn
 serialize_empty_or_serialized_map(c: empty_or_serialized_map, out: &mut [u8]) ->
     usize
 {
-    let c·: empty_or_serialized_map_ugly = empty_or_serialized_map_left(c);
+    let c·: either__COSE_Format_header_map_COSE_Format_tstr_ugly =
+        empty_or_serialized_map_left(c);
     match c·
     {
-        empty_or_serialized_map_ugly::Inl { v: c1 } =>
+        either__COSE_Format_header_map_COSE_Format_tstr_ugly::Inl { v: c1 } =>
           {
               let sz: usize = serialize_header_map(c1, out);
               if sz == 0usize || sz > 18446744073709551615u64 as usize
@@ -13251,7 +13294,7 @@ serialize_empty_or_serialized_map(c: empty_or_serialized_map, out: &mut [u8]) ->
                   )
               }
           },
-        empty_or_serialized_map_ugly::Inr { v: c2 } =>
+        either__COSE_Format_header_map_COSE_Format_tstr_ugly::Inr { v: c2 } =>
           {
               let len: usize = c2.len();
               if (0u64 as usize) <= len && len <= 0u64 as usize
@@ -15879,7 +15922,7 @@ pub fn validate_cose_sign(c: crate::cbordetveraux::cbor_raw) -> bool
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct
-array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
 <'a>
 {
     pub cddl_array_iterator_contents:
@@ -15897,14 +15940,14 @@ array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum
-either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1
+either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
 <'a>
 {
     Inl { v: &'a [cose_signature <'a>] },
     Inr
     {
         v:
-        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
         <'a>
     }
 }
@@ -15916,7 +15959,7 @@ pub struct cose_sign <'a>
     pub unprotected: header_map <'a>,
     pub payload: either__COSE_Format_bstr_COSE_Format_nil <'a>,
     pub signatures:
-    either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
     <'a>
 }
 
@@ -15931,7 +15974,7 @@ fn cose_sign_right <'a>(
     ((empty_or_serialized_map <'a>, header_map <'a>),
     (either__COSE_Format_bstr_COSE_Format_nil
     <'a>,
-    either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
     <'a>))
 ) ->
     cose_sign
@@ -15948,7 +15991,7 @@ fn cose_sign_left <'a>(x9: cose_sign <'a>) ->
     ((empty_or_serialized_map <'a>, header_map <'a>),
     (either__COSE_Format_bstr_COSE_Format_nil
     <'a>,
-    either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
     <'a>))
 {
     let x15: empty_or_serialized_map = x9.protected;
@@ -15956,7 +15999,7 @@ fn cose_sign_left <'a>(x9: cose_sign <'a>) ->
     let x17: either__COSE_Format_bstr_COSE_Format_nil = x9.payload;
     let
     x18:
-    either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
     =
         x9.signatures;
     ((x15,x16),(x17,x18))
@@ -16097,31 +16140,37 @@ parse_cose_sign
         };
     let
     i2:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
     =
-        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
         {
             cddl_array_iterator_contents: ar1,
-            cddl_array_iterator_impl_validate: aux_env41_validate_1,
+            cddl_array_iterator_impl_validate:
+            aux_env41_validate_1
+            as
+            fn
+            (&mut [crate::cbordetveraux::cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw])
+            ->
+            bool,
             cddl_array_iterator_impl_parse: aux_env41_parse_1
         };
     let
     w20:
-    either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
     =
-        either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1::Inr
+        either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1::Inr
         { v: i2 };
     let
     w21:
     (either__COSE_Format_bstr_COSE_Format_nil,
-    either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1)
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1)
     =
         (w11,w20);
     let
     res1:
     ((empty_or_serialized_map, header_map),
     (either__COSE_Format_bstr_COSE_Format_nil,
-    either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1))
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1))
     =
         (w10,w21);
     cose_sign_right(res1)
@@ -16138,7 +16187,7 @@ serialize_cose_sign(c: cose_sign, out: &mut [u8]) ->
     c·:
     ((empty_or_serialized_map, header_map),
     (either__COSE_Format_bstr_COSE_Format_nil,
-    either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1))
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1))
     =
         cose_sign_left(c);
     let mut pcount: [u64; 1] = [0u64; 1usize];
@@ -16147,7 +16196,7 @@ serialize_cose_sign(c: cose_sign, out: &mut [u8]) ->
     _letpattern:
     ((empty_or_serialized_map, header_map),
     (either__COSE_Format_bstr_COSE_Format_nil,
-    either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1))
+    either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1))
     =
         c·;
     let res: bool =
@@ -16156,7 +16205,7 @@ serialize_cose_sign(c: cose_sign, out: &mut [u8]) ->
             let
             c2:
             (either__COSE_Format_bstr_COSE_Format_nil,
-            either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1)
+            either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1)
             =
                 _letpattern.1;
             let _letpattern1: (empty_or_serialized_map, header_map) = c1;
@@ -16214,13 +16263,13 @@ serialize_cose_sign(c: cose_sign, out: &mut [u8]) ->
                 let
                 _letpattern10:
                 (either__COSE_Format_bstr_COSE_Format_nil,
-                either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1)
+                either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1)
                 =
                     c2;
                 let c11: either__COSE_Format_bstr_COSE_Format_nil = _letpattern10.0;
                 let
                 c21:
-                either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1
+                either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
                 =
                     _letpattern10.1;
                 let count: u64 = (&pcount)[0];
@@ -16265,7 +16314,7 @@ serialize_cose_sign(c: cose_sign, out: &mut [u8]) ->
                         let res: bool =
                             match c21
                             {
-                                either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1::Inl
+                                either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1::Inl
                                 { v: c12 }
                                 =>
                                   if c12.len() == 0usize
@@ -16316,7 +16365,7 @@ serialize_cose_sign(c: cose_sign, out: &mut [u8]) ->
                                       };
                                       (&pres)[0]
                                   },
-                                either__CDDL_Pulse_Types_slice·COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t·CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw·COSE_Format_aux_env41_type_1::Inr
+                                either__CDDL_Pulse_Types_slice__COSE_Format_aux_env41_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1::Inr
                                 { v: c22 }
                                 =>
                                   {
@@ -16331,7 +16380,7 @@ serialize_cose_sign(c: cose_sign, out: &mut [u8]) ->
                                           let
                                           mut
                                           pc:
-                                          [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1;
+                                          [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1;
                                           1]
                                           =
                                               [c22; 1usize];
@@ -16342,7 +16391,7 @@ serialize_cose_sign(c: cose_sign, out: &mut [u8]) ->
                                               {
                                                   let
                                                   c3:
-                                                  array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+                                                  array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
                                                   =
                                                       (&pc)[0];
                                                   let em1: bool =
@@ -16358,7 +16407,7 @@ serialize_cose_sign(c: cose_sign, out: &mut [u8]) ->
                                           {
                                               let
                                               i:
-                                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+                                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
                                               =
                                                   (&pc)[0];
                                               let len0: u64 =
@@ -16386,9 +16435,9 @@ serialize_cose_sign(c: cose_sign, out: &mut [u8]) ->
                                                   );
                                               let
                                               j:
-                                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+                                              array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
                                               =
-                                                  array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+                                                  array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
                                                   {
                                                       cddl_array_iterator_contents: ji,
                                                       cddl_array_iterator_impl_validate:
@@ -16421,7 +16470,7 @@ serialize_cose_sign(c: cose_sign, out: &mut [u8]) ->
                                                   {
                                                       let
                                                       c3:
-                                                      array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+                                                      array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
                                                       =
                                                           (&pc)[0];
                                                       let em1: bool =
@@ -16519,7 +16568,7 @@ pub fn validate_and_parse_cose_sign <'a>(s: &'a [u8]) ->
 
 pub fn is_empty_iterate_array_aux_env41_type_1(
     i:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
 ) ->
     bool
 { crate::cbordetver::cbor_det_array_iterator_is_empty(i.cddl_array_iterator_contents) }
@@ -16527,7 +16576,7 @@ pub fn is_empty_iterate_array_aux_env41_type_1(
 pub fn next_iterate_array_aux_env41_type_1 <'a>(
     pi:
     &'a mut
-    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+    [array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
     <'a>]
 ) ->
     cose_signature
@@ -16535,7 +16584,7 @@ pub fn next_iterate_array_aux_env41_type_1 <'a>(
 {
     let
     i:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
     =
         pi[0];
     let len0: u64 =
@@ -16548,9 +16597,9 @@ pub fn next_iterate_array_aux_env41_type_1 <'a>(
     let len1: u64 = crate::cbordetver::cbor_det_array_iterator_length(ji);
     let
     j:
-    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+    array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
     =
-        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator·CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
+        array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env41_type_1
         {
             cddl_array_iterator_contents: ji,
             cddl_array_iterator_impl_validate: i.cddl_array_iterator_impl_validate,
