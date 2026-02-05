@@ -171,7 +171,7 @@ else
 	@echo export EVERPARSE_HOME=$(CURDIR)
 endif
 	@echo export EVERPARSE_Z3_VERSION=$(EVERPARSE_Z3_VERSION)
-	@echo export PATH=\"$(z3_dir):'$$PATH'\"
+	@echo export PATH=\"$(dir $(FSTAR_EXE)):$(z3_dir):'$$PATH'\"
 
 .PHONY: env
 
