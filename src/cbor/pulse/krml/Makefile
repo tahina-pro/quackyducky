@@ -44,3 +44,6 @@ clean-extracted:
 	rm -rf extracted
 
 .PHONY: clean-extracted
+
+det-rust: $(DET_RUST_DIRECTORY)/cbordetver.rs
+.PHONY: det-rust
