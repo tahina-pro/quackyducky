@@ -36,6 +36,46 @@ $(DET_RUST_DIRECTORY)/cbordetver.rs: $(filter-out %CBOR_Pulse_API_Det_C.krml,$(A
 $(NONDET_RUST_DIRECTORY)/cbornondetver.rs: $(filter-out %CBOR_Pulse_API_Det_C.krml %CBOR_Pulse_API_Det_Rust.krml %CBOR_Pulse_API_Nondet_C.krml,$(ALL_KRML_FILES))
 	$(KRML_HOME)/krml $(KRML_OPTS) -backend rust -fno-box -fkeep-tuples -fcontained-type cbor_raw_iterator -warn-error @1..27 -skip-linking -bundle 'CBOR.Pulse.API.Nondet.Rust=[rename=CBORNondetVer]' -bundle 'CBOR.Spec.Constants+CBOR.Pulse.Raw.Type+CBOR.Pulse.API.Nondet.Type=\*[rename=CBORNondetVerAux]' -tmpdir $(NONDET_RUST_DIRECTORY) -skip-compilation $^
 
+REPRO_BUG_KRML_FILES = \
+  extracted/CBOR_Pulse_API_Det_Common.krml \
+  extracted/CBOR_Pulse_API_Det_Rust.krml \
+  extracted/CBOR_Pulse_API_Det_Type.krml \
+  extracted/CBOR_Pulse_Raw_Compare.krml \
+  extracted/CBOR_Pulse_Raw_Compare_Base.krml \
+  extracted/CBOR_Pulse_Raw_Compare_Bytes.krml \
+  extracted/CBOR_Pulse_Raw_EverParse_Format.krml \
+  extracted/CBOR_Pulse_Raw_EverParse_Serialized_Base.krml \
+  extracted/CBOR_Pulse_Raw_EverParse_UTF8.krml \
+  extracted/CBOR_Pulse_Raw_Format_Compare.krml \
+  extracted/CBOR_Pulse_Raw_Format_Parse.krml \
+  extracted/CBOR_Pulse_Raw_Format_Serialize.krml \
+  extracted/CBOR_Pulse_Raw_Format_Serialized.krml \
+  extracted/CBOR_Pulse_Raw_Insert.krml \
+  extracted/CBOR_Pulse_Raw_Iterator.krml \
+  extracted/CBOR_Pulse_Raw_Iterator_Base.krml \
+  extracted/CBOR_Pulse_Raw_Match.krml \
+  extracted/CBOR_Pulse_Raw_Read.krml \
+  extracted/CBOR_Pulse_Raw_Type.krml \
+  extracted/CBOR_Spec_Constants.krml \
+  extracted/CBOR_Spec_Raw_Base.krml \
+  extracted/CBOR_Spec_Raw_EverParse.krml \
+  extracted/CBOR_Spec_Raw_Optimal.krml \
+  extracted/FStar_Pervasives.krml \
+  extracted/FStar_Pervasives_Native.krml \
+  extracted/LowParse_BitFields.krml \
+  extracted/LowParse_Bytes.krml \
+  extracted/LowParse_Pulse_Base.krml \
+  extracted/LowParse_Spec_Combinators.krml \
+  extracted/Pulse_Lib_Slice.krml
+
+REPRO_BUG_DIRECTORY := /tmp/repro-bug-krml
+
+repro-bug:
+	rm -rf $(REPRO_BUG_DIRECTORY) && mkdir -p $(REPRO_BUG_DIRECTORY)
+	$(KRML_HOME)/krml $(KRML_OPTS) -backend rust -fno-box -fkeep-tuples -fcontained-type cbor_raw_iterator -warn-error @1..27 -skip-linking -bundle 'CBOR.Pulse.API.Det.Rust=[rename=CBORDetVer]' -bundle 'CBOR.Spec.Constants+CBOR.Pulse.Raw.Type+CBOR.Pulse.API.Det.Type=\*[rename=CBORDetVerAux]' -tmpdir $(REPRO_BUG_DIRECTORY) -skip-compilation $(REPRO_BUG_KRML_FILES)
+
+.PHONY: repro-bug
+
 extract: $(NONDET_C_DIRECTORY)/CBORNondet.c $(NONDET_RUST_DIRECTORY)/cbornondetver.rs $(DET_C_DIRECTORY)/CBORDet.c $(DET_RUST_DIRECTORY)/cbordetver.rs
 
 .PHONY: extract
