@@ -21,15 +21,25 @@ if [[ "$1" = --shell ]] ; then
     equal="='"
     epath="'"':"$PATH"'
     eocamlpath=";'"'"$OCAMLPATH"'
+    if [[ "$OS" = Windows_NT ]] ; then
+	eopamswitchprefixunix='"$(cygpath -u "$OPAM_SWITCH_PREFIX")"'
+	eopamswitchprefixwindows='"$(cygpath -m "$OPAM_SWITCH_PREFIX")"'
+    else
+	eopamswitchprefixunix='$OPAM_SWITCH_PREFIX'
+    fi
 else
     equal=':='
     epath=':$(PATH)'
     eocamlpath=';$(OCAMLPATH)'
+    if [[ "$OS" = Windows_NT ]] ; then
+	eopamswitchprefixunix='$(shell cygpath -u $(OPAM_SWITCH_PREFIX))'
+	eopamswitchprefixwindows='$(shell cygpath -m $(OPAM_SWITCH_PREFIX))'
+    else
+	eopamswitchprefixunix='$(OPAM_SWITCH_PREFIX)'
+    fi
 fi
 if [[ "$OS" = Windows_NT ]] ; then
     # Work around an opam bug about `opam var lib`
-    echo 'export OCAMLPATH'$equal"$(cygpath -m "$OPAMROOT")/$(opam switch "$root_opam" show | $SED 's!\r!!g')/lib$eocamlpath"
-    # convert back because I need Unix-style PATH
-    OPAMROOT="$(cygpath -u "$OPAMROOT")"
+    echo 'export OCAMLPATH'"$equal$eopamswitchprefixwindows/lib$eocamlpath"
 fi
-echo 'export PATH'$equal"$OPAMROOT/$(opam switch "$root_opam" show | $SED 's!\r!!g')/bin$epath"
+echo 'export PATH'"$equal$eopamswitchprefixunix/bin$epath"
