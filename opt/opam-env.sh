@@ -12,35 +12,33 @@ if ! [[ "$EVERPARSE_USE_LOCAL_SWITCH" = 1 ]] ; then
 	OPAMROOT="$(cygpath -m "$OPAMROOT")"
     fi
     root_opam="--root=$OPAMROOT"
-    opam env "$root_opam" --set-root --shell=sh
-else
-    opam env --shell=sh
-fi | grep -v '^PATH=' |
+fi
+opam_env () {
+    if ! [[ "$EVERPARSE_USE_LOCAL_SWITCH" = 1 ]] ; then
+	opam env "$root_opam" --set-root --shell=sh
+    else
+	opam env --shell=sh
+    fi
+}
+opam_env | grep -v '^PATH=' |
     if [[ "$1" = --shell ]] ; then
 	cat
     else
 	$SED 's!^\([^=]*\)='"'"'\(.*\)'"'"'; export [^;]*;$!export \1 := \2!'
     fi
+eopamswitchprefixunix="$(eval "$(opam_env)" ; echo -n "$OPAM_SWITCH_PREFIX")"
+if [[ "$OS" = Windows_NT ]] ; then
+    eopamswitchprefixunix="$(cygpath -u "$opamswitchprefix")"
+    eopamswitchprefixwindows="$(cygpath -m "$opamswitchprefix")"
+fi
 if [[ "$1" = --shell ]] ; then
     equal="='"
     epath="'"':"$PATH"'
     eocamlpath=";'"'"$OCAMLPATH"'
-    if [[ "$OS" = Windows_NT ]] ; then
-	eopamswitchprefixunix='"$(cygpath -u "$OPAM_SWITCH_PREFIX")"'
-	eopamswitchprefixwindows='"$(cygpath -m "$OPAM_SWITCH_PREFIX")"'
-    else
-	eopamswitchprefixunix='$OPAM_SWITCH_PREFIX'
-    fi
 else
     equal=':='
     epath=':$(PATH)'
     eocamlpath=';$(OCAMLPATH)'
-    if [[ "$OS" = Windows_NT ]] ; then
-	eopamswitchprefixunix='$(shell cygpath -u $(OPAM_SWITCH_PREFIX))'
-	eopamswitchprefixwindows='$(shell cygpath -m $(OPAM_SWITCH_PREFIX))'
-    else
-	eopamswitchprefixunix='$(OPAM_SWITCH_PREFIX)'
-    fi
 fi
 if [[ "$OS" = Windows_NT ]] ; then
     # Work around an opam bug about `opam var lib`
