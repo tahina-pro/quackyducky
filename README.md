@@ -375,6 +375,11 @@ variables:
   opam installation (the value of `OPAMROOT` if set, otherwise
   `$HOME/.opam`) instead of creating a local install
 
+* `EVERPARSE_USE_OPAMSWITCH=1` instructs EverParse to use a custom
+  existing opam switch whose path is specified by the user as the
+  value of `OPAMSWITCH`, instead of creating a local install. This
+  sets but supersedes `EVERPARSE_USE_OPAMROOT=1`
+
 * If you want to use your own F\*, first set
   `EVERPARSE_USE_FSTAR_EXE=1`, then set `FSTAR_EXE` to the full path
   of your `fstar.exe` executable (by default, `fstar.exe` via your
