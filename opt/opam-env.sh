@@ -2,16 +2,20 @@
 unset CDPATH
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 SED=$(which gsed >/dev/null 2>&1 && echo gsed || echo sed)
-if ! [[ "$EVERPARSE_USE_OPAMROOT" = 1 ]] ; then
+if ! [[ "$EVERPARSE_USE_LOCAL_SWITCH" = 1 ]] ; then
+    if ! [[ "$EVERPARSE_USE_OPAMROOT" = 1 ]] ; then
         OPAMROOT="$(pwd)/opam"
-elif [[ -z "$OPAMROOT" ]] ; then
+    elif [[ -z "$OPAMROOT" ]] ; then
 	OPAMROOT="$(opam var root | $SED 's!\r!!g')"
-fi
-if [[ "$OS" = Windows_NT ]] ; then
-    OPAMROOT="$(cygpath -m "$OPAMROOT")"
-fi
-root_opam="--root=$OPAMROOT"
-opam env "$root_opam" --set-root --shell=sh | grep -v '^PATH=' |
+    fi
+    if [[ "$OS" = Windows_NT ]] ; then
+	OPAMROOT="$(cygpath -m "$OPAMROOT")"
+    fi
+    root_opam="--root=$OPAMROOT"
+    opam env "$root_opam" --set-root --shell=sh
+else
+    opam env --shell=sh
+fi | grep -v '^PATH=' |
     if [[ "$1" = --shell ]] ; then
 	cat
     else
