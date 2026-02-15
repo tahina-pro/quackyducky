@@ -115,6 +115,7 @@ opam-env.Makefile: $(NEED_OPAM_DIR)
 	echo .PHONY: opam-env >> $@.tmp
 	echo opam-env: >> $@.tmp
 	echo "	\"$(EVERPARSE_OPT_PATH)\"/opam-env.sh --shell" >> $@.tmp
+	cat $@.tmp
 	mv $@.tmp $@
 	touch $@
 
