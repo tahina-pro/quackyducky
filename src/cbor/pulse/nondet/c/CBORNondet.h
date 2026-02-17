@@ -11,6 +11,16 @@ extern "C" {
 
 #include "CBORNondetType.h"
 
+typedef struct cbor_nondet_map_get_multiple_entry_t_s cbor_nondet_map_get_multiple_entry_t;
+
+typedef struct cbor_nondet_map_get_multiple_entry_t_s
+{
+  cbor_raw key;
+  cbor_raw value;
+  bool found;
+}
+cbor_nondet_map_get_multiple_entry_t;
+
 #define CBOR_MAJOR_TYPE_SIMPLE_VALUE (7U)
 
 #define CBOR_MAJOR_TYPE_UINT64 (0U)
@@ -110,14 +120,6 @@ bool cbor_nondet_mk_array(cbor_raw *a, uint64_t len, cbor_raw *dest);
 cbor_map_entry cbor_nondet_mk_map_entry(cbor_raw xk, cbor_raw xv);
 
 bool cbor_nondet_mk_map(cbor_map_entry *a, uint64_t len, cbor_raw *dest);
-
-typedef struct cbor_nondet_map_get_multiple_entry_t_s
-{
-  cbor_raw key;
-  cbor_raw value;
-  bool found;
-}
-cbor_nondet_map_get_multiple_entry_t;
 
 bool
 cbor_nondet_map_get_multiple(

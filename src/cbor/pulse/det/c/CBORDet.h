@@ -9,6 +9,225 @@ extern "C" {
 
 #include "krmllib.h"
 
+typedef struct CBOR_Spec_Raw_Base_raw_uint64_s CBOR_Spec_Raw_Base_raw_uint64;
+
+typedef struct Pulse_Lib_Slice_slice__uint8_t_s Pulse_Lib_Slice_slice__uint8_t;
+
+typedef struct Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_s
+Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw;
+
+typedef struct Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_s
+Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry;
+
+typedef struct cbor_freeable_box_s cbor_freeable_box;
+
+typedef struct cbor_freeable_array_s cbor_freeable_array;
+
+typedef struct cbor_freeable_map_s cbor_freeable_map;
+
+typedef struct cbor_int_s cbor_int;
+
+typedef struct cbor_tagged_s cbor_tagged;
+
+typedef struct cbor_string_s cbor_string;
+
+typedef struct cbor_serialized_s cbor_serialized;
+
+typedef struct CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator_s
+CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator;
+
+typedef struct cbor_array_s cbor_array;
+
+typedef struct cbor_map_s cbor_map;
+
+typedef struct cbor_freeable0_s cbor_freeable0;
+
+typedef struct CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_s
+CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry;
+
+typedef struct CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_s
+CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw;
+
+typedef struct cbor_freeable_map_entry_s cbor_freeable_map_entry;
+
+typedef struct cbor_freeable_s cbor_freeable;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_raw_s cbor_raw;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
+
+typedef struct cbor_raw_s cbor_raw;
+
 typedef struct CBOR_Spec_Raw_Base_raw_uint64_s
 {
   uint8_t size;
@@ -23,56 +242,12 @@ typedef struct Pulse_Lib_Slice_slice__uint8_t_s
 }
 Pulse_Lib_Slice_slice__uint8_t;
 
-typedef struct CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator_s
-{
-  Pulse_Lib_Slice_slice__uint8_t s;
-  uint64_t len;
-}
-CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator;
-
-typedef struct cbor_string_s
-{
-  uint8_t cbor_string_type;
-  uint8_t cbor_string_size;
-  Pulse_Lib_Slice_slice__uint8_t cbor_string_ptr;
-}
-cbor_string;
-
-typedef struct cbor_serialized_s
-{
-  CBOR_Spec_Raw_Base_raw_uint64 cbor_serialized_header;
-  Pulse_Lib_Slice_slice__uint8_t cbor_serialized_payload;
-}
-cbor_serialized;
-
-typedef struct cbor_raw_s cbor_raw;
-
-typedef struct cbor_tagged_s
-{
-  CBOR_Spec_Raw_Base_raw_uint64 cbor_tagged_tag;
-  cbor_raw *cbor_tagged_ptr;
-}
-cbor_tagged;
-
-typedef struct cbor_raw_s cbor_raw;
-
-typedef struct cbor_raw_s cbor_raw;
-
 typedef struct Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_s
 {
   cbor_raw *elt;
   size_t len;
 }
 Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw;
-
-typedef struct cbor_array_s
-{
-  uint8_t cbor_array_length_size;
-  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw cbor_array_ptr;
-}
-cbor_array;
-
-typedef struct cbor_map_entry_s cbor_map_entry;
 
 typedef struct Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_s
 {
@@ -81,12 +256,41 @@ typedef struct Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_s
 }
 Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry;
 
-typedef struct cbor_map_s
+#define CBOR_Pulse_Raw_Iterator_CBOR_Raw_Iterator_Slice 0
+#define CBOR_Pulse_Raw_Iterator_CBOR_Raw_Iterator_Serialized 1
+
+typedef uint8_t CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_tags;
+
+#define CBOR_Copy_Bytes 0
+#define CBOR_Copy_Box 1
+#define CBOR_Copy_Array 2
+#define CBOR_Copy_Map 3
+#define CBOR_Copy_Unit 4
+
+typedef uint8_t cbor_freeable0_tags;
+
+typedef struct cbor_freeable_box_s
 {
-  uint8_t cbor_map_length_size;
-  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry cbor_map_ptr;
+  cbor_raw *box_cbor;
+  cbor_freeable0 *box_footprint;
 }
-cbor_map;
+cbor_freeable_box;
+
+typedef struct cbor_freeable_array_s
+{
+  cbor_raw *array_cbor;
+  cbor_freeable0 *array_footprint;
+  size_t array_len;
+}
+cbor_freeable_array;
+
+typedef struct cbor_freeable_map_s
+{
+  cbor_map_entry *map_cbor;
+  cbor_freeable_map_entry *map_footprint;
+  size_t map_len;
+}
+cbor_freeable_map;
 
 typedef struct cbor_int_s
 {
@@ -108,6 +312,84 @@ cbor_int;
 
 typedef uint8_t cbor_raw_tags;
 
+typedef struct cbor_tagged_s
+{
+  CBOR_Spec_Raw_Base_raw_uint64 cbor_tagged_tag;
+  cbor_raw *cbor_tagged_ptr;
+}
+cbor_tagged;
+
+typedef struct cbor_string_s
+{
+  uint8_t cbor_string_type;
+  uint8_t cbor_string_size;
+  Pulse_Lib_Slice_slice__uint8_t cbor_string_ptr;
+}
+cbor_string;
+
+typedef struct cbor_serialized_s
+{
+  CBOR_Spec_Raw_Base_raw_uint64 cbor_serialized_header;
+  Pulse_Lib_Slice_slice__uint8_t cbor_serialized_payload;
+}
+cbor_serialized;
+
+typedef struct CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator_s
+{
+  Pulse_Lib_Slice_slice__uint8_t s;
+  uint64_t len;
+}
+CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator;
+
+typedef struct cbor_array_s
+{
+  uint8_t cbor_array_length_size;
+  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw cbor_array_ptr;
+}
+cbor_array;
+
+typedef struct cbor_map_s
+{
+  uint8_t cbor_map_length_size;
+  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry cbor_map_ptr;
+}
+cbor_map;
+
+typedef struct cbor_freeable0_s
+{
+  cbor_freeable0_tags tag;
+  union {
+    uint8_t *case_CBOR_Copy_Bytes;
+    cbor_freeable_box case_CBOR_Copy_Box;
+    cbor_freeable_array case_CBOR_Copy_Array;
+    cbor_freeable_map case_CBOR_Copy_Map;
+  }
+  ;
+}
+cbor_freeable0;
+
+typedef struct CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_s
+{
+  CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
+  union {
+    Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry case_CBOR_Raw_Iterator_Slice;
+    CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator case_CBOR_Raw_Iterator_Serialized;
+  }
+  ;
+}
+CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry;
+
+typedef struct CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_s
+{
+  CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
+  union {
+    Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw case_CBOR_Raw_Iterator_Slice;
+    CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator case_CBOR_Raw_Iterator_Serialized;
+  }
+  ;
+}
+CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw;
+
 typedef struct cbor_raw_s
 {
   cbor_raw_tags tag;
@@ -126,90 +408,6 @@ typedef struct cbor_raw_s
 }
 cbor_raw;
 
-typedef struct cbor_map_entry_s
-{
-  cbor_raw cbor_map_entry_key;
-  cbor_raw cbor_map_entry_value;
-}
-cbor_map_entry;
-
-#define CBOR_Pulse_Raw_Iterator_CBOR_Raw_Iterator_Slice 0
-#define CBOR_Pulse_Raw_Iterator_CBOR_Raw_Iterator_Serialized 1
-
-typedef uint8_t CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_tags;
-
-typedef struct CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_s
-{
-  CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
-  union {
-    Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw case_CBOR_Raw_Iterator_Slice;
-    CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator case_CBOR_Raw_Iterator_Serialized;
-  }
-  ;
-}
-CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw;
-
-typedef struct CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_s
-{
-  CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
-  union {
-    Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry case_CBOR_Raw_Iterator_Slice;
-    CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator case_CBOR_Raw_Iterator_Serialized;
-  }
-  ;
-}
-CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry;
-
-typedef struct cbor_freeable0_s cbor_freeable0;
-
-typedef struct cbor_freeable_box_s
-{
-  cbor_raw *box_cbor;
-  cbor_freeable0 *box_footprint;
-}
-cbor_freeable_box;
-
-typedef struct cbor_freeable0_s cbor_freeable0;
-
-typedef struct cbor_freeable_array_s
-{
-  cbor_raw *array_cbor;
-  cbor_freeable0 *array_footprint;
-  size_t array_len;
-}
-cbor_freeable_array;
-
-typedef struct cbor_freeable_map_entry_s cbor_freeable_map_entry;
-
-typedef struct cbor_freeable_map_s
-{
-  cbor_map_entry *map_cbor;
-  cbor_freeable_map_entry *map_footprint;
-  size_t map_len;
-}
-cbor_freeable_map;
-
-#define CBOR_Copy_Bytes 0
-#define CBOR_Copy_Box 1
-#define CBOR_Copy_Array 2
-#define CBOR_Copy_Map 3
-#define CBOR_Copy_Unit 4
-
-typedef uint8_t cbor_freeable0_tags;
-
-typedef struct cbor_freeable0_s
-{
-  cbor_freeable0_tags tag;
-  union {
-    uint8_t *case_CBOR_Copy_Bytes;
-    cbor_freeable_box case_CBOR_Copy_Box;
-    cbor_freeable_array case_CBOR_Copy_Array;
-    cbor_freeable_map case_CBOR_Copy_Map;
-  }
-  ;
-}
-cbor_freeable0;
-
 typedef struct cbor_freeable_map_entry_s
 {
   cbor_freeable0 map_entry_key;
@@ -217,12 +415,37 @@ typedef struct cbor_freeable_map_entry_s
 }
 cbor_freeable_map_entry;
 
+typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
+cbor_det_map_iterator_t;
+
+typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
+cbor_map_iterator;
+
+typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw
+cbor_det_array_iterator_t;
+
+typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw
+cbor_array_iterator;
+
+typedef cbor_raw cbor_det_t;
+
+typedef struct cbor_map_entry_s
+{
+  cbor_raw cbor_map_entry_key;
+  cbor_raw cbor_map_entry_value;
+}
+cbor_map_entry;
+
 typedef struct cbor_freeable_s
 {
   cbor_raw cbor;
   cbor_freeable0 footprint;
 }
 cbor_freeable;
+
+typedef cbor_map_entry cbor_det_map_entry_t;
+
+typedef cbor_freeable cbor_det_freeable_t;
 
 #define CBOR_MAJOR_TYPE_SIMPLE_VALUE (7U)
 
@@ -243,22 +466,6 @@ cbor_freeable;
 #define MIN_SIMPLE_VALUE_LONG_ARGUMENT (32U)
 
 #define MAX_SIMPLE_VALUE_ADDITIONAL_INFO (23U)
-
-typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw
-cbor_array_iterator;
-
-typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
-cbor_map_iterator;
-
-typedef cbor_raw cbor_det_t;
-
-typedef cbor_map_entry cbor_det_map_entry_t;
-
-typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw
-cbor_det_array_iterator_t;
-
-typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
-cbor_det_map_iterator_t;
 
 cbor_raw dummy_cbor_det_t(void);
 
@@ -371,8 +578,6 @@ bool
 cbor_det_serialize_map_insert_to_array(uint8_t *out, size_t out_len, size_t off2, size_t off3);
 
 size_t cbor_det_serialize_map_to_array(uint64_t len, uint8_t *out, size_t out_len, size_t off);
-
-typedef cbor_freeable cbor_det_freeable_t;
 
 cbor_raw cbor_get_from_freeable(cbor_freeable x);
 

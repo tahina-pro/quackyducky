@@ -11,6 +11,18 @@ extern "C" {
 
 #include "../CBORDet.h"
 
+typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
+cbor_det_map_iterator_t;
+
+typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw
+cbor_det_array_iterator_t;
+
+typedef cbor_raw cbor_det_t;
+
+typedef cbor_map_entry cbor_det_map_entry_t;
+
+typedef cbor_freeable cbor_det_freeable_t;
+
 size_t
 CBOR_Pulse_Raw_Format_Serialize_ser_(
   cbor_raw x_,
@@ -30,18 +42,6 @@ CBOR_Pulse_API_Det_Common_cbor_raw_sort_aux(
 void cbor_free_(cbor_freeable0 x);
 
 cbor_freeable cbor_copy0(cbor_raw x);
-
-typedef cbor_raw cbor_det_t;
-
-typedef cbor_map_entry cbor_det_map_entry_t;
-
-typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw
-cbor_det_array_iterator_t;
-
-typedef CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
-cbor_det_map_iterator_t;
-
-typedef cbor_freeable cbor_det_freeable_t;
 
 #if defined(__cplusplus)
 }

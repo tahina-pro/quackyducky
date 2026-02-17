@@ -7,6 +7,14 @@
 
 #include "CBORDetAbstract.h"
 
+typedef struct cbor_det_t_s cbor_det_t;
+
+typedef struct cbor_det_map_entry_t_s cbor_det_map_entry_t;
+
+typedef struct cbor_det_array_iterator_t_s cbor_det_array_iterator_t;
+
+typedef struct cbor_det_map_iterator_t_s cbor_det_map_iterator_t;
+
 #define CBOR_MAJOR_TYPE_SIMPLE_VALUE (7U)
 
 #define CBOR_MAJOR_TYPE_UINT64 (0U)
@@ -26,14 +34,6 @@
 #define MIN_SIMPLE_VALUE_LONG_ARGUMENT (32U)
 
 #define MAX_SIMPLE_VALUE_ADDITIONAL_INFO (23U)
-
-typedef struct cbor_det_t_s cbor_det_t;
-
-typedef struct cbor_det_map_entry_t_s cbor_det_map_entry_t;
-
-typedef struct cbor_det_array_iterator_t_s cbor_det_array_iterator_t;
-
-typedef struct cbor_det_map_iterator_t_s cbor_det_map_iterator_t;
 
 extern cbor_det_t dummy_cbor_det_t(void);
 

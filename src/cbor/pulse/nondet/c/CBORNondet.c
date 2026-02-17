@@ -4,20 +4,40 @@
 
 #include "CBORNondetType.h"
 
-static uint8_t LowParse_BitFields_get_bitfield_gen8(uint8_t x, uint32_t lo, uint32_t hi)
-{
-  return ((uint32_t)x << (8U - hi) & 0xFFU) >> (8U - hi + lo);
-}
+typedef struct CBOR_Spec_Raw_EverParse_initial_byte_t_s CBOR_Spec_Raw_EverParse_initial_byte_t;
 
-static uint8_t
-LowParse_BitFields_set_bitfield_gen8(uint8_t x, uint32_t lo, uint32_t hi, uint8_t v)
-{
-  return ((uint32_t)x & (uint32_t)~(255U >> (8U - (hi - lo)) << lo)) | (uint32_t)v << lo;
-}
+typedef struct K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t_s
+K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t;
 
-#define CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_LONG_ARGUMENT_8_BITS (24U)
+typedef struct
+K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_s
+K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw;
 
-#define CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_UNASSIGNED_MIN (28U)
+typedef struct
+K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_s
+K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry;
+
+typedef struct K___CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_raw_s
+K___CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_raw;
+
+typedef struct
+Pulse_Lib_Slice_slice__CBOR_Pulse_API_Nondet_C_cbor_nondet_map_get_multiple_entry_t_s
+Pulse_Lib_Slice_slice__CBOR_Pulse_API_Nondet_C_cbor_nondet_map_get_multiple_entry_t;
+
+typedef struct CBOR_Spec_Raw_EverParse_long_argument_s CBOR_Spec_Raw_EverParse_long_argument;
+
+typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw_s
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw;
+
+typedef struct
+FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_s
+FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry;
+
+typedef struct
+FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_s
+FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw;
+
+typedef struct CBOR_Spec_Raw_EverParse_header_s CBOR_Spec_Raw_EverParse_header;
 
 typedef struct CBOR_Spec_Raw_EverParse_initial_byte_t_s
 {
@@ -25,12 +45,6 @@ typedef struct CBOR_Spec_Raw_EverParse_initial_byte_t_s
   uint8_t additional_info;
 }
 CBOR_Spec_Raw_EverParse_initial_byte_t;
-
-#define CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_LONG_ARGUMENT_16_BITS (25U)
-
-#define CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_LONG_ARGUMENT_32_BITS (26U)
-
-#define CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_LONG_ARGUMENT_64_BITS (27U)
 
 #define CBOR_Spec_Raw_EverParse_LongArgumentSimpleValue 0
 #define CBOR_Spec_Raw_EverParse_LongArgumentU8 1
@@ -40,6 +54,44 @@ CBOR_Spec_Raw_EverParse_initial_byte_t;
 #define CBOR_Spec_Raw_EverParse_LongArgumentOther 5
 
 typedef uint8_t CBOR_Spec_Raw_EverParse_long_argument_tags;
+
+typedef struct K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t_s
+{
+  Pulse_Lib_Slice_slice__uint8_t fst;
+  Pulse_Lib_Slice_slice__uint8_t snd;
+}
+K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t;
+
+typedef struct
+K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_s
+{
+  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw fst;
+  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw snd;
+}
+K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw;
+
+typedef struct
+K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_s
+{
+  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry fst;
+  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry snd;
+}
+K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry;
+
+typedef struct K___CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_raw_s
+{
+  cbor_raw fst;
+  cbor_raw snd;
+}
+K___CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_raw;
+
+typedef struct
+Pulse_Lib_Slice_slice__CBOR_Pulse_API_Nondet_C_cbor_nondet_map_get_multiple_entry_t_s
+{
+  cbor_nondet_map_get_multiple_entry_t *elt;
+  size_t len;
+}
+Pulse_Lib_Slice_slice__CBOR_Pulse_API_Nondet_C_cbor_nondet_map_get_multiple_entry_t;
 
 typedef struct CBOR_Spec_Raw_EverParse_long_argument_s
 {
@@ -55,12 +107,56 @@ typedef struct CBOR_Spec_Raw_EverParse_long_argument_s
 }
 CBOR_Spec_Raw_EverParse_long_argument;
 
+typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw_s
+{
+  FStar_Pervasives_Native_option__bool_tags tag;
+  cbor_raw v;
+}
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw;
+
+typedef struct
+FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_s
+{
+  FStar_Pervasives_Native_option__bool_tags tag;
+  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry v;
+}
+FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry;
+
+typedef struct
+FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_s
+{
+  FStar_Pervasives_Native_option__bool_tags tag;
+  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw v;
+}
+FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw;
+
 typedef struct CBOR_Spec_Raw_EverParse_header_s
 {
   CBOR_Spec_Raw_EverParse_initial_byte_t fst;
   CBOR_Spec_Raw_EverParse_long_argument snd;
 }
 CBOR_Spec_Raw_EverParse_header;
+
+static uint8_t LowParse_BitFields_get_bitfield_gen8(uint8_t x, uint32_t lo, uint32_t hi)
+{
+  return ((uint32_t)x << (8U - hi) & 0xFFU) >> (8U - hi + lo);
+}
+
+static uint8_t
+LowParse_BitFields_set_bitfield_gen8(uint8_t x, uint32_t lo, uint32_t hi, uint8_t v)
+{
+  return ((uint32_t)x & (uint32_t)~(255U >> (8U - (hi - lo)) << lo)) | (uint32_t)v << lo;
+}
+
+#define CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_LONG_ARGUMENT_8_BITS (24U)
+
+#define CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_UNASSIGNED_MIN (28U)
+
+#define CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_LONG_ARGUMENT_16_BITS (25U)
+
+#define CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_LONG_ARGUMENT_32_BITS (26U)
+
+#define CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_LONG_ARGUMENT_64_BITS (27U)
 
 static uint64_t
 CBOR_Spec_Raw_EverParse_argument_as_uint64(
@@ -511,19 +607,12 @@ CBOR_Pulse_Raw_EverParse_Format_read_initial_byte_t(Pulse_Lib_Slice_slice__uint8
     );
 }
 
-typedef struct K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t_s
-{
-  Pulse_Lib_Slice_slice__uint8_t fst;
-  Pulse_Lib_Slice_slice__uint8_t snd;
-}
-K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t;
-
-static K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+static K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
 Pulse_Lib_Slice_split__uint8_t(Pulse_Lib_Slice_slice__uint8_t s, size_t i)
 {
   return
     (
-      (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+      (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
         .fst = { .elt = s.elt, .len = i },
         .snd = { .elt = s.elt + i, .len = s.len - i }
       }
@@ -533,11 +622,11 @@ Pulse_Lib_Slice_split__uint8_t(Pulse_Lib_Slice_slice__uint8_t s, size_t i)
 static CBOR_Spec_Raw_EverParse_header
 CBOR_Pulse_Raw_EverParse_Format_read_header(Pulse_Lib_Slice_slice__uint8_t input)
 {
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut = Pulse_Lib_Slice_split__uint8_t(input, (size_t)1U);
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
   Pulse_Lib_Slice_slice__uint8_t input2 = scrut1.snd;
   CBOR_Spec_Raw_EverParse_initial_byte_t
@@ -665,23 +754,23 @@ CBOR_Pulse_Raw_EverParse_Format_validate_header(
   if (ite0)
   {
     size_t off = *poffset;
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut = Pulse_Lib_Slice_split__uint8_t(input, offset2);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut0 =
       Pulse_Lib_Slice_split__uint8_t((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut.fst,
             .snd = scrut.snd
           }
         ).snd,
         off - offset2);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
     CBOR_Spec_Raw_EverParse_initial_byte_t
     x =
       CBOR_Pulse_Raw_EverParse_Format_read_initial_byte_t((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut1.fst,
             .snd = scrut1.snd
           }
@@ -698,23 +787,23 @@ CBOR_Pulse_Raw_EverParse_Format_validate_header(
   if (ite1)
   {
     size_t off = *poffset;
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut0 = Pulse_Lib_Slice_split__uint8_t(input, offset1);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut1 =
       Pulse_Lib_Slice_split__uint8_t((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut0.fst,
             .snd = scrut0.snd
           }
         ).snd,
         off - offset1);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
     CBOR_Spec_Raw_EverParse_initial_byte_t
     x =
       CBOR_Pulse_Raw_EverParse_Format_read_initial_byte_t((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut2.fst,
             .snd = scrut2.snd
           }
@@ -735,23 +824,23 @@ CBOR_Pulse_Raw_EverParse_Format_validate_header(
         if (ite)
         {
           size_t off1 = *poffset;
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut = Pulse_Lib_Slice_split__uint8_t(input, offset2);
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut0 =
             Pulse_Lib_Slice_split__uint8_t((
-                (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                   .fst = scrut.fst,
                   .snd = scrut.snd
                 }
               ).snd,
               off1 - offset2);
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
           return
             MIN_SIMPLE_VALUE_LONG_ARGUMENT <=
               Pulse_Lib_Slice_op_Array_Access__uint8_t((
-                  (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                  (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                     .fst = scrut1.fst,
                     .snd = scrut1.snd
                   }
@@ -819,23 +908,23 @@ CBOR_Pulse_Raw_EverParse_Format_jump_header(
 )
 {
   size_t off1 = offset + (size_t)1U;
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut = Pulse_Lib_Slice_split__uint8_t(input, offset);
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut0 =
     Pulse_Lib_Slice_split__uint8_t((
-        (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+        (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
           .fst = scrut.fst,
           .snd = scrut.snd
         }
       ).snd,
       off1 - offset);
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
   CBOR_Spec_Raw_EverParse_initial_byte_t
   x =
     CBOR_Pulse_Raw_EverParse_Format_read_initial_byte_t((
-        (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+        (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
           .fst = scrut1.fst,
           .snd = scrut1.snd
         }
@@ -849,7 +938,7 @@ CBOR_Pulse_Raw_EverParse_Format_jump_header(
   else if (x.additional_info == CBOR_SPEC_RAW_EVERPARSE_ADDITIONAL_INFO_LONG_ARGUMENT_64_BITS)
     return off1 + (size_t)8U;
   else
-    return off1 + (size_t)0U;
+    return off1;
 }
 
 static bool
@@ -859,16 +948,16 @@ CBOR_Pulse_Raw_EverParse_Format_validate_recursive_step_count_leaf(
   size_t *prem
 )
 {
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut =
     Pulse_Lib_Slice_split__uint8_t(a,
       CBOR_Pulse_Raw_EverParse_Format_jump_header(a, (size_t)0U));
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
   CBOR_Spec_Raw_EverParse_header
   h =
     CBOR_Pulse_Raw_EverParse_Format_read_header((
-        (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+        (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
           .fst = scrut0.fst,
           .snd = scrut0.snd
         }
@@ -928,15 +1017,15 @@ CBOR_Pulse_Raw_EverParse_Format_jump_recursive_step_count_leaf(
   Pulse_Lib_Slice_slice__uint8_t a
 )
 {
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut =
     Pulse_Lib_Slice_split__uint8_t(a,
       CBOR_Pulse_Raw_EverParse_Format_jump_header(a, (size_t)0U));
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
   return
     CBOR_Pulse_Raw_EverParse_Format_impl_remaining_data_items_header(CBOR_Pulse_Raw_EverParse_Format_read_header((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut0.fst,
             .snd = scrut0.snd
           }
@@ -964,23 +1053,23 @@ CBOR_Pulse_Raw_EverParse_Format_validate_raw_data_item(
       if (CBOR_Pulse_Raw_EverParse_Format_validate_header(input, poffset))
       {
         size_t off1 = *poffset;
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut0 = Pulse_Lib_Slice_split__uint8_t(input, offset1);
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut1 =
           Pulse_Lib_Slice_split__uint8_t((
-              (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+              (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                 .fst = scrut0.fst,
                 .snd = scrut0.snd
               }
             ).snd,
             off1 - offset1);
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
         CBOR_Spec_Raw_EverParse_header
         x =
           CBOR_Pulse_Raw_EverParse_Format_read_header((
-              (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+              (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                 .fst = scrut2.fst,
                 .snd = scrut2.snd
               }
@@ -1003,23 +1092,23 @@ CBOR_Pulse_Raw_EverParse_Format_validate_raw_data_item(
           if (ite)
           {
             size_t off2 = *poffset;
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut = Pulse_Lib_Slice_split__uint8_t(input, offset2);
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut0 =
               Pulse_Lib_Slice_split__uint8_t((
-                  (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                  (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                     .fst = scrut.fst,
                     .snd = scrut.snd
                   }
                 ).snd,
                 off2 - offset2);
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
             Pulse_Lib_Slice_slice__uint8_t
             x1 =
               (
-                (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                   .fst = scrut1.fst,
                   .snd = scrut1.snd
                 }
@@ -1042,23 +1131,23 @@ CBOR_Pulse_Raw_EverParse_Format_validate_raw_data_item(
       else
       {
         size_t offset1 = *poffset;
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut = Pulse_Lib_Slice_split__uint8_t(input, off);
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut0 =
           Pulse_Lib_Slice_split__uint8_t((
-              (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+              (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                 .fst = scrut.fst,
                 .snd = scrut.snd
               }
             ).snd,
             offset1 - off);
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
         Pulse_Lib_Slice_slice__uint8_t
         input1 =
           (
-            (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+            (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
               .fst = scrut1.fst,
               .snd = scrut1.snd
             }
@@ -1092,23 +1181,23 @@ CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(
   {
     size_t off = poffset;
     size_t off10 = CBOR_Pulse_Raw_EverParse_Format_jump_header(input, off);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut0 = Pulse_Lib_Slice_split__uint8_t(input, off);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut1 =
       Pulse_Lib_Slice_split__uint8_t((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut0.fst,
             .snd = scrut0.snd
           }
         ).snd,
         off10 - off);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
     CBOR_Spec_Raw_EverParse_header
     x =
       CBOR_Pulse_Raw_EverParse_Format_read_header((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut2.fst,
             .snd = scrut2.snd
           }
@@ -1118,25 +1207,25 @@ CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(
     if (b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING || b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING)
       off1 = off10 + (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(x.fst, x.snd);
     else
-      off1 = off10 + (size_t)0U;
+      off1 = off10;
     poffset = off1;
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut = Pulse_Lib_Slice_split__uint8_t(input, off);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut3 =
       Pulse_Lib_Slice_split__uint8_t((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut.fst,
             .snd = scrut.snd
           }
         ).snd,
         off1 - off);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
     Pulse_Lib_Slice_slice__uint8_t
     input1 =
       (
-        (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+        (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
           .fst = scrut4.fst,
           .snd = scrut4.snd
         }
@@ -1158,13 +1247,13 @@ CBOR_Pulse_Raw_EverParse_Serialized_Base_cbor_read(Pulse_Lib_Slice_slice__uint8_
       .fst = { .major_type = CBOR_MAJOR_TYPE_SIMPLE_VALUE, .additional_info = 0U },
       .snd = { .tag = CBOR_Spec_Raw_EverParse_LongArgumentOther }
     };
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut =
     Pulse_Lib_Slice_split__uint8_t(input,
       CBOR_Pulse_Raw_EverParse_Format_jump_header(input, (size_t)0U));
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
   Pulse_Lib_Slice_slice__uint8_t outc = scrut1.snd;
   ph = CBOR_Pulse_Raw_EverParse_Format_read_header(scrut1.fst);
@@ -1363,22 +1452,22 @@ CBOR_Pulse_Raw_EverParse_Serialized_Base_cbor_read(Pulse_Lib_Slice_slice__uint8_
 static cbor_raw
 CBOR_Pulse_Raw_Format_Parse_cbor_parse(Pulse_Lib_Slice_slice__uint8_t input, size_t len)
 {
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut = Pulse_Lib_Slice_split__uint8_t(input, (size_t)0U);
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut0 =
     Pulse_Lib_Slice_split__uint8_t((
-        (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+        (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
           .fst = scrut.fst,
           .snd = scrut.snd
         }
       ).snd,
       len - (size_t)0U);
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
   return
     CBOR_Pulse_Raw_EverParse_Serialized_Base_cbor_read((
-        (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+        (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
           .fst = scrut1.fst,
           .snd = scrut1.snd
         }
@@ -1400,18 +1489,18 @@ CBOR_Pulse_Raw_Format_Serialized_cbor_serialized_array_item(cbor_serialized c, u
   {
     Pulse_Lib_Slice_slice__uint8_t res = pres;
     size_t i1 = pi;
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut =
       Pulse_Lib_Slice_split__uint8_t(res,
         CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(res, (size_t)0U));
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
     Pulse_Lib_Slice_slice__uint8_t
     res2 =
       (
-        (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+        (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
           .fst = scrut1.fst,
           .snd = scrut1.snd
         }
@@ -1420,17 +1509,17 @@ CBOR_Pulse_Raw_Format_Serialized_cbor_serialized_array_item(cbor_serialized c, u
     pres = res2;
   }
   Pulse_Lib_Slice_slice__uint8_t res = pres;
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut =
     Pulse_Lib_Slice_split__uint8_t(res,
       CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(res, (size_t)0U));
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
   return
     CBOR_Pulse_Raw_EverParse_Serialized_Base_cbor_read((
-        (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+        (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
           .fst = scrut1.fst,
           .snd = scrut1.snd
         }
@@ -1471,15 +1560,15 @@ CBOR_Pulse_Raw_Format_Serialized_cbor_serialized_array_iterator_next(
   CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator i
 )
 {
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut =
     Pulse_Lib_Slice_split__uint8_t(i.s,
       CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(i.s, (size_t)0U));
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
   Pulse_Lib_Slice_slice__uint8_t s2 = scrut2.snd;
   cbor_raw res = CBOR_Pulse_Raw_EverParse_Serialized_Base_cbor_read(scrut2.fst);
@@ -1528,28 +1617,28 @@ CBOR_Pulse_Raw_Format_Serialized_cbor_serialized_map_iterator_next(
   CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator i
 )
 {
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut0 =
     Pulse_Lib_Slice_split__uint8_t(i.s,
       CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(i.s,
         CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(i.s, (size_t)0U)));
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
   Pulse_Lib_Slice_slice__uint8_t s1 = scrut3.fst;
   Pulse_Lib_Slice_slice__uint8_t s2 = scrut3.snd;
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut =
     Pulse_Lib_Slice_split__uint8_t(s1,
       CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(s1, (size_t)0U));
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut4 = { .fst = scrut.fst, .snd = scrut.snd };
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut5 = { .fst = scrut4.fst, .snd = scrut4.snd };
-  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
   scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
   Pulse_Lib_Slice_slice__uint8_t s21 = scrut6.snd;
   cbor_raw res1 = CBOR_Pulse_Raw_EverParse_Serialized_Base_cbor_read(scrut6.fst);
@@ -1690,15 +1779,7 @@ static uint64_t CBOR_Pulse_Raw_Read_cbor_array_iterator_length(cbor_array_iterat
   }
 }
 
-typedef struct
-K___Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw_s
-{
-  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw fst;
-  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw snd;
-}
-K___Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw;
-
-static K___Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw
+static K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw
 Pulse_Lib_Slice_split__CBOR_Pulse_Raw_Type_cbor_raw(
   Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw s,
   size_t i
@@ -1706,7 +1787,7 @@ Pulse_Lib_Slice_split__CBOR_Pulse_Raw_Type_cbor_raw(
 {
   return
     (
-      (K___Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw){
+      (K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw){
         .fst = { .elt = s.elt, .len = i },
         .snd = { .elt = s.elt + i, .len = s.len - i }
       }
@@ -1751,7 +1832,7 @@ CBOR_Pulse_Raw_Read_cbor_array_iterator_truncate(cbor_array_iterator c, uint64_t
 {
   if (c.tag == CBOR_Raw_Iterator_Slice)
   {
-    K___Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw
+    K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw
     scrut =
       Pulse_Lib_Slice_split__CBOR_Pulse_Raw_Type_cbor_raw(c.case_CBOR_Raw_Iterator_Slice,
         (size_t)len);
@@ -1761,7 +1842,7 @@ CBOR_Pulse_Raw_Read_cbor_array_iterator_truncate(cbor_array_iterator c, uint64_t
           .tag = CBOR_Raw_Iterator_Slice,
           {
             .case_CBOR_Raw_Iterator_Slice = (
-              (K___Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw){
+              (K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw){
                 .fst = scrut.fst,
                 .snd = scrut.snd
               }
@@ -1857,15 +1938,7 @@ Pulse_Lib_Slice_op_Array_Access__CBOR_Pulse_Raw_Type_cbor_map_entry(
   return a.elt[i];
 }
 
-typedef struct
-K___Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry_s
-{
-  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry fst;
-  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry snd;
-}
-K___Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry;
-
-static K___Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry
+static K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry
 Pulse_Lib_Slice_split__CBOR_Pulse_Raw_Type_cbor_map_entry(
   Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry s,
   size_t i
@@ -1873,7 +1946,7 @@ Pulse_Lib_Slice_split__CBOR_Pulse_Raw_Type_cbor_map_entry(
 {
   return
     (
-      (K___Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry){
+      (K___Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry){
         .fst = { .elt = s.elt, .len = i },
         .snd = { .elt = s.elt + i, .len = s.len - i }
       }
@@ -2366,22 +2439,6 @@ Pulse_Lib_Slice_copy__uint8_t(
   memcpy(dst.elt, src.elt, src.len * sizeof (uint8_t));
 }
 
-typedef struct
-FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw_s
-{
-  FStar_Pervasives_Native_option__bool_tags tag;
-  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw v;
-}
-FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw;
-
-typedef struct
-FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry_s
-{
-  FStar_Pervasives_Native_option__bool_tags tag;
-  Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry v;
-}
-FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry;
-
 size_t
 CBOR_Pulse_Raw_Format_Serialize_ser_(
   cbor_raw x_,
@@ -2420,12 +2477,12 @@ CBOR_Pulse_Raw_Format_Serialize_ser_(
     if (ite)
     {
       cbor_raw scrut0 = x_;
-      FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw
+      FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw
       scrut;
       if (scrut0.tag == CBOR_Case_Array)
         scrut =
           (
-            (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw){
+            (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw){
               .tag = FStar_Pervasives_Native_Some,
               .v = scrut0.case_CBOR_Case_Array.cbor_array_ptr
             }
@@ -2433,7 +2490,7 @@ CBOR_Pulse_Raw_Format_Serialize_ser_(
       else
         scrut =
           (
-            (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw){
+            (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw){
               .tag = FStar_Pervasives_Native_None
             }
           );
@@ -2494,12 +2551,12 @@ CBOR_Pulse_Raw_Format_Serialize_ser_(
     if (ite)
     {
       cbor_raw scrut0 = x_;
-      FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry
+      FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry
       scrut;
       if (scrut0.tag == CBOR_Case_Map)
         scrut =
           (
-            (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry){
+            (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry){
               .tag = FStar_Pervasives_Native_Some,
               .v = scrut0.case_CBOR_Case_Map.cbor_map_ptr
             }
@@ -2507,7 +2564,7 @@ CBOR_Pulse_Raw_Format_Serialize_ser_(
       else
         scrut =
           (
-            (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry){
+            (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry){
               .tag = FStar_Pervasives_Native_None
             }
           );
@@ -2654,12 +2711,12 @@ bool CBOR_Pulse_Raw_Format_Serialize_siz_(cbor_raw x_, size_t *out)
       if (ite0)
       {
         cbor_raw scrut0 = x_;
-        FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw
+        FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw
         scrut;
         if (scrut0.tag == CBOR_Case_Array)
           scrut =
             (
-              (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw){
+              (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw){
                 .tag = FStar_Pervasives_Native_Some,
                 .v = scrut0.case_CBOR_Case_Array.cbor_array_ptr
               }
@@ -2667,7 +2724,7 @@ bool CBOR_Pulse_Raw_Format_Serialize_siz_(cbor_raw x_, size_t *out)
         else
           scrut =
             (
-              (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_raw){
+              (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw){
                 .tag = FStar_Pervasives_Native_None
               }
             );
@@ -2733,12 +2790,12 @@ bool CBOR_Pulse_Raw_Format_Serialize_siz_(cbor_raw x_, size_t *out)
       if (ite0)
       {
         cbor_raw scrut0 = x_;
-        FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry
+        FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry
         scrut;
         if (scrut0.tag == CBOR_Case_Map)
           scrut =
             (
-              (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry){
+              (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry){
                 .tag = FStar_Pervasives_Native_Some,
                 .v = scrut0.case_CBOR_Case_Map.cbor_map_ptr
               }
@@ -2746,7 +2803,7 @@ bool CBOR_Pulse_Raw_Format_Serialize_siz_(cbor_raw x_, size_t *out)
         else
           scrut =
             (
-              (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm_Pulse_Lib_Slice_slice_CBOR_Pulse_Raw_Type_cbor_map_entry){
+              (FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry){
                 .tag = FStar_Pervasives_Native_None
               }
             );
@@ -2924,38 +2981,38 @@ CBOR_Pulse_Raw_EverParse_Nondet_Gen_impl_check_map_depth_aux(
   {
     Pulse_Lib_Slice_slice__uint8_t l = *pl;
     size_t n_ = pn - (size_t)1U;
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut =
       Pulse_Lib_Slice_split__uint8_t(l,
         CBOR_Pulse_Raw_EverParse_Format_jump_header(l, (size_t)0U));
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
     Pulse_Lib_Slice_slice__uint8_t tl_ = scrut3.snd;
     CBOR_Spec_Raw_EverParse_header h = CBOR_Pulse_Raw_EverParse_Format_read_header(scrut3.fst);
     CBOR_Spec_Raw_EverParse_initial_byte_t b = h.fst;
     size_t ite;
     if (b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING || b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING)
-      ite = (size_t)0U + (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h.fst, h.snd);
+      ite = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h.fst, h.snd);
     else
       ite = (size_t)0U;
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut4 = Pulse_Lib_Slice_split__uint8_t(tl_, ite);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut5 = { .fst = scrut4.fst, .snd = scrut4.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
     Pulse_Lib_Slice_slice__uint8_t
     tl =
       (
-        (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+        (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
           .fst = scrut7.fst,
           .snd = scrut7.snd
         }
@@ -3061,34 +3118,34 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
       ((FStar_Pervasives_Native_option__bool){ .tag = FStar_Pervasives_Native_Some, .v = true });
   else
   {
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut0 =
       Pulse_Lib_Slice_split__uint8_t(l1,
         CBOR_Pulse_Raw_EverParse_Format_jump_header(l1, (size_t)0U));
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
     CBOR_Spec_Raw_EverParse_header
     h1 =
       CBOR_Pulse_Raw_EverParse_Format_read_header((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut2.fst,
             .snd = scrut2.snd
           }
         ).fst);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut3 =
       Pulse_Lib_Slice_split__uint8_t(l2,
         CBOR_Pulse_Raw_EverParse_Format_jump_header(l2, (size_t)0U));
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut5 = { .fst = scrut4.fst, .snd = scrut4.snd };
     CBOR_Spec_Raw_EverParse_header
     h2 =
       CBOR_Pulse_Raw_EverParse_Format_read_header((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut5.fst,
             .snd = scrut5.snd
           }
@@ -3127,57 +3184,57 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
         nv2 =
           (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(FStar_Pervasives_dfst__CBOR_Spec_Raw_EverParse_initial_byte_t_CBOR_Spec_Raw_EverParse_long_argument(h2),
             FStar_Pervasives_dsnd__CBOR_Spec_Raw_EverParse_initial_byte_t_CBOR_Spec_Raw_EverParse_long_argument(h2));
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut0 =
           Pulse_Lib_Slice_split__uint8_t(l1,
             CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l1, (size_t)0U));
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
         Pulse_Lib_Slice_slice__uint8_t
         map1 =
           (
-            (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+            (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
               .fst = scrut2.fst,
               .snd = scrut2.snd
             }
           ).fst;
         CBOR_Spec_Raw_EverParse_header ph = h1;
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut3 =
           Pulse_Lib_Slice_split__uint8_t(map1,
             CBOR_Pulse_Raw_EverParse_Format_jump_header(map1, (size_t)0U));
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut5 = { .fst = scrut4.fst, .snd = scrut4.snd };
         Pulse_Lib_Slice_slice__uint8_t outc0 = scrut5.snd;
         ph = CBOR_Pulse_Raw_EverParse_Format_read_header(scrut5.fst);
         Pulse_Lib_Slice_slice__uint8_t c1 = outc0;
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut6 =
           Pulse_Lib_Slice_split__uint8_t(l2,
             CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l2, (size_t)0U));
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
         Pulse_Lib_Slice_slice__uint8_t
         map2 =
           (
-            (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+            (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
               .fst = scrut8.fst,
               .snd = scrut8.snd
             }
           ).fst;
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut9 =
           Pulse_Lib_Slice_split__uint8_t(map2,
             CBOR_Pulse_Raw_EverParse_Format_jump_header(map2, (size_t)0U));
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut10 = { .fst = scrut9.fst, .snd = scrut9.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut11 = { .fst = scrut10.fst, .snd = scrut10.snd };
         Pulse_Lib_Slice_slice__uint8_t outc = scrut11.snd;
         ph = CBOR_Pulse_Raw_EverParse_Format_read_header(scrut11.fst);
@@ -3192,31 +3249,31 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
         {
           Pulse_Lib_Slice_slice__uint8_t l = pl;
           size_t n_ = pn0 - (size_t)1U;
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut0 =
             Pulse_Lib_Slice_split__uint8_t(l,
               CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l, (size_t)0U));
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
           Pulse_Lib_Slice_slice__uint8_t lh = scrut4.fst;
           Pulse_Lib_Slice_slice__uint8_t lt = scrut4.snd;
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut5 =
             Pulse_Lib_Slice_split__uint8_t(lt,
               CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(lt, (size_t)0U));
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
           Pulse_Lib_Slice_slice__uint8_t lv = scrut9.fst;
           Pulse_Lib_Slice_slice__uint8_t lt_ = scrut9.snd;
@@ -3232,17 +3289,17 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
           {
             Pulse_Lib_Slice_slice__uint8_t l3 = pll;
             size_t n_1 = pn1 - (size_t)1U;
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut0 =
               Pulse_Lib_Slice_split__uint8_t(l3,
                 CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l3, (size_t)0U));
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
             Pulse_Lib_Slice_slice__uint8_t lt1 = scrut4.snd;
             size_t pn2 = (size_t)1U;
@@ -3269,34 +3326,34 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                 if (CBOR_Pulse_Raw_Util_eq_Some_true(r))
                 {
                   size_t n_2 = n4 - (size_t)1U;
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut0 =
                     Pulse_Lib_Slice_split__uint8_t(l1_,
                       CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l1_, (size_t)0U));
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
                   Pulse_Lib_Slice_slice__uint8_t
                   tl1 =
                     (
-                      (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                      (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                         .fst = scrut2.fst,
                         .snd = scrut2.snd
                       }
                     ).snd;
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut =
                     Pulse_Lib_Slice_split__uint8_t(l2_,
                       CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l2_, (size_t)0U));
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut3 = { .fst = scrut.fst, .snd = scrut.snd };
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                   Pulse_Lib_Slice_slice__uint8_t
                   tl2 =
                     (
-                      (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                      (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                         .fst = scrut4.fst,
                         .snd = scrut4.snd
                       }
@@ -3307,33 +3364,33 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                 }
                 else
                 {
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut0 =
                     Pulse_Lib_Slice_split__uint8_t(l1_,
                       CBOR_Pulse_Raw_EverParse_Format_jump_header(l1_, (size_t)0U));
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                   Pulse_Lib_Slice_slice__uint8_t tl1 = scrut4.snd;
                   CBOR_Spec_Raw_EverParse_header
                   h11 = CBOR_Pulse_Raw_EverParse_Format_read_header(scrut4.fst);
                   uint8_t mt11 = CBOR_Spec_Raw_EverParse_get_header_major_type(h11);
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut5 =
                     Pulse_Lib_Slice_split__uint8_t(l2_,
                       CBOR_Pulse_Raw_EverParse_Format_jump_header(l2_, (size_t)0U));
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-                  K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                  K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                   scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
                   Pulse_Lib_Slice_slice__uint8_t tl2 = scrut9.snd;
                   CBOR_Spec_Raw_EverParse_header
@@ -3355,20 +3412,18 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                       b0.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                         b0.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                     )
-                      ite0 =
-                        (size_t)0U +
-                          (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
+                      ite0 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
                     else
                       ite0 = (size_t)0U;
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut0 = Pulse_Lib_Slice_split__uint8_t(tl1, ite0);
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                     Pulse_Lib_Slice_slice__uint8_t lc1 = scrut4.fst;
                     Pulse_Lib_Slice_slice__uint8_t tl1_ = scrut4.snd;
@@ -3383,20 +3438,18 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                       b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                         b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                     )
-                      ite1 =
-                        (size_t)0U +
-                          (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
+                      ite1 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
                     else
                       ite1 = (size_t)0U;
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut5 = Pulse_Lib_Slice_split__uint8_t(tl2, ite1);
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
                     Pulse_Lib_Slice_slice__uint8_t lc2 = scrut9.fst;
                     Pulse_Lib_Slice_slice__uint8_t tl2_ = scrut9.snd;
@@ -3477,17 +3530,17 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
               pres1 = res;
             else
             {
-              K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+              K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
               scrut0 =
                 Pulse_Lib_Slice_split__uint8_t(lt1,
                   CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(lt1, (size_t)0U));
-              K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+              K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
               scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-              K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+              K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
               scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-              K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+              K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
               scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-              K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+              K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
               scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
               Pulse_Lib_Slice_slice__uint8_t lv1 = scrut4.fst;
               Pulse_Lib_Slice_slice__uint8_t lt_1 = scrut4.snd;
@@ -3522,34 +3575,34 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                     if (CBOR_Pulse_Raw_Util_eq_Some_true(r))
                     {
                       size_t n_2 = n4 - (size_t)1U;
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut0 =
                         Pulse_Lib_Slice_split__uint8_t(l1_,
                           CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l1_, (size_t)0U));
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
                       Pulse_Lib_Slice_slice__uint8_t
                       tl1 =
                         (
-                          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                             .fst = scrut2.fst,
                             .snd = scrut2.snd
                           }
                         ).snd;
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut =
                         Pulse_Lib_Slice_split__uint8_t(l2_,
                           CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l2_, (size_t)0U));
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut3 = { .fst = scrut.fst, .snd = scrut.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                       Pulse_Lib_Slice_slice__uint8_t
                       tl2 =
                         (
-                          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                             .fst = scrut4.fst,
                             .snd = scrut4.snd
                           }
@@ -3560,33 +3613,33 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                     }
                     else
                     {
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut0 =
                         Pulse_Lib_Slice_split__uint8_t(l1_,
                           CBOR_Pulse_Raw_EverParse_Format_jump_header(l1_, (size_t)0U));
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                       Pulse_Lib_Slice_slice__uint8_t tl1 = scrut4.snd;
                       CBOR_Spec_Raw_EverParse_header
                       h11 = CBOR_Pulse_Raw_EverParse_Format_read_header(scrut4.fst);
                       uint8_t mt11 = CBOR_Spec_Raw_EverParse_get_header_major_type(h11);
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut5 =
                         Pulse_Lib_Slice_split__uint8_t(l2_,
                           CBOR_Pulse_Raw_EverParse_Format_jump_header(l2_, (size_t)0U));
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
                       Pulse_Lib_Slice_slice__uint8_t tl2 = scrut9.snd;
                       CBOR_Spec_Raw_EverParse_header
@@ -3609,19 +3662,18 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                             b0.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                         )
                           ite0 =
-                            (size_t)0U +
-                              (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
+                            (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
                         else
                           ite0 = (size_t)0U;
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut0 = Pulse_Lib_Slice_split__uint8_t(tl1, ite0);
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                         Pulse_Lib_Slice_slice__uint8_t lc1 = scrut4.fst;
                         Pulse_Lib_Slice_slice__uint8_t tl1_ = scrut4.snd;
@@ -3637,19 +3689,18 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                             b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                         )
                           ite1 =
-                            (size_t)0U +
-                              (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
+                            (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
                         else
                           ite1 = (size_t)0U;
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut5 = Pulse_Lib_Slice_split__uint8_t(tl2, ite1);
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
                         Pulse_Lib_Slice_slice__uint8_t lc2 = scrut9.fst;
                         Pulse_Lib_Slice_slice__uint8_t tl2_ = scrut9.snd;
@@ -3765,31 +3816,31 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
           {
             Pulse_Lib_Slice_slice__uint8_t l = pl;
             size_t n_ = pn - (size_t)1U;
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut0 =
               Pulse_Lib_Slice_split__uint8_t(l,
                 CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l, (size_t)0U));
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
             Pulse_Lib_Slice_slice__uint8_t lh = scrut4.fst;
             Pulse_Lib_Slice_slice__uint8_t lt = scrut4.snd;
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut5 =
               Pulse_Lib_Slice_split__uint8_t(lt,
                 CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(lt, (size_t)0U));
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
             Pulse_Lib_Slice_slice__uint8_t lv = scrut9.fst;
             Pulse_Lib_Slice_slice__uint8_t lt_ = scrut9.snd;
@@ -3805,17 +3856,17 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
             {
               Pulse_Lib_Slice_slice__uint8_t l3 = pll;
               size_t n_1 = pn1 - (size_t)1U;
-              K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+              K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
               scrut0 =
                 Pulse_Lib_Slice_split__uint8_t(l3,
                   CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l3, (size_t)0U));
-              K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+              K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
               scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-              K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+              K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
               scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-              K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+              K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
               scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-              K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+              K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
               scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
               Pulse_Lib_Slice_slice__uint8_t lt1 = scrut4.snd;
               size_t pn2 = (size_t)1U;
@@ -3842,34 +3893,34 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                   if (CBOR_Pulse_Raw_Util_eq_Some_true(r))
                   {
                     size_t n_2 = n4 - (size_t)1U;
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut0 =
                       Pulse_Lib_Slice_split__uint8_t(l1_,
                         CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l1_, (size_t)0U));
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
                     Pulse_Lib_Slice_slice__uint8_t
                     tl1 =
                       (
-                        (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                        (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                           .fst = scrut2.fst,
                           .snd = scrut2.snd
                         }
                       ).snd;
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut =
                       Pulse_Lib_Slice_split__uint8_t(l2_,
                         CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l2_, (size_t)0U));
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut3 = { .fst = scrut.fst, .snd = scrut.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                     Pulse_Lib_Slice_slice__uint8_t
                     tl2 =
                       (
-                        (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                        (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                           .fst = scrut4.fst,
                           .snd = scrut4.snd
                         }
@@ -3880,33 +3931,33 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                   }
                   else
                   {
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut0 =
                       Pulse_Lib_Slice_split__uint8_t(l1_,
                         CBOR_Pulse_Raw_EverParse_Format_jump_header(l1_, (size_t)0U));
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                     Pulse_Lib_Slice_slice__uint8_t tl1 = scrut4.snd;
                     CBOR_Spec_Raw_EverParse_header
                     h11 = CBOR_Pulse_Raw_EverParse_Format_read_header(scrut4.fst);
                     uint8_t mt11 = CBOR_Spec_Raw_EverParse_get_header_major_type(h11);
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut5 =
                       Pulse_Lib_Slice_split__uint8_t(l2_,
                         CBOR_Pulse_Raw_EverParse_Format_jump_header(l2_, (size_t)0U));
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-                    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                     scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
                     Pulse_Lib_Slice_slice__uint8_t tl2 = scrut9.snd;
                     CBOR_Spec_Raw_EverParse_header
@@ -3928,20 +3979,18 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                         b0.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                           b0.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                       )
-                        ite0 =
-                          (size_t)0U +
-                            (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
+                        ite0 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
                       else
                         ite0 = (size_t)0U;
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut0 = Pulse_Lib_Slice_split__uint8_t(tl1, ite0);
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                       Pulse_Lib_Slice_slice__uint8_t lc1 = scrut4.fst;
                       Pulse_Lib_Slice_slice__uint8_t tl1_ = scrut4.snd;
@@ -3956,20 +4005,18 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                         b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                           b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                       )
-                        ite1 =
-                          (size_t)0U +
-                            (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
+                        ite1 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
                       else
                         ite1 = (size_t)0U;
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut5 = Pulse_Lib_Slice_split__uint8_t(tl2, ite1);
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-                      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                       scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
                       Pulse_Lib_Slice_slice__uint8_t lc2 = scrut9.fst;
                       Pulse_Lib_Slice_slice__uint8_t tl2_ = scrut9.snd;
@@ -4050,17 +4097,17 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                 pres1 = res1;
               else
               {
-                K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                 scrut0 =
                   Pulse_Lib_Slice_split__uint8_t(lt1,
                     CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(lt1, (size_t)0U));
-                K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                 scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                 scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-                K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                 scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-                K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                 scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                 Pulse_Lib_Slice_slice__uint8_t lv1 = scrut4.fst;
                 Pulse_Lib_Slice_slice__uint8_t lt_1 = scrut4.snd;
@@ -4095,34 +4142,34 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                       if (CBOR_Pulse_Raw_Util_eq_Some_true(r))
                       {
                         size_t n_2 = n4 - (size_t)1U;
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut0 =
                           Pulse_Lib_Slice_split__uint8_t(l1_,
                             CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l1_, (size_t)0U));
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
                         Pulse_Lib_Slice_slice__uint8_t
                         tl1 =
                           (
-                            (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                            (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                               .fst = scrut2.fst,
                               .snd = scrut2.snd
                             }
                           ).snd;
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut =
                           Pulse_Lib_Slice_split__uint8_t(l2_,
                             CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l2_, (size_t)0U));
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut3 = { .fst = scrut.fst, .snd = scrut.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                         Pulse_Lib_Slice_slice__uint8_t
                         tl2 =
                           (
-                            (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                            (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                               .fst = scrut4.fst,
                               .snd = scrut4.snd
                             }
@@ -4133,33 +4180,33 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                       }
                       else
                       {
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut0 =
                           Pulse_Lib_Slice_split__uint8_t(l1_,
                             CBOR_Pulse_Raw_EverParse_Format_jump_header(l1_, (size_t)0U));
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                         Pulse_Lib_Slice_slice__uint8_t tl1 = scrut4.snd;
                         CBOR_Spec_Raw_EverParse_header
                         h11 = CBOR_Pulse_Raw_EverParse_Format_read_header(scrut4.fst);
                         uint8_t mt11 = CBOR_Spec_Raw_EverParse_get_header_major_type(h11);
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut5 =
                           Pulse_Lib_Slice_split__uint8_t(l2_,
                             CBOR_Pulse_Raw_EverParse_Format_jump_header(l2_, (size_t)0U));
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-                        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                         scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
                         Pulse_Lib_Slice_slice__uint8_t tl2 = scrut9.snd;
                         CBOR_Spec_Raw_EverParse_header
@@ -4182,19 +4229,18 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                               b0.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                           )
                             ite0 =
-                              (size_t)0U +
-                                (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
+                              (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h11.fst, h11.snd);
                           else
                             ite0 = (size_t)0U;
-                          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                           scrut0 = Pulse_Lib_Slice_split__uint8_t(tl1, ite0);
-                          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                           scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-                          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                           scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-                          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                           scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-                          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                           scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
                           Pulse_Lib_Slice_slice__uint8_t lc1 = scrut4.fst;
                           Pulse_Lib_Slice_slice__uint8_t tl1_ = scrut4.snd;
@@ -4210,19 +4256,18 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_map_hd_basic(
                               b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
                           )
                             ite1 =
-                              (size_t)0U +
-                                (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
+                              (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h21.fst, h21.snd);
                           else
                             ite1 = (size_t)0U;
-                          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                           scrut5 = Pulse_Lib_Slice_split__uint8_t(tl2, ite1);
-                          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                           scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-                          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                           scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-                          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                           scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-                          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+                          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
                           scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
                           Pulse_Lib_Slice_slice__uint8_t lc2 = scrut9.fst;
                           Pulse_Lib_Slice_slice__uint8_t tl2_ = scrut9.snd;
@@ -4371,34 +4416,34 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_list_basic(
         if (CBOR_Pulse_Raw_Util_eq_Some_true(r))
         {
           size_t n_ = n - (size_t)1U;
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut0 =
             Pulse_Lib_Slice_split__uint8_t(l1_,
               CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l1_, (size_t)0U));
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
           Pulse_Lib_Slice_slice__uint8_t
           tl1 =
             (
-              (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+              (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                 .fst = scrut2.fst,
                 .snd = scrut2.snd
               }
             ).snd;
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut =
             Pulse_Lib_Slice_split__uint8_t(l2_,
               CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l2_, (size_t)0U));
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut3 = { .fst = scrut.fst, .snd = scrut.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
           Pulse_Lib_Slice_slice__uint8_t
           tl2 =
             (
-              (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+              (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                 .fst = scrut4.fst,
                 .snd = scrut4.snd
               }
@@ -4409,33 +4454,33 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_list_basic(
         }
         else
         {
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut0 =
             Pulse_Lib_Slice_split__uint8_t(l1_,
               CBOR_Pulse_Raw_EverParse_Format_jump_header(l1_, (size_t)0U));
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
           Pulse_Lib_Slice_slice__uint8_t tl1 = scrut4.snd;
           CBOR_Spec_Raw_EverParse_header
           h1 = CBOR_Pulse_Raw_EverParse_Format_read_header(scrut4.fst);
           uint8_t mt1 = CBOR_Spec_Raw_EverParse_get_header_major_type(h1);
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut5 =
             Pulse_Lib_Slice_split__uint8_t(l2_,
               CBOR_Pulse_Raw_EverParse_Format_jump_header(l2_, (size_t)0U));
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
           Pulse_Lib_Slice_slice__uint8_t tl2 = scrut9.snd;
           CBOR_Spec_Raw_EverParse_header
@@ -4457,18 +4502,18 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_list_basic(
               b0.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                 b0.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
             )
-              ite0 = (size_t)0U + (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h1.fst, h1.snd);
+              ite0 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h1.fst, h1.snd);
             else
               ite0 = (size_t)0U;
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut0 = Pulse_Lib_Slice_split__uint8_t(tl1, ite0);
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
             Pulse_Lib_Slice_slice__uint8_t lc1 = scrut4.fst;
             Pulse_Lib_Slice_slice__uint8_t tl1_ = scrut4.snd;
@@ -4482,18 +4527,18 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_equiv_list_basic(
               b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING ||
                 b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING
             )
-              ite1 = (size_t)0U + (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h2.fst, h2.snd);
+              ite1 = (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(h2.fst, h2.snd);
             else
               ite1 = (size_t)0U;
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut5 = Pulse_Lib_Slice_split__uint8_t(tl2, ite1);
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
             Pulse_Lib_Slice_slice__uint8_t lc2 = scrut9.fst;
             Pulse_Lib_Slice_slice__uint8_t tl2_ = scrut9.snd;
@@ -4599,31 +4644,31 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_list_for_all_with_overflow_setoid_ass
   {
     Pulse_Lib_Slice_slice__uint8_t l = pl;
     size_t n_ = pn - (size_t)1U;
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut0 =
       Pulse_Lib_Slice_split__uint8_t(l,
         CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l, (size_t)0U));
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
     Pulse_Lib_Slice_slice__uint8_t lh = scrut4.fst;
     Pulse_Lib_Slice_slice__uint8_t lt = scrut4.snd;
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut5 =
       Pulse_Lib_Slice_split__uint8_t(lt,
         CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(lt, (size_t)0U));
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut8 = { .fst = scrut7.fst, .snd = scrut7.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut9 = { .fst = scrut8.fst, .snd = scrut8.snd };
     Pulse_Lib_Slice_slice__uint8_t lv = scrut9.fst;
     Pulse_Lib_Slice_slice__uint8_t lt_ = scrut9.snd;
@@ -4639,17 +4684,17 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_list_for_all_with_overflow_setoid_ass
     {
       Pulse_Lib_Slice_slice__uint8_t l3 = pll;
       size_t n_1 = pn1 - (size_t)1U;
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut0 =
         Pulse_Lib_Slice_split__uint8_t(l3,
           CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l3, (size_t)0U));
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
       Pulse_Lib_Slice_slice__uint8_t lt1 = scrut4.snd;
       FStar_Pervasives_Native_option__bool
@@ -4663,17 +4708,17 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_list_for_all_with_overflow_setoid_ass
         pres1 = res;
       else
       {
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut =
           Pulse_Lib_Slice_split__uint8_t(lt1,
             CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(lt1, (size_t)0U));
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
         Pulse_Lib_Slice_slice__uint8_t lv1 = scrut3.fst;
         Pulse_Lib_Slice_slice__uint8_t lt_1 = scrut3.snd;
@@ -4730,20 +4775,20 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_valid_basic(
   {
     size_t n = pn;
     Pulse_Lib_Slice_slice__uint8_t pi = ppi;
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut0 =
       Pulse_Lib_Slice_split__uint8_t(pi,
         CBOR_Pulse_Raw_EverParse_Format_jump_header(pi, (size_t)0U));
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
     CBOR_Spec_Raw_EverParse_header
     h =
       CBOR_Pulse_Raw_EverParse_Format_read_header((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut3.fst,
             .snd = scrut3.snd
           }
@@ -4751,30 +4796,30 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_valid_basic(
     bool ite0;
     if (CBOR_Spec_Raw_EverParse_get_header_major_type(h) == CBOR_MAJOR_TYPE_MAP)
     {
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut0 =
         Pulse_Lib_Slice_split__uint8_t(pi,
           CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(pi, (size_t)0U));
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
       Pulse_Lib_Slice_slice__uint8_t
       hd =
         (
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut2.fst,
             .snd = scrut2.snd
           }
         ).fst;
       CBOR_Spec_Raw_EverParse_header ph = h;
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut =
         Pulse_Lib_Slice_split__uint8_t(hd,
           CBOR_Pulse_Raw_EverParse_Format_jump_header(hd, (size_t)0U));
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut3 = { .fst = scrut.fst, .snd = scrut.snd };
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
       Pulse_Lib_Slice_slice__uint8_t outc = scrut4.snd;
       ph = CBOR_Pulse_Raw_EverParse_Format_read_header(scrut4.fst);
@@ -4791,34 +4836,34 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_valid_basic(
       {
         size_t n_ = pn1 - (size_t)1U;
         Pulse_Lib_Slice_slice__uint8_t l = pl;
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut =
           Pulse_Lib_Slice_split__uint8_t(l,
             CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l, (size_t)0U));
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
         Pulse_Lib_Slice_slice__uint8_t lh = scrut3.fst;
         Pulse_Lib_Slice_slice__uint8_t lt = scrut3.snd;
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut4 =
           Pulse_Lib_Slice_split__uint8_t(lt,
             CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(lt, (size_t)0U));
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut5 = { .fst = scrut4.fst, .snd = scrut4.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut6 = { .fst = scrut5.fst, .snd = scrut5.snd };
-        K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
         scrut7 = { .fst = scrut6.fst, .snd = scrut6.snd };
         Pulse_Lib_Slice_slice__uint8_t
         lt_ =
           (
-            (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+            (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
               .fst = scrut7.fst,
               .snd = scrut7.snd
             }
@@ -4833,17 +4878,17 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_valid_basic(
         {
           size_t n_1 = pn2 - (size_t)1U;
           Pulse_Lib_Slice_slice__uint8_t l2 = pl1;
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut =
             Pulse_Lib_Slice_split__uint8_t(l2,
               CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(l2, (size_t)0U));
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
-          K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+          K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
           scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
           Pulse_Lib_Slice_slice__uint8_t lt1 = scrut3.snd;
           FStar_Pervasives_Native_option__bool
@@ -4853,19 +4898,19 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_valid_basic(
               scrut3.fst);
           if (CBOR_Pulse_Raw_Util_eq_Some_false(res))
           {
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut =
               Pulse_Lib_Slice_split__uint8_t(lt1,
                 CBOR_Pulse_Raw_EverParse_Format_jump_raw_data_item(lt1, (size_t)0U));
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut0 = { .fst = scrut.fst, .snd = scrut.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
-            K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+            K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
             scrut2 = { .fst = scrut1.fst, .snd = scrut1.snd };
             pl1 =
               (
-                (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+                (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
                   .fst = scrut2.fst,
                   .snd = scrut2.snd
                 }
@@ -4925,23 +4970,23 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_valid_basic(
     else
     {
       size_t off1 = CBOR_Pulse_Raw_EverParse_Format_jump_header(pi, (size_t)0U);
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut = Pulse_Lib_Slice_split__uint8_t(pi, (size_t)0U);
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut0 =
         Pulse_Lib_Slice_split__uint8_t((
-            (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+            (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
               .fst = scrut.fst,
               .snd = scrut.snd
             }
           ).snd,
           off1 - (size_t)0U);
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
       CBOR_Spec_Raw_EverParse_header
       x =
         CBOR_Pulse_Raw_EverParse_Format_read_header((
-            (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+            (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
               .fst = scrut1.fst,
               .snd = scrut1.snd
             }
@@ -4952,12 +4997,12 @@ CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_valid_basic(
       (b.major_type == CBOR_MAJOR_TYPE_BYTE_STRING || b.major_type == CBOR_MAJOR_TYPE_TEXT_STRING)
         ite = off1 + (size_t)CBOR_Spec_Raw_EverParse_argument_as_uint64(x.fst, x.snd);
       else
-        ite = off1 + (size_t)0U;
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+        ite = off1;
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut2 = Pulse_Lib_Slice_split__uint8_t(pi, ite);
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut3 = { .fst = scrut2.fst, .snd = scrut2.snd };
-      K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+      K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
       scrut4 = { .fst = scrut3.fst, .snd = scrut3.snd };
       Pulse_Lib_Slice_slice__uint8_t ph = scrut4.fst;
       Pulse_Lib_Slice_slice__uint8_t pc = scrut4.snd;
@@ -4981,25 +5026,25 @@ CBOR_Pulse_Raw_Format_Nondet_Validate_cbor_validate_nondet(
   if (CBOR_Pulse_Raw_EverParse_Format_validate_raw_data_item(input, &poff))
   {
     size_t off = poff;
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut = Pulse_Lib_Slice_split__uint8_t(input, (size_t)0U);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut0 =
       Pulse_Lib_Slice_split__uint8_t((
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut.fst,
             .snd = scrut.snd
           }
         ).snd,
         off - (size_t)0U);
-    K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t
+    K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t
     scrut1 = { .fst = scrut0.fst, .snd = scrut0.snd };
     if
     (
       CBOR_Pulse_Raw_EverParse_Nondet_Basic_impl_check_valid_basic(map_key_bound,
         strict_check,
         (
-          (K___Pulse_Lib_Slice_slice_uint8_t_Pulse_Lib_Slice_slice_uint8_t){
+          (K___Pulse_Lib_Slice_slice__uint8_t_Pulse_Lib_Slice_slice__uint8_t){
             .fst = scrut1.fst,
             .snd = scrut1.snd
           }
@@ -5078,13 +5123,6 @@ FStar_Pervasives_Native_uu___is_Some__bool(FStar_Pervasives_Native_option__bool 
   else
     return false;
 }
-
-typedef struct K___CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_raw_s
-{
-  cbor_raw fst;
-  cbor_raw snd;
-}
-K___CBOR_Pulse_Raw_Type_cbor_raw_CBOR_Pulse_Raw_Type_cbor_raw;
 
 bool CBOR_Pulse_Raw_Nondet_Compare_cbor_nondet_equiv(cbor_raw x1, cbor_raw x2)
 {
@@ -5779,13 +5817,6 @@ static bool CBOR_Pulse_Raw_Nondet_cbor_nondet_equal(cbor_raw x1, cbor_raw x2)
 {
   return CBOR_Pulse_Raw_Nondet_Compare_cbor_nondet_equiv(x1, x2);
 }
-
-typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw_s
-{
-  FStar_Pervasives_Native_option__bool_tags tag;
-  cbor_raw v;
-}
-FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw;
 
 static FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw
 CBOR_Pulse_Raw_Nondet_cbor_nondet_map_get(cbor_raw x, cbor_raw k)
@@ -6496,15 +6527,7 @@ bool cbor_nondet_mk_map(cbor_map_entry *a, uint64_t len, cbor_raw *dest)
   }
 }
 
-typedef struct
-Pulse_Lib_Slice_slice__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw_s
-{
-  cbor_nondet_map_get_multiple_entry_t *elt;
-  size_t len;
-}
-Pulse_Lib_Slice_slice__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw;
-
-static Pulse_Lib_Slice_slice__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw
+static Pulse_Lib_Slice_slice__CBOR_Pulse_API_Nondet_C_cbor_nondet_map_get_multiple_entry_t
 Pulse_Lib_Slice_arrayptr_to_slice_intro__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw(
   cbor_nondet_map_get_multiple_entry_t *a,
   size_t alen
@@ -6512,7 +6535,7 @@ Pulse_Lib_Slice_arrayptr_to_slice_intro__CBOR_Pulse_API_Base_cbor_map_get_multip
 {
   return
     (
-      (Pulse_Lib_Slice_slice__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw){
+      (Pulse_Lib_Slice_slice__CBOR_Pulse_API_Nondet_C_cbor_nondet_map_get_multiple_entry_t){
         .elt = a,
         .len = alen
       }
@@ -6521,8 +6544,7 @@ Pulse_Lib_Slice_arrayptr_to_slice_intro__CBOR_Pulse_API_Base_cbor_map_get_multip
 
 static size_t
 Pulse_Lib_Slice_len__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw(
-  Pulse_Lib_Slice_slice__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw
-  s
+  Pulse_Lib_Slice_slice__CBOR_Pulse_API_Nondet_C_cbor_nondet_map_get_multiple_entry_t s
 )
 {
   return s.len;
@@ -6530,8 +6552,7 @@ Pulse_Lib_Slice_len__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Puls
 
 static cbor_nondet_map_get_multiple_entry_t
 Pulse_Lib_Slice_op_Array_Access__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw(
-  Pulse_Lib_Slice_slice__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw
-  a,
+  Pulse_Lib_Slice_slice__CBOR_Pulse_API_Nondet_C_cbor_nondet_map_get_multiple_entry_t a,
   size_t i
 )
 {
@@ -6540,8 +6561,7 @@ Pulse_Lib_Slice_op_Array_Access__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry
 
 static void
 Pulse_Lib_Slice_op_Array_Assignment__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw(
-  Pulse_Lib_Slice_slice__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw
-  a,
+  Pulse_Lib_Slice_slice__CBOR_Pulse_API_Nondet_C_cbor_nondet_map_get_multiple_entry_t a,
   size_t i,
   cbor_nondet_map_get_multiple_entry_t v
 )
@@ -6562,7 +6582,7 @@ cbor_nondet_map_get_multiple(
     return false;
   else
   {
-    Pulse_Lib_Slice_slice__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw
+    Pulse_Lib_Slice_slice__CBOR_Pulse_API_Nondet_C_cbor_nondet_map_get_multiple_entry_t
     dests =
       Pulse_Lib_Slice_arrayptr_to_slice_intro__CBOR_Pulse_API_Base_cbor_map_get_multiple_entry_t_CBOR_Pulse_Raw_Type_cbor_raw(dest,
         len);
