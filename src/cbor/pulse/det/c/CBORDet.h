@@ -9,48 +9,9 @@ extern "C" {
 
 #include "krmllib.h"
 
-typedef struct CBOR_Spec_Raw_Base_raw_uint64_s CBOR_Spec_Raw_Base_raw_uint64;
-
-typedef struct Pulse_Lib_Slice_slice__uint8_t_s Pulse_Lib_Slice_slice__uint8_t;
-
-typedef struct Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_s
-Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw;
-
-typedef struct Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry_s
-Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry;
-
-typedef struct cbor_freeable_box_s cbor_freeable_box;
-
-typedef struct cbor_freeable_array_s cbor_freeable_array;
-
-typedef struct cbor_freeable_map_s cbor_freeable_map;
-
-typedef struct cbor_int_s cbor_int;
-
-typedef struct cbor_tagged_s cbor_tagged;
-
-typedef struct cbor_string_s cbor_string;
-
-typedef struct cbor_serialized_s cbor_serialized;
-
-typedef struct CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator_s
-CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator;
-
-typedef struct cbor_array_s cbor_array;
-
-typedef struct cbor_map_s cbor_map;
-
 typedef struct cbor_freeable0_s cbor_freeable0;
 
-typedef struct CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_s
-CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry;
-
-typedef struct CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_s
-CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw;
-
 typedef struct cbor_freeable_map_entry_s cbor_freeable_map_entry;
-
-typedef struct cbor_freeable_s cbor_freeable;
 
 typedef struct cbor_raw_s cbor_raw;
 

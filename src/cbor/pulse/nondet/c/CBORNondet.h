@@ -11,8 +11,6 @@ extern "C" {
 
 #include "CBORNondetType.h"
 
-typedef struct cbor_nondet_map_get_multiple_entry_t_s cbor_nondet_map_get_multiple_entry_t;
-
 typedef struct cbor_nondet_map_get_multiple_entry_t_s
 {
   cbor_raw key;

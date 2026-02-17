@@ -12,10 +12,6 @@ extern "C" {
 #include "CBORNondetType.h"
 #include "../CBORNondet.h"
 
-typedef struct FStar_Pervasives_Native_option__size_t_s FStar_Pervasives_Native_option__size_t;
-
-typedef struct FStar_Pervasives_Native_option__bool_s FStar_Pervasives_Native_option__bool;
-
 #define FStar_Pervasives_Native_None 0
 #define FStar_Pervasives_Native_Some 1
 

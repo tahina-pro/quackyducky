@@ -8,9 +8,6 @@
 #include "COSE_Format.h"
 #include "CBORDetAbstract.h"
 
-typedef struct FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice__uint8_t_s
-FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice__uint8_t;
-
 typedef void *COSE_EverCrypt_ser_to;
 
 typedef void *COSE_EverCrypt_to_be_signed_spec;
