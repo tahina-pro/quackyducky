@@ -783,7 +783,7 @@ fn jump_header(input: &[u8], offset: usize) -> usize
     else if x0.additional_info == additional_info_long_argument_64_bits
     { off1.wrapping_add(8usize) }
     else
-    { off1.wrapping_add(0usize) }
+    { off1 }
 }
 
 fn validate_recursive_step_count_leaf(a: &[u8], bound: usize, prem: &mut [usize]) -> bool
@@ -1107,7 +1107,7 @@ fn jump_raw_data_item(input: &[u8], offset: usize) -> usize
                 off1.wrapping_add(argument_as_uint64(b0, l) as usize)
             }
             else
-            { off1.wrapping_add(0usize) };
+            { off1 };
         (&mut poffset)[0] = off10;
         let s·0: (&[u8], &[u8]) = input.split_at(off);
         let _letpattern0: (&[u8], &[u8]) =
@@ -1424,7 +1424,7 @@ fn cbor_raw_sorted(a: &[u8]) -> bool
                 {
                     let b0: initial_byte_t = h.fst;
                     let l: long_argument = h.snd;
-                    0usize.wrapping_add(argument_as_uint64(b0, l) as usize)
+                    argument_as_uint64(b0, l) as usize
                 }
                 else
                 { 0usize };
@@ -1707,7 +1707,7 @@ fn cbor_validate_det·(input: &[u8]) -> usize
                         off1.wrapping_add(argument_as_uint64(b0, l) as usize)
                     }
                     else
-                    { off1.wrapping_add(0usize) };
+                    { off1 };
                 let s: (&[u8], &[u8]) = pi.split_at(i);
                 let _letpattern1: (&[u8], &[u8]) =
                     {
@@ -1798,7 +1798,7 @@ fn cbor_validate_det·(input: &[u8]) -> usize
                             off1.wrapping_add(argument_as_uint64(b0, l) as usize)
                         }
                         else
-                        { off1.wrapping_add(0usize) };
+                        { off1 };
                     let s: (&[u8], &[u8]) = pi.split_at(i);
                     let _letpattern1: (&[u8], &[u8]) =
                         {
@@ -2840,7 +2840,7 @@ fn cbor_raw_with_perm_get_header(xl: cbor_raw) -> header { cbor_raw_get_header(x
 
 #[derive(PartialEq, Clone, Copy)]
 enum
-option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw_tags
+option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw_tags
 {
     None,
     Some
@@ -2848,7 +2848,7 @@ option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Typ
 
 #[derive(PartialEq, Clone, Copy)]
 enum
-option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw
+option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw
 <'a>
 {
     None,
@@ -2857,7 +2857,7 @@ option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Typ
 
 #[derive(PartialEq, Clone, Copy)]
 enum
-option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry
+option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry
 <'a>
 {
     None,
@@ -2901,13 +2901,13 @@ pub(crate) fn ser·(x·: cbor_raw, out: &mut [u8], offset: usize) -> usize
                     match x2·
                     {
                         cbor_raw::CBOR_Case_Array { v: a } =>
-                          option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
+                          option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
                           { v: a.cbor_array_ptr },
                         _ =>
-                          option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::None
+                          option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::None
                     }
                     {
-                        option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
+                        option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
                         { v }
                         => v,
                         _ => panic!("Incomplete pattern matching")
@@ -2965,13 +2965,13 @@ pub(crate) fn ser·(x·: cbor_raw, out: &mut [u8], offset: usize) -> usize
                         match x2·
                         {
                             cbor_raw::CBOR_Case_Map { v: a } =>
-                              option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
+                              option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
                               { v: a.cbor_map_ptr },
                             _ =>
-                              option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::None
+                              option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::None
                         }
                         {
-                            option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
+                            option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
                             { v }
                             => v,
                             _ => panic!("Incomplete pattern matching")
@@ -3112,13 +3112,13 @@ pub(crate) fn siz·(x·: cbor_raw, out: &mut [usize]) -> bool
                         match x2·
                         {
                             cbor_raw::CBOR_Case_Array { v: a } =>
-                              option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
                               { v: a.cbor_array_ptr },
                             _ =>
-                              option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::None
+                              option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::None
                         }
                         {
-                            option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
+                            option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_raw::Some
                             { v }
                             => v,
                             _ => panic!("Incomplete pattern matching")
@@ -3182,13 +3182,13 @@ pub(crate) fn siz·(x·: cbor_raw, out: &mut [usize]) -> bool
                             match x2·
                             {
                                 cbor_raw::CBOR_Case_Map { v: a } =>
-                                  option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
+                                  option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
                                   { v: a.cbor_map_ptr },
                                 _ =>
-                                  option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::None
+                                  option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::None
                             }
                             {
-                                option__LowParse_Pulse_Base_with_perm·Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
+                                option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice·CBOR_Pulse_Raw_Type_cbor_map_entry::Some
                                 { v }
                                 => v,
                                 _ => panic!("Incomplete pattern matching")

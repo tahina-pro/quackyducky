@@ -66,6 +66,8 @@ cbor_tagged;
 
 typedef struct cbor_raw_s cbor_raw;
 
+typedef struct cbor_raw_s cbor_raw;
+
 typedef struct Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_s
 {
   cbor_raw *elt;
@@ -73,12 +75,16 @@ typedef struct Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_s
 }
 Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw;
 
+typedef struct cbor_raw_s cbor_raw;
+
 typedef struct cbor_array_s
 {
   uint8_t cbor_array_length_size;
   Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw cbor_array_ptr;
 }
 cbor_array;
+
+typedef struct cbor_map_entry_s cbor_map_entry;
 
 typedef struct cbor_map_entry_s cbor_map_entry;
 
