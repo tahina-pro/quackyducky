@@ -55,7 +55,7 @@ void bench_evercddl () {
 
     printf(" >>> EVERCDDL SERIALIZATION OF RECORD TAKES: %f us\n", f * 1e6 / LAPS);
 
-    FStar_Pervasives_Native_option___BenchFlat_record___Pulse_Lib_Slice_slice_uint8_t_
+    FStar_Pervasives_Native_option__K___BenchFlat_record_Pulse_Lib_Slice_slice__uint8_t
       rc;
     TIME_void(({
         for (int i = 0; i < LAPS; i++) {
