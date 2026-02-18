@@ -160,7 +160,7 @@ void bench_verify(EVP_PKEY *pkey) {
 //         COSE_Format_validate_and_parse_COSE_Sign1_Tagged(signed_msg).v.fst;
 //     COSE_Format_evercddl_Sig_structure_pretty sig_struct = {
 //         .context = 1,
-//         .body_protected = c.protected,
+//         .body_protected = c.protected0,
 //         ._x0 = {
 //             .tag = COSE_Format_Inr,
 //             .case_Inr = {
