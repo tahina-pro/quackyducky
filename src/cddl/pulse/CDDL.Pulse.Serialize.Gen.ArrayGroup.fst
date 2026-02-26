@@ -328,7 +328,8 @@ fn impl_det_serialize_array
 {
   let mut pcount = 0uL;
   let mut psize = 0sz;
-  let res = i c out pcount psize #0sz [];
+  with w_init . assert (pts_to out w_init);
+  let res = i c out pcount psize #0sz [] #(Ghost.hide (Seq.empty #U8.t));
   if (res) {
     let size = !psize;
     let count = !pcount;
@@ -445,9 +446,10 @@ fn impl_serialize_array_group_ext
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
   ag_spec_ext_serializer ps ps' v;
-  i c out out_count out_size #size_before l
+  i c out out_count out_size #size_before l #w_pfx
 }
 
 #pop-options
@@ -483,12 +485,13 @@ fn impl_serialize_array_group_bij
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
   let c' = g21 c;
   Trade.rewrite_with_trade
     (rel_fun r g21 f21 c v)
     (r c' (Ghost.reveal f21 v));
-  let res = i c' #(Ghost.reveal f21 v) out out_count out_size #size_before l;
+  let res = i c' #(Ghost.reveal f21 v) out out_count out_size #size_before l #w_pfx;
   Trade.elim _ _;
   res
 }
@@ -633,6 +636,7 @@ fn impl_serialize_array_group_item
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
   let count = !out_count;
   if (U64.lt count pow2_64_m1) {
@@ -807,14 +811,16 @@ fn impl_serialize_array_group_concat
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
   norewrite let (c1, c2) = c;
   Trade.rewrite_with_trade (rel_pair r1 r2 c v) (r1 c1 (fst v) ** r2 c2 (snd v));
-  let res1 = i1 c1 out out_count out_size #size_before l;
+  let res1 = i1 c1 out out_count out_size #size_before l #w_pfx;
   S.pts_to_len out;
   if (res1) {
     let size_mid = !out_size;
-    let res2 = i2 c2 out out_count out_size #size_mid (List.Tot.append l (ps1.ag_serializer (fst v)));
+    with w1 . assert (pts_to out w1);
+    let res2 = i2 c2 out out_count out_size #size_mid (List.Tot.append l (ps1.ag_serializer (fst v))) #(Ghost.hide (Seq.slice w1 0 (SZ.v size_mid)));
     Trade.elim _ _;
     S.pts_to_len out;
     with w2 . assert (pts_to out w2);
@@ -866,20 +872,21 @@ fn impl_serialize_array_group_choice
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
   rel_either_cases r1 r2 c v;
   match c {
     norewrite
     Inl c1 -> {
       Trade.rewrite_with_trade (rel_either r1 r2 c v) (r1 c1 (Inl?.v v));
-      let res = i1 c1 out out_count out_size #size_before l;
+      let res = i1 c1 out out_count out_size #size_before l #w_pfx;
       Trade.elim _ _;
       res
     }
     norewrite
     Inr c2 -> {
       Trade.rewrite_with_trade (rel_either r1 r2 c v) (r2 c2 (Inr?.v v));
-      let res = i2 c2 out out_count out_size #size_before l;
+      let res = i2 c2 out out_count out_size #size_before l #w_pfx;
       Trade.elim _ _;
       res
     }
@@ -911,8 +918,9 @@ fn impl_serialize_array_group_ext'
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
-  i c out out_count out_size #size_before l
+  i c out out_count out_size #size_before l #w_pfx
 }
 
 inline_for_extraction noextract [@@noextract_to "krml"]
@@ -936,8 +944,9 @@ fn impl_serialize_array_group_close_intro
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
-  i1 c out out_count out_size #size_before l
+  i1 c out out_count out_size #size_before l #w_pfx
 }
 
 inline_for_extraction noextract [@@noextract_to "krml"]
@@ -961,8 +970,9 @@ fn impl_serialize_array_group_close_elim
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
-  i1 c out out_count out_size #size_before l
+  i1 c out out_count out_size #size_before l #w_pfx
 }
 
 inline_for_extraction noextract [@@noextract_to "krml"]
@@ -1025,13 +1035,14 @@ fn impl_serialize_array_group_zero_or_one
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
   rel_option_cases r1 c v;
   match c {
     norewrite
     Some c1 -> {
       Trade.rewrite_with_trade (rel_option r1 c v) (r1 c1 (Some?.v v));
-      let res = i1 c1 out out_count out_size #size_before l;
+      let res = i1 c1 out out_count out_size #size_before l #w_pfx;
       Trade.elim _ _;
       res
     }
@@ -1066,19 +1077,20 @@ fn impl_serialize_array_group_either_left
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
   match c {
     norewrite
     Inl c1 -> {
       Trade.rewrite_with_trade (rel_either_left r1 r2 c v) (r1 c1 v);
-      let res = i1 c1 out out_count out_size #size_before l;
+      let res = i1 c1 out out_count out_size #size_before l #w_pfx;
       Trade.elim _ _;
       res
     }
     norewrite
     Inr c2 -> {
       Trade.rewrite_with_trade (rel_either_left r1 r2 c v) (r2 c2 v);
-      let res = i2 c2 out out_count out_size #size_before l;
+      let res = i2 c2 out out_count out_size #size_before l #w_pfx;
       Trade.elim _ _;
       res
     }
@@ -1497,6 +1509,7 @@ fn impl_serialize_array_group_zero_or_more_slice
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
   let ps = Ghost.hide (ag_spec_zero_or_more ps1);
   unfold (rel_slice_of_list r1 false c v);
@@ -1560,7 +1573,8 @@ fn impl_serialize_array_group_zero_or_more_slice
     Trade.trans_hyp_l (r1 x y) _ _ _;
     with l1 . assert (GR.pts_to pl1 l1);
     with cur_size . assert (pts_to out_size cur_size);
-    let res = i1 x out out_count out_size #cur_size (List.Tot.append l (ps.ag_serializer l1));
+    with w_cur . assert (pts_to out w_cur);
+    let res = i1 x out out_count out_size #cur_size (List.Tot.append l (ps.ag_serializer l1)) #(Ghost.hide (Seq.slice w_cur 0 (SZ.v cur_size)));
     with w . assert (pts_to out w);
     S.pts_to_len c.s;
     ag_serializable_zero_or_more_append ps1 l1 l2;
@@ -1651,6 +1665,7 @@ impl_serialize_array_group_zero_or_more_iterator
     (out_size: R.ref SZ.t)
     (#size_before: _)
     (l: Ghost.erased (list Cbor.cbor))
+    (#w_pfx: _)
 {
   let ps = Ghost.hide (ag_spec_zero_or_more ps1);
   let mut pc = c0;
@@ -1697,7 +1712,8 @@ impl_serialize_array_group_zero_or_more_iterator
     Trade.trans_hyp_l (r1 x z) _ _ _;
     with l1 . assert (GR.pts_to pl1 l1);
     with cur_size . assert (pts_to out_size cur_size);
-    let res = i1 x #z out out_count out_size #cur_size (List.Tot.append l (ps.ag_serializer l1));
+    with w_cur . assert (pts_to out w_cur);
+    let res = i1 x #z out out_count out_size #cur_size (List.Tot.append l (ps.ag_serializer l1)) #(Ghost.hide (Seq.slice w_cur 0 (SZ.v cur_size)));
     Trade.elim_hyp_l _ _ _;
     Trade.trans _ _ (rel_array_iterator cbor_array_iterator_match (Iterator.mk_spec r1) c0 v);
     with w . assert (pts_to out w);
@@ -1781,6 +1797,7 @@ fn impl_serialize_array_group_one_or_more_slice
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
   unfold (rel_slice_of_list r1 false c v);
   S.pts_to_len c.s;
@@ -1789,7 +1806,7 @@ fn impl_serialize_array_group_one_or_more_slice
   if (S.len c.s = 0sz) {
     false
   } else {
-    impl_serialize_array_group_zero_or_more_slice i1 sq c out out_count out_size #size_before l
+    impl_serialize_array_group_zero_or_more_slice i1 sq c out out_count out_size #size_before l #w_pfx
   }
 }
 
@@ -1849,6 +1866,7 @@ fn impl_serialize_array_group_one_or_more_iterator
     (out_size: _)
     (#size_before: _)
     (l: _)
+    (#w_pfx: _)
 {
   let v' : Ghost.erased (list (dfst (Iterator.mk_spec r1))) = v;
   Trade.rewrite_with_trade
@@ -1859,7 +1877,7 @@ fn impl_serialize_array_group_one_or_more_iterator
   if (em) {
     false
   } else {
-    impl_serialize_array_group_zero_or_more_iterator is_empty length share gather truncate i1 sq c out out_count out_size #size_before l
+    impl_serialize_array_group_zero_or_more_iterator is_empty length share gather truncate i1 sq c out out_count out_size #size_before l #w_pfx
   }
 }
 

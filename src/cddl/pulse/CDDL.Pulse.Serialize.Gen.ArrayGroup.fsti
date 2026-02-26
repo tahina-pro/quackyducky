@@ -236,12 +236,16 @@ let impl_serialize_array_group
   (out_size: R.ref SZ.t) ->
   (#size_before: Ghost.erased SZ.t) ->
   (l: Ghost.erased (list Cbor.cbor)) ->
+  (#w_pfx: Ghost.erased (Seq.seq U8.t)) ->
   stt bool
     (exists* w count . r c v ** pts_to out w ** pts_to out_count count ** pts_to out_size size_before **
-      pure (impl_serialize_array_group_pre p count size_before l w)
+      pure (impl_serialize_array_group_pre p count size_before l w /\
+        Ghost.reveal w_pfx == Seq.slice w 0 (SZ.v size_before))
     )
     (fun res -> exists* w count' size' . r c v ** pts_to out w ** pts_to out_count count' ** pts_to out_size size' ** pure (
-      impl_serialize_array_group_post lmin lmax count' size' size_before l s v w res
+      impl_serialize_array_group_post lmin lmax count' size' size_before l s v w res /\
+      SZ.v size_before <= Seq.length w /\
+      Seq.slice w 0 (SZ.v size_before) == Ghost.reveal w_pfx
     ))
 
 let impl_serialize_array_group_t_eq
@@ -257,7 +261,7 @@ let impl_serialize_array_group_t_eq
     (impl_tgt2: Type0)
     (ieq: squash (impl_tgt == impl_tgt2))
 : Tot (squash (impl_serialize_array_group lmin lmax s #impl_tgt r == impl_serialize_array_group lmin lmax s #impl_tgt2 (coerce_rel r impl_tgt2 ieq)))
-= ()
+= assert (impl_tgt == impl_tgt2) by (FStar.Tactics.assumption ())
 
 inline_for_extraction noextract [@@noextract_to "krml"]
 val impl_det_serialize_array
