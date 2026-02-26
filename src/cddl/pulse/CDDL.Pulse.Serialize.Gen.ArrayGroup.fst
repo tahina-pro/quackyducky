@@ -671,6 +671,29 @@ fn impl_serialize_array_group_item
 
 #pop-options
 
+let impl_serialize_array_group_post_true_size_order
+    (#p: cbor_parser)
+    (lmin: cbor_min_length p)
+    (lmax: cbor_max_length p)
+    (count: U64.t)
+    (size: SZ.t)
+    (size_before: SZ.t)
+    (l: list Cbor.cbor)
+    (#t: array_group None)
+    (#tgt: Type0)
+    (#inj: bool)
+    (ps: ag_spec t tgt inj)
+    (v: tgt)
+    (w: Seq.seq U8.t)
+: Lemma
+  (requires impl_serialize_array_group_post lmin lmax count size size_before l ps v w true)
+  (ensures (
+    ps.ag_serializable v /\
+    SZ.v size - SZ.v size_before >= cbor_array_min_length lmin (ps.ag_serializer v) /\
+    SZ.v size_before <= SZ.v size
+  ))
+= ()
+
 #push-options "--z3rlimit 32 --fuel 2 --ifuel 1 --split_queries always --ext context_pruning"
 
 let impl_serialize_array_group_concat_true_post
@@ -698,12 +721,15 @@ let impl_serialize_array_group_concat_true_post
     ps1.ag_serializable v1 /\
     impl_serialize_array_group_post lmin lmax count size size_mid (List.Tot.append l (ps1.ag_serializer v1)) ps2 v2 w true /\
     impl_serialize_array_group_requires l ps1 v1 /\
-    array_group_concat_unique_weak t1 t2
+    array_group_concat_unique_weak t1 t2 /\
+    SZ.v size_before <= SZ.v size_mid /\
+    SZ.v size_mid - SZ.v size_before >= cbor_array_min_length lmin (ps1.ag_serializer v1)
   ))
   (ensures (
     impl_serialize_array_group_post lmin lmax count size size_before l (ag_spec_concat ps1 ps2) (v1, v2) w true
   ))
-= assume (impl_serialize_array_group_post lmin lmax count size size_before l (ag_spec_concat ps1 ps2) (v1, v2) w true)
+= List.Tot.append_assoc l (ps1.ag_serializer v1) (ps2.ag_serializer v2);
+  CBOR.Spec.Util.list_sum_append lmin (ps1.ag_serializer v1) (ps2.ag_serializer v2)
 
 #pop-options
 
@@ -734,12 +760,14 @@ let impl_serialize_array_group_concat_false2_post
     ps1.ag_serializable v1 /\
     impl_serialize_array_group_post lmin lmax count size size_mid (List.Tot.append l (ps1.ag_serializer v1)) ps2 v2 w false /\
     impl_serialize_array_group_requires l ps1 v1 /\
-    array_group_concat_unique_weak t1 t2
+    array_group_concat_unique_weak t1 t2 /\
+    SZ.v size_before <= SZ.v size_mid /\
+    SZ.v size_mid - SZ.v size_before >= cbor_array_min_length lmin (ps1.ag_serializer v1)
   ))
   (ensures (
     impl_serialize_array_group_post lmin lmax count size size_before l (ag_spec_concat ps1 ps2) (v1, v2) w false
   ))
-= assume (impl_serialize_array_group_post lmin lmax count size size_before l (ag_spec_concat ps1 ps2) (v1, v2) w false)
+= CBOR.Spec.Util.list_sum_append lmin (ps1.ag_serializer v1) (ps2.ag_serializer v2)
 
 #pop-options
 
@@ -820,6 +848,7 @@ fn impl_serialize_array_group_concat
   if (res1) {
     let size_mid = !out_size;
     with w1 . assert (pts_to out w1);
+    impl_serialize_array_group_post_true_size_order lmin lmax !out_count size_mid size_before l ps1 (fst v) w1;
     let res2 = i2 c2 out out_count out_size #size_mid (List.Tot.append l (ps1.ag_serializer (fst v))) #(Ghost.hide (Seq.slice w1 0 (SZ.v size_mid)));
     Trade.elim _ _;
     S.pts_to_len out;
@@ -1438,6 +1467,68 @@ let impl_serialize_array_group_valid_zero_or_more_true_intro_length
 
 #push-options "--z3rlimit 64 --fuel 2 --ifuel 1 --split_queries always --ext context_pruning"
 
+let impl_serialize_array_group_valid_zero_or_more_false_intro_shifted
+  (#p: cbor_parser)
+  (lmin: cbor_min_length p)
+  (lmax: cbor_max_length p)
+  (l: list Cbor.cbor)
+  (#t: array_group None)
+  (#tgt: Type0)
+  (#inj: bool)
+  (ps1: ag_spec t tgt inj)
+  (l1: list tgt)
+  (x: tgt)
+  (l2: list tgt)
+  (count: U64.t)
+  (size_before: SZ.t)
+  (cur_size: SZ.t)
+  (w: Seq.seq U8.t)
+: Lemma
+  (requires (
+    array_group_is_nonempty t /\ array_group_concat_unique_strong t t /\ (
+    let ps = ag_spec_zero_or_more ps1 in (
+    ps.ag_serializable l1 /\
+    impl_serialize_array_group_post lmin lmax count cur_size size_before l ps l1 w true /\
+    impl_serialize_array_group_valid lmax (List.Tot.append l (ps.ag_serializer l1)) ps1 x (Seq.length w - SZ.v cur_size) == false /\
+    SZ.v cur_size - SZ.v size_before >= cbor_array_min_length lmin (ps.ag_serializer l1) /\
+    cbor_parse_list p (List.Tot.length l) (Seq.slice w 0 (SZ.v size_before)) == Some (Ghost.reveal l, SZ.v size_before)
+  ))))
+  (ensures (
+    let ps = ag_spec_zero_or_more ps1 in (
+    impl_serialize_array_group_valid lmax l ps (List.Tot.append l1 (x :: l2)) (Seq.length w - SZ.v size_before) == false
+  )))
+= let ps = ag_spec_zero_or_more ps1 in
+  ag_serializable_zero_or_more_append ps1 l1 (x :: l2);
+  ag_serializable_zero_or_more_append ps1 [x] l2;
+  if not (ps1.ag_serializable x && ps.ag_serializable l2) then ()
+  else begin
+    // If valid_whole(Seq.length w - size_before) were true, we'd derive valid_item(Seq.length w - cur_size) = true, contradiction.
+    // Proof: valid_whole => Seq.length w - size_before >= max_whole
+    // From parse of l ++ ps.ser l1 in w[0..cur_size]: cur_size - size_before <= max(ps.ser l1)
+    // So Seq.length w - cur_size >= Seq.length w - size_before - max(ps.ser l1)
+    //    >= max_whole - max(ps.ser l1) = max(ps1.ser x) + max(ps.ser l2') >= max(ps1.ser x)
+    // => valid_item(Seq.length w - cur_size), contradiction.
+    ag_spec_zero_or_more_serializer_append ps1 l1 (x :: l2);
+    ag_spec_zero_or_more_serializer_append ps1 l1 [x];
+    List.Tot.append_assoc (ps.ag_serializer l1) (ps1.ag_serializer x) (ps.ag_serializer l2);
+    cbor_array_max_length_append lmax (ps.ag_serializer l1) (ps1.ag_serializer x @ ps.ag_serializer l2);
+    cbor_array_max_length_append lmax (ps1.ag_serializer x) (ps.ag_serializer l2);
+    // Derive cur_size - size_before <= max(ps.ser l1) from the parse
+    // From post: pre p count cur_size (l ++ ps.ser l1) w
+    // Split the parse into l and ps.ser l1
+    cbor_parse_list_split p (List.Tot.length l) (List.Tot.length (ps.ag_serializer l1)) (Seq.slice w 0 (SZ.v cur_size));
+    // Now: cbor_parse_list p |l| (Seq.slice w 0 cur_size) == Some (l, n_l)
+    // And by cbor_parse_list_prefix with our known parse of l in w[0..size_before]:
+    // n_l == size_before (since the parser is deterministic on the same prefix)
+    cbor_parse_list_prefix p (List.Tot.length l) (Seq.slice w 0 (SZ.v size_before)) (Seq.slice w 0 (SZ.v cur_size));
+    // So the second part parses from w[size_before..cur_size]: ps.ser l1 using cur_size - size_before bytes
+    cbor_parse_list_size_le_max p lmax (List.Tot.length (ps.ag_serializer l1)) (Seq.slice (Seq.slice w 0 (SZ.v cur_size)) (SZ.v size_before) (SZ.v cur_size));
+    // So cur_size - size_before <= max(ps.ser l1)
+    cbor_array_max_length_append lmax l (ps.ag_serializer l1);
+    // Now use the contrapositive argument
+    Classical.move_requires (impl_serialize_array_group_valid_zero_or_more_valid_item lmax l ps1 l1 x l2) (Seq.length w - SZ.v size_before)
+  end
+
 let impl_serialize_array_group_valid_zero_or_more_true_intro
   (#p: cbor_parser)
   (lmin: cbor_min_length p)
@@ -1460,7 +1551,8 @@ let impl_serialize_array_group_valid_zero_or_more_true_intro
     array_group_is_nonempty t /\ array_group_concat_unique_strong t t /\ (
     let ps = ag_spec_zero_or_more ps1 in (
     ps.ag_serializable l1 /\
-    impl_serialize_array_group_post lmin lmax count size cur_size (List.Tot.append l (ps.ag_serializer l1)) ps1 x w true
+    impl_serialize_array_group_post lmin lmax count size cur_size (List.Tot.append l (ps.ag_serializer l1)) ps1 x w true /\
+    SZ.v cur_size - SZ.v size_before >= cbor_array_min_length lmin (ps.ag_serializer l1)
   ))))
   (ensures (
     array_group_is_nonempty t /\ array_group_concat_unique_strong t t /\ (
@@ -1470,14 +1562,11 @@ let impl_serialize_array_group_valid_zero_or_more_true_intro
     impl_serialize_array_group_post lmin lmax count size cur_size (List.Tot.append l (ps.ag_serializer l1)) ps1 x w true /\
     impl_serialize_array_group_post lmin lmax count size size_before l ps (List.Tot.append l1 [x]) w true
   ))))
-= assume (
-    array_group_is_nonempty t /\ array_group_concat_unique_strong t t /\ (
-    let ps = ag_spec_zero_or_more ps1 in (
-    ps.ag_serializable l1 /\
-    ps.ag_serializable (List.Tot.append l1 [x]) /\
-    impl_serialize_array_group_post lmin lmax count size cur_size (List.Tot.append l (ps.ag_serializer l1)) ps1 x w true /\
-    impl_serialize_array_group_post lmin lmax count size size_before l ps (List.Tot.append l1 [x]) w true
-  )))
+= let ps = ag_spec_zero_or_more ps1 in
+  ag_serializable_zero_or_more_append ps1 l1 [x];
+  ag_spec_zero_or_more_serializer_append ps1 l1 [x];
+  List.Tot.append_assoc l (ps.ag_serializer l1) (ps1.ag_serializer x);
+  CBOR.Spec.Util.list_sum_append lmin (ps.ag_serializer l1) (ps1.ag_serializer x)
 
 #pop-options
 
@@ -1555,8 +1644,10 @@ fn impl_serialize_array_group_zero_or_more_slice
       Seq.equal s2 (Seq.slice s (SZ.v i) (Seq.length s)) /\
       Ghost.reveal v == List.Tot.append l1 l2 /\
       ps.ag_serializable l1 /\
-      (impl_serialize_array_group_valid lmax l ps v (Seq.length w) ==> res == true) /\
-      (res == true ==> impl_serialize_array_group_post lmin lmax count size size_before l ps l1 w true)
+      (impl_serialize_array_group_valid lmax l ps v (Seq.length w - SZ.v size_before) ==> res == true) /\
+      (res == true ==> impl_serialize_array_group_post lmin lmax count size size_before l ps l1 w true) /\
+      (res == true ==> SZ.v size - SZ.v size_before >= cbor_array_min_length lmin (ps.ag_serializer l1)) /\
+      cbor_parse_list p (List.Tot.length l) (Seq.slice w 0 (SZ.v size_before)) == Some (Ghost.reveal l, SZ.v size_before)
     ) ** pure (
       b == (res && (SZ.v i < Seq.length s))
     )
@@ -1574,6 +1665,7 @@ fn impl_serialize_array_group_zero_or_more_slice
     with l1 . assert (GR.pts_to pl1 l1);
     with cur_size . assert (pts_to out_size cur_size);
     with w_cur . assert (pts_to out w_cur);
+    with old_count . assert (pts_to out_count old_count);
     let res = i1 x out out_count out_size #cur_size (List.Tot.append l (ps.ag_serializer l1)) #(Ghost.hide (Seq.slice w_cur 0 (SZ.v cur_size)));
     with w . assert (pts_to out w);
     S.pts_to_len c.s;
@@ -1589,15 +1681,16 @@ fn impl_serialize_array_group_zero_or_more_slice
       with gcount . assert (pts_to out_count gcount);
       with gsize . assert (pts_to out_size gsize);
       impl_serialize_array_group_valid_zero_or_more_true_intro lmin lmax l ps1 l1 y l2' gcount gsize size_before cur_size w;
-      assume (pure (Seq.equal s2' (Seq.slice s (SZ.v i') (Seq.length s))));
+      assert (pure (Seq.equal s2' (Seq.slice s (SZ.v i') (Seq.length s))));
       List.Tot.append_assoc l1 [Ghost.reveal y] l2';
       assert (pure (Ghost.reveal v == List.Tot.append l1' l2'));
       assert (pure (ps.ag_serializable l1'));
       assert (pure (impl_serialize_array_group_post lmin lmax gcount gsize size_before l ps l1' w true));
+      impl_serialize_array_group_post_true_size_order lmin lmax gcount gsize size_before l ps l1' w;
       ()
     } else {
       Trade.elim _ (SM.seq_list_match s2 l2 r1);
-      assume (pure (impl_serialize_array_group_valid lmax l (ag_spec_zero_or_more ps1) (List.Tot.append l1 (Ghost.reveal y :: l2')) (Seq.length w - SZ.v size_before) == false));
+      impl_serialize_array_group_valid_zero_or_more_false_intro_shifted lmin lmax l ps1 l1 y l2' old_count size_before cur_size w;
       pres := false
     }
   };
@@ -1698,8 +1791,10 @@ impl_serialize_array_group_zero_or_more_iterator
     pure (
       (res == true ==> Ghost.reveal v == List.Tot.append l1 l2) /\
       ps.ag_serializable l1 /\
-      (impl_serialize_array_group_valid lmax l ps v (Seq.length w) ==> res == true) /\
-      (res == true ==> impl_serialize_array_group_post lmin lmax count size size_before l ps l1 w true)
+      (impl_serialize_array_group_valid lmax l ps v (Seq.length w - SZ.v size_before) ==> res == true) /\
+      (res == true ==> impl_serialize_array_group_post lmin lmax count size size_before l ps l1 w true) /\
+      (res == true ==> SZ.v size - SZ.v size_before >= cbor_array_min_length lmin (ps.ag_serializer l1)) /\
+      cbor_parse_list p (List.Tot.length l) (Seq.slice w 0 (SZ.v size_before)) == Some (Ghost.reveal l, SZ.v size_before)
     ) ** pure (
       b == (res && (Cons? l2))
     )
@@ -1713,6 +1808,7 @@ impl_serialize_array_group_zero_or_more_iterator
     with l1 . assert (GR.pts_to pl1 l1);
     with cur_size . assert (pts_to out_size cur_size);
     with w_cur . assert (pts_to out w_cur);
+    with old_count . assert (pts_to out_count old_count);
     let res = i1 x #z out out_count out_size #cur_size (List.Tot.append l (ps.ag_serializer l1)) #(Ghost.hide (Seq.slice w_cur 0 (SZ.v cur_size)));
     Trade.elim_hyp_l _ _ _;
     Trade.trans _ _ (rel_array_iterator cbor_array_iterator_match (Iterator.mk_spec r1) c0 v);
@@ -1729,9 +1825,10 @@ impl_serialize_array_group_zero_or_more_iterator
       assert (pure (Ghost.reveal v == List.Tot.append l1' l2'));
       assert (pure (ps.ag_serializable l1'));
       assert (pure (impl_serialize_array_group_post lmin lmax gcount gsize size_before l ps l1' w true));
+      impl_serialize_array_group_post_true_size_order lmin lmax gcount gsize size_before l ps l1' w;
       ()
     } else {
-      assume (pure (impl_serialize_array_group_valid lmax l (ag_spec_zero_or_more ps1) (List.Tot.append l1 (Ghost.reveal z :: l2')) (Seq.length w - SZ.v size_before) == false));
+      impl_serialize_array_group_valid_zero_or_more_false_intro_shifted lmin lmax l ps1 l1 z l2' old_count size_before cur_size w;
       pres := false
     }
   };
