@@ -248,7 +248,7 @@ let impl_serialize_array_group
       Seq.slice w 0 (SZ.v size_before) == Ghost.reveal w_pfx
     ))
 
-let impl_serialize_array_group_t_eq
+val impl_serialize_array_group_t_eq
   (#p: cbor_parser)
   (lmin: cbor_min_length p)
   (lmax: cbor_max_length p)
@@ -261,7 +261,6 @@ let impl_serialize_array_group_t_eq
     (impl_tgt2: Type0)
     (ieq: squash (impl_tgt == impl_tgt2))
 : Tot (squash (impl_serialize_array_group lmin lmax s #impl_tgt r == impl_serialize_array_group lmin lmax s #impl_tgt2 (coerce_rel r impl_tgt2 ieq)))
-= assert (impl_tgt == impl_tgt2) by (FStar.Tactics.assumption ())
 
 inline_for_extraction noextract [@@noextract_to "krml"]
 val impl_det_serialize_array

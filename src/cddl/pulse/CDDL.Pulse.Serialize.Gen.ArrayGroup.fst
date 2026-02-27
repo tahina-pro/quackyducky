@@ -266,6 +266,21 @@ let rec cbor_array_min_length_underspec_zero
   | [] -> ()
   | _ :: q -> cbor_array_min_length_underspec_zero #p q
 
+let impl_serialize_array_group_t_eq
+  (#p: cbor_parser)
+  (lmin: cbor_min_length p)
+  (lmax: cbor_max_length p)
+    (#t: array_group None)
+    (#tgt: Type0)
+    (#inj: bool)
+    (s: ag_spec t tgt inj)
+    (#impl_tgt: Type0)
+    (r: rel impl_tgt tgt)
+    (impl_tgt2: Type0)
+    (ieq: squash (impl_tgt == impl_tgt2))
+: Tot (squash (impl_serialize_array_group lmin lmax s #impl_tgt r == impl_serialize_array_group lmin lmax s #impl_tgt2 (coerce_rel r impl_tgt2 ieq)))
+= ()
+
 let impl_det_serialize_array_valid_inner
     (#t: array_group None)
     (#tgt: Type0)
