@@ -686,6 +686,35 @@ fn impl_serialize_array_group_item
 
 #pop-options
 
+
+#push-options "--z3rlimit 32 --fuel 2 --ifuel 1 --split_queries always"
+
+let cbor_parse_list_same_prefix
+    (p: cbor_parser)
+    (n: nat)
+    (w: Seq.seq U8.t)
+    (a: nat)
+    (b: nat)
+    (l: list Cbor.cbor)
+: Lemma
+    (requires (
+        a <= Seq.length w /\
+        b <= Seq.length w /\
+        cbor_parse_list p n (Seq.slice w 0 a) == Some (l, a) /\
+        Some? (cbor_parse_list p n (Seq.slice w 0 b)) /\
+        fst (Some?.v (cbor_parse_list p n (Seq.slice w 0 b))) == l
+    ))
+    (ensures (
+        snd (Some?.v (cbor_parse_list p n (Seq.slice w 0 b))) == a /\
+        a <= b
+    ))
+= cbor_parse_list_prefix p n (Seq.slice w 0 a) (Seq.slice w 0 b);
+  cbor_parse_list_prefix p n (Seq.slice w 0 b) (Seq.slice w 0 a)
+
+#pop-options
+
+#push-options "--z3rlimit 256 --fuel 2 --ifuel 1"
+
 let impl_serialize_array_group_post_true_size_order
     (#p: cbor_parser)
     (lmin: cbor_min_length p)
@@ -701,13 +730,23 @@ let impl_serialize_array_group_post_true_size_order
     (v: tgt)
     (w: Seq.seq U8.t)
 : Lemma
-  (requires impl_serialize_array_group_post lmin lmax count size size_before l ps v w true)
+  (requires impl_serialize_array_group_post lmin lmax count size size_before l ps v w true /\
+    cbor_parse_list p (List.Tot.length l) (Seq.slice w 0 (SZ.v size_before)) == Some (l, SZ.v size_before)
+  )
   (ensures (
     ps.ag_serializable v /\
     SZ.v size - SZ.v size_before >= cbor_array_min_length lmin (ps.ag_serializer v) /\
     SZ.v size_before <= SZ.v size
   ))
-= ()
+= List.Tot.Properties.append_length l (ps.ag_serializer v);
+  FStar.List.Pure.Properties.lemma_append_splitAt l (ps.ag_serializer v);
+  cbor_parse_list_split p (List.Tot.length l) (List.Tot.length (ps.ag_serializer v)) (Seq.slice w 0 (SZ.v size));
+  cbor_parse_list_same_prefix p (List.Tot.length l) w (SZ.v size_before) (SZ.v size) l;
+  cbor_parse_list_prefix p (List.Tot.length l) (Seq.slice w 0 (SZ.v size_before)) (Seq.slice w 0 (SZ.v size));
+  cbor_parse_list_size_ge_min p lmin (List.Tot.length (ps.ag_serializer v))
+    (Seq.slice (Seq.slice w 0 (SZ.v size)) (SZ.v size_before) (SZ.v size))
+
+#pop-options
 
 #push-options "--z3rlimit 32 --fuel 2 --ifuel 1 --split_queries always --ext context_pruning"
 
@@ -748,7 +787,7 @@ let impl_serialize_array_group_concat_true_post
 
 #pop-options
 
-#push-options "--z3rlimit 32 --fuel 2 --ifuel 1 --split_queries always --ext context_pruning"
+#push-options "--z3rlimit 64 --fuel 2 --ifuel 1"
 
 let impl_serialize_array_group_concat_false2_post
     (#p: cbor_parser)
@@ -777,12 +816,18 @@ let impl_serialize_array_group_concat_false2_post
     impl_serialize_array_group_requires l ps1 v1 /\
     array_group_concat_unique_weak t1 t2 /\
     SZ.v size_before <= SZ.v size_mid /\
-    SZ.v size_mid - SZ.v size_before >= cbor_array_min_length lmin (ps1.ag_serializer v1)
+    SZ.v size_mid - SZ.v size_before >= cbor_array_min_length lmin (ps1.ag_serializer v1) /\
+    (Some? (cbor_array_max_length lmax (ps1.ag_serializer v1)) ==> SZ.v size_mid - SZ.v size_before <= Some?.v (cbor_array_max_length lmax (ps1.ag_serializer v1)))
   ))
   (ensures (
     impl_serialize_array_group_post lmin lmax count size size_before l (ag_spec_concat ps1 ps2) (v1, v2) w false
   ))
-= CBOR.Spec.Util.list_sum_append lmin (ps1.ag_serializer v1) (ps2.ag_serializer v2)
+= if ps2.ag_serializable v2
+  then begin
+    List.Tot.Properties.append_length (ps1.ag_serializer v1) (ps2.ag_serializer v2);
+    CBOR.Spec.Util.list_sum_append lmin (ps1.ag_serializer v1) (ps2.ag_serializer v2);
+    cbor_array_max_length_append lmax (ps1.ag_serializer v1) (ps2.ag_serializer v2)
+  end
 
 #pop-options
 
@@ -821,7 +866,17 @@ let impl_serialize_array_group_concat_false_post
 
 #pop-options
 
-#push-options "--z3rlimit_factor 16 --fuel 1 --ifuel 1"
+#push-options "--fuel 0 --ifuel 0 --z3rlimit 32"
+let seq_slice_sub_prefix (#a: Type) (s1 s2: Seq.seq a) (n: nat) (m: nat)
+: Lemma
+  (requires m <= n /\ n <= Seq.length s1 /\ n <= Seq.length s2 /\ Seq.slice s1 0 n == Seq.slice s2 0 n)
+  (ensures Seq.slice s1 0 m == Seq.slice s2 0 m)
+= Seq.lemma_eq_elim (Seq.slice (Seq.slice s1 0 n) 0 m) (Seq.slice (Seq.slice s2 0 n) 0 m);
+  Seq.lemma_eq_elim (Seq.slice s1 0 m) (Seq.slice (Seq.slice s1 0 n) 0 m);
+  Seq.lemma_eq_elim (Seq.slice s2 0 m) (Seq.slice (Seq.slice s2 0 n) 0 m)
+#pop-options
+
+#push-options "--z3rlimit_factor 32 --fuel 1 --ifuel 1"
 
 inline_for_extraction noextract [@@noextract_to "krml"]
 fn impl_serialize_array_group_concat
@@ -862,17 +917,28 @@ fn impl_serialize_array_group_concat
   S.pts_to_len out;
   if (res1) {
     let size_mid = !out_size;
+    let count_mid = !out_count;
     with w1 . assert (pts_to out w1);
-    impl_serialize_array_group_post_true_size_order lmin lmax !out_count size_mid size_before l ps1 (fst v) w1;
+    assert (pure (Seq.slice w1 0 (SZ.v size_before) == Ghost.reveal w_pfx));
+    impl_serialize_array_group_post_true_size_order lmin lmax count_mid size_mid size_before l ps1 (fst v) w1;
     let res2 = i2 c2 out out_count out_size #size_mid (List.Tot.append l (ps1.ag_serializer (fst v))) #(Ghost.hide (Seq.slice w1 0 (SZ.v size_mid)));
     Trade.elim _ _;
     S.pts_to_len out;
     with w2 . assert (pts_to out w2);
     if (res2) {
       impl_serialize_array_group_concat_true_post lmin lmax !out_count !out_size size_before size_mid l ps1 ps2 (fst v) (snd v) w2;
+      seq_slice_sub_prefix w2 w1 (SZ.v size_mid) (SZ.v size_before);
       true
     } else {
+      List.Tot.Properties.append_length l (ps1.ag_serializer (fst v));
+      FStar.List.Pure.Properties.lemma_append_splitAt l (ps1.ag_serializer (fst v));
+      cbor_parse_list_split p (List.Tot.length l) (List.Tot.length (ps1.ag_serializer (fst v))) (Seq.slice w1 0 (SZ.v size_mid));
+      cbor_parse_list_prefix p (List.Tot.length l) (Seq.slice w1 0 (SZ.v size_before)) (Seq.slice w1 0 (SZ.v size_mid));
+      cbor_parse_list_prefix p (List.Tot.length l) (Seq.slice w1 0 (SZ.v size_mid)) (Seq.slice w1 0 (SZ.v size_before));
+      Classical.move_requires (cbor_parse_list_size_le_max p lmax (List.Tot.length (ps1.ag_serializer (fst v))))
+        (Seq.slice (Seq.slice w1 0 (SZ.v size_mid)) (SZ.v size_before) (SZ.v size_mid));
       impl_serialize_array_group_concat_false2_post lmin lmax !out_count !out_size size_before size_mid l ps1 ps2 (fst v) (snd v) w2;
+      seq_slice_sub_prefix w2 w1 (SZ.v size_mid) (SZ.v size_before);
       false
     }
   } else {
@@ -1269,6 +1335,31 @@ let ag_spec_zero_or_more_serializer_singleton
   ))
 = List.Tot.append_l_nil (ps1.ag_serializer x)
 
+let ag_serializable_zero_or_more_cons
+  (#source: nonempty_array_group)
+  (#target: Type)
+  (#inj: bool)
+  (ps1: ag_spec source target inj {
+    array_group_concat_unique_strong source source
+  })
+  (x: target)
+  (l2: list target)
+: Lemma
+  (requires (ps1.ag_serializable x /\ (ag_spec_zero_or_more ps1).ag_serializable l2))
+  (ensures ((ag_spec_zero_or_more ps1).ag_serializable (x :: l2)))
+= assert_norm (ag_spec_zero_or_more_serializable ps1.ag_serializable (x :: l2) == (ps1.ag_serializable x && ag_spec_zero_or_more_serializable ps1.ag_serializable l2))
+
+let ag_serializable_zero_or_more_nil
+  (#source: nonempty_array_group)
+  (#target: Type)
+  (#inj: bool)
+  (ps1: ag_spec source target inj {
+    array_group_concat_unique_strong source source
+  })
+: Lemma
+  (ensures ((ag_spec_zero_or_more ps1).ag_serializable []))
+= assert_norm (ag_spec_zero_or_more_serializable ps1.ag_serializable [] == true)
+
 #push-options "--z3rlimit 64 --fuel 2 --ifuel 1 --split_queries always"
 #restart-solver
 
@@ -1303,7 +1394,7 @@ let valid_item_serializer_facts
 
 #pop-options
 
-#push-options "--z3rlimit 64 --fuel 0 --ifuel 0 --split_queries always"
+#push-options "--z3rlimit 64 --fuel 2 --ifuel 0 --split_queries always"
 #restart-solver
 
 let valid_item_max_length_helper0
@@ -1369,7 +1460,7 @@ let valid_item_max_length_helper
 = valid_item_max_length_helper0 lmax ps1 l1 x l2 n;
   ag_spec_zero_or_more_serializer_singleton ps1 x
 
-#push-options "--z3rlimit 128 --fuel 0 --ifuel 0 --split_queries always"
+#push-options "--z3rlimit 128 --fuel 2 --ifuel 0 --split_queries always"
 #restart-solver
 
 let valid_item_fits_helper
@@ -1406,6 +1497,7 @@ let valid_item_fits_helper
 #pop-options
 
 #push-options "--z3rlimit 128 --fuel 2 --ifuel 1 --split_queries always"
+#restart-solver
 
 let impl_serialize_array_group_valid_zero_or_more_valid_item
   (#p: cbor_parser)
@@ -1480,7 +1572,7 @@ let impl_serialize_array_group_valid_zero_or_more_true_intro_length
   ((x1 + x2) + (x3 + x4) == (x1 + (x2 + x3)) + x4)
 = ()
 
-#push-options "--z3rlimit 64 --fuel 2 --ifuel 1 --split_queries always --ext context_pruning"
+#push-options "--z3rlimit 128 --fuel 2 --ifuel 1 --split_queries always --ext context_pruning"
 
 let impl_serialize_array_group_valid_zero_or_more_false_intro_shifted
   (#p: cbor_parser)
