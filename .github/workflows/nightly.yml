@@ -39,8 +39,8 @@ jobs:
           sudo apt-get update && sudo apt-get install --yes --no-install-recommends opam
       - name: Advance hashes
         run: |
-          make -C opt -j$(nproc) advance &&
-          if ! git diff --exit-code -- opt/hashes.Makefile ; then git add -u opt/hashes.Makefile && git commit -m 'Update hashes' ; fi &&
+          make -C lib/everparse/opt -j$(nproc) advance &&
+          if ! git diff --exit-code -- lib/everparse/opt/hashes.Makefile ; then git add -u lib/everparse/opt/hashes.Makefile && git commit -m 'Update hashes' ; fi &&
           git diff --exit-code
       - name: Generate CBOR .krml files
         run: |
@@ -230,11 +230,11 @@ jobs:
           path: everparse
           ref: ${{ env.hash }}
           sparse-checkout: |
-            opt/Makefile
-            opt/hashes.Makefile
+            lib/everparse/opt/Makefile
+            lib/everparse/opt/hashes.Makefile
       - name: Get F* hash
         run: |
-          echo "fstar_hash=$(make -s -C everparse/opt echo-FStar-hash)" >> $GITHUB_ENV
+          echo "fstar_hash=$(make -s -C everparse/lib/everparse/opt echo-FStar-hash)" >> $GITHUB_ENV
       - uses: actions/checkout@master
         id: checkout
         with:
@@ -309,7 +309,7 @@ jobs:
       - name: Expand F* source package
         shell: C:\cygwin\bin\bash.exe --login '{0}'
         run: >-
-          cd "$GITHUB_WORKSPACE" && tar xzf fstar-src.tar.gz && mv fstar opt/FStar
+          cd "$GITHUB_WORKSPACE" && tar xzf fstar-src.tar.gz && mv fstar lib/everparse/opt/FStar
       - name: Build package
         shell: C:\cygwin\bin\bash.exe --login '{0}'
         run: >-
@@ -598,28 +598,28 @@ jobs:
           sparse-checkout: |
             Dockerfile
             deps.Makefile
-            opt/Makefile
-            opt/hashes.Makefile
+            lib/everparse/opt/Makefile
+            lib/everparse/opt/hashes.Makefile
             src/package/start-code-server.sh
       - uses: actions/cache/restore@v4
         id: cache
         with:
           path: deps.tgz
-          key: dzomoeverparsedeps${{ hashFiles('opt/hashes.Makefile') }}
+          key: dzomoeverparsedeps${{ hashFiles('lib/everparse/opt/hashes.Makefile') }}
           lookup-only: true
           fail-on-cache-miss: false
       - name: Build dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          rm -rf .git && docker build -t dzomoeverparsedeps${{ hashFiles('opt/hashes.Makefile') }} --pull --target deps .
+          rm -rf .git && docker build -t dzomoeverparsedeps${{ hashFiles('lib/everparse/opt/hashes.Makefile') }} --pull --target deps .
       - name: Save image
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          docker save dzomoeverparsedeps${{ hashFiles('opt/hashes.Makefile') }} | gzip > deps.tgz
+          docker save dzomoeverparsedeps${{ hashFiles('lib/everparse/opt/hashes.Makefile') }} | gzip > deps.tgz
       - name: Upload image into cache
         if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
             deps.tgz
-          key: dzomoeverparsedeps${{ hashFiles('opt/hashes.Makefile') }}
+          key: dzomoeverparsedeps${{ hashFiles('lib/everparse/opt/hashes.Makefile') }}

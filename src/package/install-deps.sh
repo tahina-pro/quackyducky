@@ -4,4 +4,4 @@ set -x
 git submodule init
 git submodule update
 # Install the Everest OPAM package dependencies
-./opt/everest/everest --yes opam
+./lib/everparse/opt/everest/everest --yes opam

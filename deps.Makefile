@@ -2,11 +2,17 @@ deps:
 
 .PHONY: deps
 
+# Exclude 'deps' from .depend inclusion (via common.Makefile) to avoid
+# an infinite restart loop: building deps changes directory timestamps,
+# which makes .depend outdated; .depend regeneration causes make to
+# restart and re-evaluate all targets, leading to an infinite cycle.
+other_clean_rules += deps
+
 ifeq (,$(OS))
 export OS := $(shell uname)
 endif
 
-export EVERPARSE_OPT_PATH := $(realpath opt)
+export EVERPARSE_OPT_PATH := $(realpath lib/everparse/opt)
 ifeq ($(OS),Windows_NT)
 export EVERPARSE_OPT_PATH := $(shell cygpath -m $(EVERPARSE_OPT_PATH))
 # Pulse does not compile on Windows
@@ -67,7 +73,7 @@ endif
 NEED_OPAM_DIR :=
 NEED_OPAM :=
 ifneq (1,$(EVERPARSE_USE_OPAMROOT))
-NEED_OPAM_DIR := $(EVERPARSE_OPT_PATH)/opam/opam-init/init.sh
+NEED_OPAM_DIR := $(EVERPARSE_OPT_PATH)/opam/config
 NEED_OPAM := $(EVERPARSE_OPT_PATH)/opam.done
 endif
 with_opam := eval "$$($(EVERPARSE_OPT_PATH)/opam-env.sh --shell)" &&
@@ -99,7 +105,7 @@ NEED_Z3 :=
 endif
 export PATH := $(z3_dir):$(PATH)
 
-$(EVERPARSE_OPT_PATH)/opam/opam-init/init.sh:
+$(EVERPARSE_OPT_PATH)/opam/config:
 	+$(MAKE) -C $(EVERPARSE_OPT_PATH) opam
 
 ifeq (,$(filter clean distclean $(clean_rules),$(MAKECMDGOALS)))
@@ -129,7 +135,7 @@ $(EVERPARSE_OPT_PATH)/karamel/Makefile: $(EVERPARSE_OPT_PATH)/hashes.Makefile
 $(EVERPARSE_OPT_PATH)/pulse/Makefile: $(EVERPARSE_OPT_PATH)/hashes.Makefile
 	+$(MAKE) -C $(EVERPARSE_OPT_PATH) pulse/Makefile
 
-$(EVERPARSE_OPT_PATH)/opam.done: $(EVERPARSE_OPT_PATH)/opam/opam-init/init.sh $(EVERPARSE_OPT_PATH)/FStar/Makefile $(EVERPARSE_OPT_PATH)/karamel/Makefile $(EVERPARSE_OPT_PATH)/pulse/Makefile
+$(EVERPARSE_OPT_PATH)/opam.done: $(EVERPARSE_OPT_PATH)/opam/config $(EVERPARSE_OPT_PATH)/FStar/Makefile $(EVERPARSE_OPT_PATH)/karamel/Makefile $(EVERPARSE_OPT_PATH)/pulse/Makefile
 	+$(MAKE) -C $(EVERPARSE_OPT_PATH) opam.done
 
 $(EVERPARSE_OPT_PATH)/FStar.done: $(EVERPARSE_OPT_PATH)/FStar/Makefile $(NEED_OPAM)
@@ -181,7 +187,7 @@ deps: $(NEED_OPAM) $(NEED_FSTAR) $(NEED_Z3) $(NEED_KRML) $(NEED_PULSE)
 
 distclean: clean
 	rm -rf opam-env.Makefile
-	+$(MAKE) -C opt clean
+	+$(MAKE) -C lib/everparse/opt clean
 
 clean:
 

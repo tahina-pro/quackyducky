@@ -6,7 +6,7 @@ let krml_home =
   match OS.getenv_opt "KRML_HOME" with
   | Some k -> k
   | _ ->
-     let opt_krml = filename_concat (filename_concat everparse_home "opt") "karamel" in
+     let opt_krml = filename_concat (filename_concat (filename_concat (filename_concat everparse_home "lib") "everparse") "opt") "karamel" in
      if Sys.file_exists opt_krml
      then opt_krml
      else everparse_home
@@ -87,7 +87,7 @@ let z3_executable_option fstar_exe =
   if test = 0
   then ["--z3version"; z3_version]
   else
-    let opt_z3 = Filename.concat (Filename.concat (Filename.concat everparse_home "opt") "z3") ("z3-" ^ z3_version) in
+    let opt_z3 = Filename.concat (Filename.concat (Filename.concat (Filename.concat (Filename.concat everparse_home "lib") "everparse") "opt") "z3") ("z3-" ^ z3_version) in
     if Sys.file_exists opt_z3
     then ["--smt"; opt_z3]
     else []

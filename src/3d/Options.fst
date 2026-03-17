@@ -638,7 +638,7 @@ let get_fstar_exe () : ML string =
     begin match OS.getenv_opt "FSTAR_EXE" with
     | Some s -> s
     | None ->
-      let opt_fstar = OS.concat (OS.concat (OS.concat (OS.concat (OS.concat OS.everparse_home "opt") "FStar") "out") "bin") "fstar.exe" in
+      let opt_fstar = OS.concat (OS.concat (OS.concat (OS.concat (OS.concat (OS.concat (OS.concat OS.everparse_home "lib") "everparse") "opt") "FStar") "out") "bin") "fstar.exe" in
       if OS.file_exists opt_fstar
       then opt_fstar
       else

@@ -24,12 +24,12 @@ jobs:
         with:
           path: everparse
           sparse-checkout: |
-            opt/Makefile
-            opt/hashes.Makefile
+            lib/everparse/opt/Makefile
+            lib/everparse/opt/hashes.Makefile
 
       - name: Get F* hash
         run: |
-          echo "fstar_hash=$(make -s -C everparse/opt echo-FStar-hash)" >> $GITHUB_ENV
+          echo "fstar_hash=$(make -s -C everparse/lib/everparse/opt echo-FStar-hash)" >> $GITHUB_ENV
 
       - uses: actions/checkout@master
         id: checkout
@@ -107,7 +107,7 @@ jobs:
 
       - name: Expand F* source package
         run: |
-          cd "$GITHUB_WORKSPACE" && tar xzf fstar-src.tar.gz && mv fstar opt/FStar && git add --force opt/FStar && git commit -m 'Add F* source package'
+          cd "$GITHUB_WORKSPACE" && tar xzf fstar-src.tar.gz && mv fstar lib/everparse/opt/FStar && git add --force lib/everparse/opt/FStar && git commit -m 'Add F* source package'
 
       - name: Use frozen opam packages
         run: |
@@ -115,9 +115,9 @@ jobs:
           cd $GITHUB_WORKSPACE
           git config --local user.name "Dzomo, the Everest Yak"
           git config --local user.email "dzomo@users.noreply.github.com"
-          make -C opt release
-          git add opt/fstar-deps.opam.locked opt/karamel-deps.opam.locked opt/pulse-deps.opam.locked opt/everparse-deps.opam.locked
-          git mv opt/release.Makefile{.disabled,}
+          make -C lib/everparse/opt release
+          git add lib/everparse/opt/fstar-deps.opam.locked lib/everparse/opt/karamel-deps.opam.locked lib/everparse/opt/pulse-deps.opam.locked lib/everparse/opt/everparse-deps.opam.locked
+          git mv lib/everparse/opt/release.Makefile{.disabled,}
           git commit -m 'Use frozen opam packages'
 
       - name: Create new version

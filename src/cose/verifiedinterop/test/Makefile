@@ -9,7 +9,7 @@ ifeq (,$(HACL_HOME))
 endif
 export HACL_HOME
 ifeq (,$(KRML_HOME))
-  KRML_HOME := $(EVERPARSE_PATH)/opt/karamel
+  KRML_HOME := $(EVERPARSE_PATH)/lib/everparse/opt/karamel
 endif
 export KRML_HOME
 
@@ -24,7 +24,7 @@ $(CURDIR)/hacl-star:
 	git clone https://github.com/hacl-star/hacl-star $@.tmp
 	mv $@.tmp $@
 
-$(EVERPARSE_PATH)/opt/karamel:
+$(EVERPARSE_PATH)/lib/everparse/opt/karamel:
 	+$(MAKE) -C $(dir $@) $(notdir $@)
 
 HEADERDEPS = ../../c/COSE_Format.h ../../c/COSE_EverCrypt.h $(EVERPARSE_SRC_PATH)/cbor/pulse/det/c/CBORDet.h

@@ -296,7 +296,7 @@ clean-cddl:
 .PHONY: clean-cbor-verify
 
 clean-bin:
-	rm -rf bin lib
+	rm -rf bin lib/evercddl
 
 .PHONY: clean-bin
 

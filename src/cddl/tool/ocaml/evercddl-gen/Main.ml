@@ -106,7 +106,7 @@ let fstar_exe =
     Sys.getenv "FSTAR_EXE"
   with
   | Not_found ->
-     let opt_fstar_exe = Filename.concat (Filename.concat (Filename.concat (Filename.concat everparse_home "opt") "FStar") "bin") "fstar.exe" in
+     let opt_fstar_exe = Filename.concat (Filename.concat (Filename.concat (Filename.concat (Filename.concat (Filename.concat everparse_home "lib") "everparse") "opt") "FStar") "bin") "fstar.exe" in
      if Sys.file_exists opt_fstar_exe
      then opt_fstar_exe
      else
@@ -121,7 +121,7 @@ let krml_home =
     Sys.getenv "KRML_HOME"
   with
   | Not_found ->
-     let opt_krml = Filename.concat (Filename.concat everparse_home "opt") "karamel" in
+     let opt_krml = Filename.concat (Filename.concat (Filename.concat (Filename.concat everparse_home "lib") "everparse") "opt") "karamel" in
      if Sys.file_exists opt_krml
      then opt_krml
      else
@@ -142,7 +142,7 @@ let pulse_home =
     Sys.getenv "PULSE_HOME"
   with
   | Not_found ->
-     let opt_pulse = Filename.concat (Filename.concat (Filename.concat everparse_home "opt") "pulse") "out" in
+     let opt_pulse = Filename.concat (Filename.concat (Filename.concat (Filename.concat (Filename.concat everparse_home "lib") "everparse") "opt") "pulse") "out" in
      if Sys.file_exists opt_pulse
      then opt_pulse
      else
@@ -156,7 +156,7 @@ let z3_executable_option =
   if test = 0
   then ["--z3version"; z3_version]
   else
-    let opt_z3 = Filename.concat (Filename.concat (Filename.concat everparse_home "opt") "z3") ("z3-" ^ z3_version) in
+    let opt_z3 = Filename.concat (Filename.concat (Filename.concat (Filename.concat (Filename.concat everparse_home "lib") "everparse") "opt") "z3") ("z3-" ^ z3_version) in
     if Sys.file_exists opt_z3
     then ["--smt"; opt_z3]
     else []

@@ -105,7 +105,7 @@ to verify the produced files and extract C code:
 
 * The binary package contains F\* and Karamel respectively at `bin/fstar.exe` and `bin/krml`
 
-* The Docker image contains F\* and Karamel respectively at `opt/FStar/out/bin/fstar.exe` and `opt/karamel/krml`
+* The Docker image contains F\* and Karamel respectively at `lib/everparse/opt/FStar/out/bin/fstar.exe` and `lib/everparse/opt/karamel/krml`
 
 TODO: integrate [documentation and example by Samuel Chassot](https://github.com/project-everest/everparse/pull/86)
 
@@ -336,33 +336,33 @@ accessing the F\* files in the container:
    files in the container. The F\* VSCode Assistant extension is
    already installed for you.
 
-## Using different F\*, Karamel, Pulse clones in opt/
+## Using different F\*, Karamel, Pulse clones in lib/everparse/opt/
 
-EverParse clones F\*, Karamel and Pulse into the `opt/`
+EverParse clones F\*, Karamel and Pulse into the `lib/everparse/opt/`
 subdirectory. If you want to create an EverParse branch with different
 clones (e.g. if you need to patch F\*, Karamel or Pulse):
 
-1. Change the relevant `*_repo` variables in `opt/Makefile` to point
+1. Change the relevant `*_repo` variables in `lib/everparse/opt/Makefile` to point
    to the repositories from which you clone.
 
-2. Run `make -C opt snapshot` to reflect this change in your clones.
+2. Run `make -C lib/everparse/opt snapshot` to reflect this change in your clones.
 
 Then, whenever you make a change in your clones:
 
 1. Commit and push your changes.
 
-2. Run `make -C opt snapshot` to register your clone hashes.
+2. Run `make -C lib/everparse/opt snapshot` to register your clone hashes.
 
 Then, in EverParse, `make` will automatically rebuild F\*, Karamel and
 Pulse from your clones with your patches.
 
 ## Using a specific branch of F\*, Karamel, Pulse etc. 
 
-1. Run `make -C opt FStar pulse karamel` to clone the default branches of those repositories
+1. Run `make -C lib/everparse/opt FStar pulse karamel` to clone the default branches of those repositories
 
 2. In the cloned directories, switch to your branch, e.g., `git checkout <mybranch>`
 
-3. Then run `make -C opt snapshot` to record the hashes you intend to use
+3. Then run `make -C lib/everparse/opt snapshot` to record the hashes you intend to use
 
 
 ## Using an existing opam root, F\*, etc.
@@ -404,5 +404,5 @@ as setting all of those environment variables to 1.
 
 NOTES: These settings are all ignored when building a binary package.
 
-NOTE: DO NOT use the clones from the opt/ subdirectory with
+NOTE: DO NOT use the clones from the lib/everparse/opt/ subdirectory with
 `EVERPARSE_USE_*`
