@@ -1,4 +1,4 @@
-name: Upgrade hashes, 3D doc, CBOR, COSE snapshots
+name: Upgrade hashes, 3D doc, CBOR, COSE snapshots (fstar2)
 on:
   workflow_dispatch:
     inputs:
@@ -25,10 +25,10 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-          ref: ${{ github.event_name == 'schedule' && 'master' || '' }}
+          ref: ${{ github.event_name == 'schedule' && 'fstar2' || '' }}
       - name: Record base ref
         run: |
-          echo "base_branch=${{ github.event_name == 'schedule' && 'master' || github.ref_name }}" > base_ref.txt
+          echo "base_branch=${{ github.event_name == 'schedule' && 'fstar2' || github.ref_name }}" > base_ref.txt
           echo "base_sha=$(git rev-parse HEAD)" >> base_ref.txt
       - name: Set up git
         run: |
