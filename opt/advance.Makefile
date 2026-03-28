@@ -1,3 +1,2 @@
-FStar_hash := origin/master
+FStar_hash := origin/fstar2
 karamel_hash := origin/master
-pulse_hash := origin/main
