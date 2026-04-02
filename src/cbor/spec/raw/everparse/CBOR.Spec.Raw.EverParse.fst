@@ -1054,7 +1054,15 @@ let synth_raw_data_item_recip
     (| raw_uint64_as_argument cbor_major_type_tagged tag, v |)
 
 #restart-solver
-let synth_raw_data_item_recip_inverse : squash (synth_inverse synth_raw_data_item synth_raw_data_item_recip) = ()
+let synth_raw_data_item_recip_inverse : squash (synth_inverse synth_raw_data_item synth_raw_data_item_recip) =
+  synth_inverse_intro' synth_raw_data_item synth_raw_data_item_recip (fun x ->
+    match x with
+    | Simple _ -> ()
+    | Int64 _ _ -> ()
+    | String _ _ _ -> ()
+    | Array _ _ -> ()
+    | Map _ _ -> ()
+    | Tagged _ _ -> ())
 
 #pop-options
 
@@ -1079,7 +1087,12 @@ let synth_raw_data_item'_from_alt_recip
 #restart-solver
 
 let synth_raw_data_item'_from_alt_inverse : squash (synth_inverse synth_raw_data_item'_from_alt synth_raw_data_item'_from_alt_recip ) =
-  Classical.forall_intro_2 (pair_list_of_list_of_pair_list #raw_data_item)
+  Classical.forall_intro_2 (pair_list_of_list_of_pair_list #raw_data_item);
+  synth_inverse_intro' synth_raw_data_item'_from_alt synth_raw_data_item'_from_alt_recip (fun x ->
+    match x with
+    | (| h, c |) ->
+      match h with
+      | (| b, long_arg |) -> ())
 
 #pop-options
 
@@ -1937,7 +1950,7 @@ let bytes_lex_compare_refl
 
 #pop-options
 
-#push-options "--z3rlimit 128 --split_queries always"
+#push-options "--z3rlimit 256 --split_queries always"
 
 let serialized_lex_compare_simple_value
   (x1 x2: simple_value)

@@ -931,7 +931,7 @@ ensures
   };
 }
 
-#push-options "--z3rlimit 32"
+#push-options "--z3rlimit 64"
 
 inline_for_extraction
 fn ser_payload_array_not_array_lens
@@ -1391,7 +1391,7 @@ ensures
   };
 }
 
-#push-options "--z3rlimit 32"
+#push-options "--z3rlimit 64"
 
 inline_for_extraction
 fn ser_payload_map_not_map_lens
@@ -2157,7 +2157,7 @@ let seq_length_append_slice_left
 
 module Swap = Pulse.Lib.Swap.Slice
 
-#push-options "--z3rlimit 64"
+#push-options "--z3rlimit 128"
 
 inline_for_extraction noextract [@@noextract_to "krml"]
 let sz_zero : SZ.t = 0sz
