@@ -336,11 +336,11 @@ accessing the F\* files in the container:
    files in the container. The F\* VSCode Assistant extension is
    already installed for you.
 
-## Using different F\*, Karamel, Pulse clones in opt/
+## Using different F\*, Karamel clones in opt/
 
-EverParse clones F\*, Karamel and Pulse into the `opt/`
+EverParse clones F\*, Karamel into the `opt/`
 subdirectory. If you want to create an EverParse branch with different
-clones (e.g. if you need to patch F\*, Karamel or Pulse):
+clones (e.g. if you need to patch F\*, Karamel):
 
 1. Change the relevant `*_repo` variables in `opt/Makefile` to point
    to the repositories from which you clone.
@@ -353,12 +353,12 @@ Then, whenever you make a change in your clones:
 
 2. Run `make -C opt snapshot` to register your clone hashes.
 
-Then, in EverParse, `make` will automatically rebuild F\*, Karamel and
-Pulse from your clones with your patches.
+Then, in EverParse, `make` will automatically rebuild F\*, Karamel
+from your clones with your patches.
 
-## Using a specific branch of F\*, Karamel, Pulse etc. 
+## Using a specific branch of F\*, Karamel etc. 
 
-1. Run `make -C opt FStar pulse karamel` to clone the default branches of those repositories
+1. Run `make -C opt FStar karamel` to clone the default branches of those repositories
 
 2. In the cloned directories, switch to your branch, e.g., `git checkout <mybranch>`
 
