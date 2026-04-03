@@ -1,1 +1,1 @@
-FStar_hash := origin/fstar2
+FStar_hash := origin/_taramana_fstar2_ci
