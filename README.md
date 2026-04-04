@@ -358,12 +358,40 @@ Pulse from your clones with your patches.
 
 ## Using a specific branch of F\*, Karamel, Pulse etc. 
 
+### Method 1: Record snapshots
+
 1. Run `make -C opt FStar pulse karamel` to clone the default branches of those repositories
 
 2. In the cloned directories, switch to your branch, e.g., `git checkout <mybranch>`
 
 3. Then run `make -C opt snapshot` to record the hashes you intend to use
 
+### Method 2: Local lock
+
+Alternatively, if you do not want to record the snapshot every time
+(e.g. to keep your git working copy clean, to avoid pushing to F*,
+Karamel, etc. every time, or if you want to use your own repository):
+
+1. Run `make -C opt FStar pulse karamel` to clone the default branches
+   of those repositories
+
+2. Run `touch opt/hashes.lock` to prevent Make in EverParse from
+   changing the working copies of F*, Karamel and Pulse in `opt/`
+
+3. In the cloned directories, switch to your branch, e.g., `git
+   checkout <mybranch>`
+
+Then, every time you make a change in your local copies, run `touch
+opt/hashes.Makefile` so that Make in EverParse will rebuild your
+local copies.
+
+When you are done:
+
+1. If you want to record your hashes for future uses of EverParse, run
+   `make -C opt snapshot`
+
+2. Remove `opt/hashes.lock` to allow Make in EverParse to pick commits
+   from recorded hashes again.
 
 ## Using an existing opam root, F\*, etc.
 
