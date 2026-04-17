@@ -17,6 +17,7 @@ include $(EVERPARSE_SRC_PATH)/pulse.Makefile
 include $(EVERPARSE_SRC_PATH)/common.Makefile
 
 KRML_OPTS += -warn-error @4@6
+KRML_OPTS += -ccopt -Wtautological-constant-out-of-range-compare
 
 KRML=$(KRML_HOME)/krml -fstar $(FSTAR_EXE) $(KRML_OPTS)
 
