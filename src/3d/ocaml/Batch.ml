@@ -391,6 +391,17 @@ let krml_args input_stream_binding emit_output_types_defs add_include skip_c_mak
                               "-minimal" ::
                                 "-add-include" :: "\"EverParse.h\"" ::
                                   "-fextern-c" ::
+                                    (if Options.get_hoist_locals ()
+                                     then ["-fhoist-locals"]
+                                     else []) @
+                                    (if Options.get_goto_for_early_return ()
+                                     then ["-goto_for_early_return"]
+                                     else []) @
+                                    (let init_locals_value = match Options.get_init_locals () with
+                                     | Some v -> v
+                                     | None -> "no"
+                                     in
+                                     ["-finitialize-locals"; init_locals_value]) @
                                     external_types_lib_args @
                                     external_api_lib_args @
                                     external_types_no_prefix_args @

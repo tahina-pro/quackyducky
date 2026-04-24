@@ -25,7 +25,7 @@ endif
 
 # Change these if you want to use your own clones
 FStar_repo=https://github.com/FStarLang/FStar
-karamel_repo=https://github.com/FStarLang/karamel
+karamel_repo=https://github.com/tahina-pro/karamel
 pulse_repo=https://github.com/FStarLang/pulse
 
 # This rule is necessary for the package and release CI rules to pull
@@ -50,7 +50,7 @@ opam:
 	touch $@
 
 %/Makefile: % hashes.Makefile
-	if test -d $</.git && ! test -e hashes.lock ; then cd $< && git remote set-url origin $($<_repo) && git fetch && git checkout $($<_hash) ; fi
+	if test -d $</.git && ! test -e hashes.lock ; then cd $< && git remote set-url origin $($<_repo) && i=3 && until git fetch && sleep 1 && git checkout $($<_hash) && sleep 1 || test $$i -eq 0 ; do i=$$(($$i - 1)) ; done && test $$i -ne 0 ; fi
 	touch -c $@
 	test -f $@
 
