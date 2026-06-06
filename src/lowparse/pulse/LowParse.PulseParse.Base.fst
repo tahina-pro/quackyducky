@@ -7,6 +7,7 @@ open LowParse.Spec.Base
 module LPS = LowParse.Pulse.Base
 
 module SZ = FStar.SizeT
+module U64 = FStar.UInt64
 module Trade = Pulse.Lib.Trade.Util
 module S = Pulse.Lib.Slice
 
@@ -764,4 +765,643 @@ fn accessor_parser_ext
   pts_to_parsed_ext_trade_gen p2 input;
   with v2 . assert (pts_to_parsed p2 input #pm v2);
   input
+}
+
+(* Packed high-level separation logic predicate: the low-level representation
+   [x] relates to the high-level value [v] when there EXISTS a refinement-free
+   "mid" value [vm] such that [x] relates to [vm] via [vmatch] and [vm] converts
+   to [v] via the partial conversion [conv]. All refinements on the high-level
+   value type [t] are captured by [conv] (a partial function), so the [vmatch]
+   right-hand-side type [tm] is free of refinements. *)
+let vmatch_conv
+  (#t' #tm #t: Type0)
+  (vmatch: t' -> tm -> slprop)
+  (conv: tm -> GTot (option t))
+  (x: t')
+  (v: t)
+: slprop
+= exists* (vm: tm) . vmatch x vm ** pure (conv vm == Some v)
+
+ghost
+fn intro_vmatch_conv
+  (#t' #tm #t: Type0)
+  (vmatch: t' -> tm -> slprop)
+  (conv: tm -> GTot (option t))
+  (x: t')
+  (vm: tm)
+  (v: t)
+  requires vmatch x vm ** pure (conv vm == Some v)
+  ensures vmatch_conv vmatch conv x v
+{
+  fold (vmatch_conv vmatch conv x v);
+}
+
+ghost
+fn elim_vmatch_conv
+  (#t' #tm #t: Type0)
+  (vmatch: t' -> tm -> slprop)
+  (conv: tm -> GTot (option t))
+  (x: t')
+  (v: t)
+  requires vmatch_conv vmatch conv x v
+  ensures exists* (vm: tm) . vmatch x vm ** pure (conv vm == Some v)
+{
+  unfold (vmatch_conv vmatch conv x v);
+}
+
+inline_for_extraction
+let copyful_parse
+  (#t' #tm #t: Type0)
+  (vmatch: t' -> tm -> slprop)
+  (#k: parser_kind)
+  (p: parser k t)
+  (conv: tm -> GTot (option t))
+=
+  (input: slice byte) ->
+  (#pm: perm) ->
+  (#v: Ghost.erased t) ->
+  stt t'
+    (pts_to_parsed p input #pm v)
+    (fun res ->
+      pts_to_parsed p input #pm v **
+      vmatch_conv vmatch conv res v
+    )
+
+inline_for_extraction
+let free_t
+  (#t' #tm: Type0)
+  (vmatch: t' -> tm -> slprop)
+=
+  (x: t') ->
+  (#v: Ghost.erased tm) ->
+  stt unit
+    (vmatch x v)
+    (fun _ -> emp)
+
+(* Lift a [free_t] over a mid [vmatch] to a [free_t] over the packed high-level
+   predicate [vmatch_conv vmatch conv]: eliminate the existential mid witness,
+   then free using the underlying destructor. *)
+inline_for_extraction
+fn free_vmatch_conv
+  (#t' #tm #t: Type0)
+  (vmatch: t' -> tm -> slprop)
+  (conv: tm -> GTot (option t))
+  (free: free_t vmatch)
+: free_t #t' #t (vmatch_conv vmatch conv)
+=
+  (x: t')
+  (#v: Ghost.erased t)
+{
+  elim_vmatch_conv vmatch conv x v;
+  with vm . assert (vmatch x vm ** pure (conv vm == Some (Ghost.reveal v)));
+  free x #vm;
+}
+
+(* A named (non-anonymous) identity conv for leaf types. Using a named top-level
+   symbol (rather than an inline lambda) lets SMT congruence equate the conv used
+   in a sum's casevmatch with the conv implicit inferred from copyful_parse_leaf,
+   which is required to discharge the per-case vmatch-extensionality obligation. *)
+let leaf_conv (t: Type) : t -> GTot (option t) = fun x -> Some x
+
+inline_for_extraction
+fn copyful_parse_leaf
+  (#t: Type0)
+  (#k: Ghost.erased parser_kind)
+  (#p: parser k t)
+  (r: leaf_reader p)
+: copyful_parse #_ #_ #_ (LPS.eq_as_slprop t) #_ p (leaf_conv t)
+=
+  (input: slice byte)
+  (#pm: perm)
+  (#v: Ghost.erased _)
+{
+  let res = r input;
+  fold (LPS.eq_as_slprop t res v);
+  intro_vmatch_conv (LPS.eq_as_slprop t) (leaf_conv t) res (Ghost.reveal v) (Ghost.reveal v);
+  res
+}
+
+inline_for_extraction
+fn free_leaf
+  (#t: Type0)
+: free_t #t #t (LPS.eq_as_slprop t)
+=
+  (x: t)
+  (#v: Ghost.erased _)
+{
+  unfold (LPS.eq_as_slprop t x v);
+}
+
+let vmatch_synth_lhs
+  (#t1' #t2' #t: Type0)
+  (vmatch: t1' -> t -> slprop)
+  (g: t2' -> GTot t1')
+  (xl2: t2')
+  (xh: t)
+: slprop
+= vmatch (g xl2) xh
+
+inline_for_extraction
+fn copyful_parse_synth_lhs
+  (#t1' #tm #t: Type0)
+  (#vmatch: t1' -> tm -> slprop)
+  (#k: Ghost.erased parser_kind)
+  (#p: parser k t)
+  (#conv: tm -> GTot (option t))
+  (r: copyful_parse vmatch p conv)
+  (#t2': Type0)
+  (f: t1' -> t2')
+  (g: t2' -> GTot t1')
+  (sq: squash (forall (x: t1') . g (f x) == x))
+: copyful_parse #_ #_ #_ (vmatch_synth_lhs vmatch g) #_ p conv
+=
+  (input: slice byte)
+  (#pm: perm)
+  (#v: Ghost.erased _)
+{
+  let res = r input;
+  elim_vmatch_conv vmatch conv res (Ghost.reveal v);
+  with vm . assert (vmatch res vm ** pure (conv vm == Some (Ghost.reveal v)));
+  let res2 = f res;
+  rewrite (vmatch res vm) as (vmatch (g res2) vm);
+  fold (vmatch_synth_lhs vmatch g res2 vm);
+  intro_vmatch_conv (vmatch_synth_lhs vmatch g) conv res2 vm (Ghost.reveal v);
+  res2
+}
+
+inline_for_extraction
+fn free_synth_lhs
+  (#t1' #t: Type0)
+  (#vmatch: t1' -> t -> slprop)
+  (free: free_t vmatch)
+  (#t2': Type0)
+  (g: t2' -> GTot t1')
+  (g': t2' -> t1')
+  (sq: squash (forall (x: t2') . g' x == g x))
+: free_t #t2' #t (vmatch_synth_lhs vmatch g)
+=
+  (x: t2')
+  (#v: Ghost.erased _)
+{
+  unfold (vmatch_synth_lhs vmatch g x v);
+  rewrite (vmatch (g x) v) as (vmatch (g' x) v);
+  free (g' x);
+}
+
+inline_for_extraction
+fn copyful_parse_ext
+  (#t' #tm #t1: Type0)
+  (#vmatch1: t' -> tm -> slprop)
+  (#conv1: tm -> GTot (option t1))
+  (#k1: Ghost.erased parser_kind)
+  (#p1: parser k1 t1)
+  (w: copyful_parse vmatch1 p1 conv1)
+  (#k2: Ghost.erased parser_kind)
+  (p2: parser k2 t1)
+  (vmatch2: t' -> tm -> slprop)
+  (sq: squash (
+    LPS.pts_to_serialized_ext_trade_gen_precond p2 p1 /\
+    (forall (x: t') (vm: tm) .
+      vmatch2 x vm == vmatch1 x vm)
+  ))
+: copyful_parse #_ #_ #_ vmatch2 #_ p2 conv1
+=
+  (input: slice byte)
+  (#pm: perm)
+  (#v: Ghost.erased t1)
+{
+  pts_to_parsed_ext_trade_gen p1 input;
+  with v1 . assert (pts_to_parsed p1 input #pm v1);
+  let res = w input;
+  Trade.elim (pts_to_parsed p1 input #pm v1) (pts_to_parsed p2 input #pm v);
+  elim_vmatch_conv vmatch1 conv1 res (Ghost.reveal v1);
+  with vm . assert (vmatch1 res vm ** pure (conv1 vm == Some (Ghost.reveal v1)));
+  rewrite (vmatch1 res vm) as (vmatch2 res vm);
+  intro_vmatch_conv vmatch2 conv1 res vm (Ghost.reveal v);
+  res
+}
+
+inline_for_extraction
+fn free_ext
+  (#t' #t1: Type0)
+  (#vmatch1: t' -> t1 -> slprop)
+  (free1: free_t vmatch1)
+  (#t2: Type0)
+  (vmatch2: t' -> t2 -> slprop)
+  (sq: squash (
+    t1 == t2 /\
+    (forall (x: t') (vb: t2) .
+      vmatch2 x vb == vmatch1 x (coerce t1 vb))
+  ))
+: free_t #t' #t2 vmatch2
+=
+  (x: t')
+  (#v: Ghost.erased t2)
+{
+  let v1 : Ghost.erased t1 = Ghost.hide (coerce t1 (Ghost.reveal v));
+  rewrite (vmatch2 x v) as (vmatch1 x v1);
+  free1 x #v1;
+}
+
+(* Re-index a [copyful_parse] from a mid type [tm1] (with predicate [vmatch1] and
+   conv [conv1]) to a different mid type [tm2] (predicate [vmatch2], conv [conv2]),
+   given a ghost map [fg : tm1 -> tm2] that is compatible with both the predicate
+   and the conv. Used to bridge the library's dependent-pair sum mid to a generated
+   transparent textual mid, while keeping conv tight. *)
+inline_for_extraction
+fn copyful_parse_coerce_mid
+  (#t' #tm1 #t1: Type0)
+  (#vmatch1: t' -> tm1 -> slprop)
+  (#conv1: tm1 -> GTot (option t1))
+  (#k1: Ghost.erased parser_kind)
+  (#p1: parser k1 t1)
+  (w: copyful_parse vmatch1 p1 conv1)
+  (#tm2: Type0)
+  (vmatch2: t' -> tm2 -> slprop)
+  (conv2: tm2 -> GTot (option t1))
+  (fg: tm1 -> GTot tm2)
+  (sq: squash (
+    (forall (x: t') (m1: tm1) . vmatch1 x m1 == vmatch2 x (fg m1)) /\
+    (forall (m1: tm1) . conv2 (fg m1) == conv1 m1)
+  ))
+: copyful_parse #_ #_ #_ vmatch2 #_ p1 conv2
+=
+  (input: slice byte)
+  (#pm: perm)
+  (#v: Ghost.erased t1)
+{
+  let res = w input;
+  elim_vmatch_conv vmatch1 conv1 res (Ghost.reveal v);
+  with m1 . assert (vmatch1 res m1 ** pure (conv1 m1 == Some (Ghost.reveal v)));
+  rewrite (vmatch1 res m1) as (vmatch2 res (fg m1));
+  intro_vmatch_conv vmatch2 conv2 res (fg m1) (Ghost.reveal v);
+  res
+}
+
+(* Re-index a [free_t] from a mid type [tm1] to [tm2], given a ghost map
+   [gf : tm2 -> tm1] compatible with the predicate. *)
+inline_for_extraction
+fn free_coerce_mid
+  (#t' #tm1: Type0)
+  (#vmatch1: t' -> tm1 -> slprop)
+  (free1: free_t vmatch1)
+  (#tm2: Type0)
+  (vmatch2: t' -> tm2 -> slprop)
+  (gf: tm2 -> GTot tm1)
+  (sq: squash (forall (x: t') (m2: tm2) . vmatch2 x m2 == vmatch1 x (gf m2)))
+: free_t #t' #tm2 vmatch2
+=
+  (x: t')
+  (#v: Ghost.erased tm2)
+{
+  let v1 : Ghost.erased tm1 = Ghost.hide (gf (Ghost.reveal v));
+  rewrite (vmatch2 x v) as (vmatch1 x v1);
+  free1 x #v1;
+}
+
+let l2r_safe_writer_postcond
+  (#tm #t: Type0)
+  (conv: tm -> GTot (option t))
+  (#k: parser_kind)
+  (#p: parser k t)
+  (s: serializer p)
+  (y: tm)
+  (v': Seq.seq byte)
+  (res: SZ.t)
+  (err: bool)
+: Tot prop
+= begin match conv y with
+  | None -> err == true
+  | Some y' ->
+    let sy = serialize s y' in
+    let len = Seq.length sy in
+    err == (Seq.length v' < len) /\
+    (err == false ==> (SZ.v res == len /\ Seq.slice v' 0 len == sy))
+  end
+
+inline_for_extraction
+let l2r_safe_writer
+  (#t' #tm #t: Type0)
+  (vmatch: t' -> tm -> slprop)
+  (#k: parser_kind)
+  (#p: parser k t)
+  (s: serializer p)
+  (conv: tm -> GTot (option t))
+=
+  (x: t') ->
+  (#y: Ghost.erased tm) ->
+  (out: slice byte) ->
+  (#v: Ghost.erased (Seq.seq byte)) ->
+  (perr: ref bool) ->
+  stt SZ.t
+      (exists* err . S.pts_to out v ** vmatch x y ** R.pts_to perr err)
+      (fun sz -> exists* v' err . S.pts_to out v' ** vmatch x y ** R.pts_to perr err **
+      	   pure (l2r_safe_writer_postcond conv s (Ghost.reveal y) v' sz err)
+      )
+
+(* Leaf safe writer: the copyful leaf representation IS the value (eq_as_slprop),
+   and [leaf_conv] never fails, so the writer fails (err=true) iff there is not
+   enough room. Requires a constant-size leaf so the serialized size [sz] is known
+   before writing. *)
+inline_for_extraction
+fn l2r_safe_writer_leaf
+  (#t: Type0)
+  (#k: parser_kind)
+  (#p: parser k t)
+  (s: serializer p)
+  (sz: SZ.t {
+    k.parser_kind_high == Some k.parser_kind_low /\
+    k.parser_kind_low == SZ.v sz
+  })
+  (w: LPS.l2r_leaf_writer s)
+: l2r_safe_writer #t #t #t (LPS.eq_as_slprop t) #k #p s (leaf_conv t)
+=
+  (x: t)
+  (#y: Ghost.erased t)
+  (out: slice byte)
+  (#v: Ghost.erased (Seq.seq byte))
+  (perr: R.ref bool)
+{
+  unfold (LPS.eq_as_slprop t x (Ghost.reveal y));
+  S.pts_to_len out;
+  serialize_length s x;
+  let l = S.len out;
+  if (SZ.lt l sz) {
+    perr := true;
+    fold (LPS.eq_as_slprop t x (Ghost.reveal y));
+    sz
+  } else {
+    let res = w x out 0sz;
+    perr := false;
+    fold (LPS.eq_as_slprop t x (Ghost.reveal y));
+    res
+  }
+}
+
+(* Variable-length leaf safe writer: like [l2r_safe_writer_leaf] but for a
+   variable-length leaf. Instead of a constant size, it takes a [size] function
+   computing the exact serialized length of [x] (whose postcondition gives
+   [SZ.v sz == Seq.length (serialize s x)]), so no fixed-size kind is needed. *)
+inline_for_extraction
+fn l2r_safe_writer_leaf_vl
+  (#t: Type0)
+  (#k: parser_kind)
+  (#p: parser k t)
+  (s: serializer p)
+  (size: (x: t -> Pure SZ.t (requires True) (ensures fun sz -> SZ.v sz == Seq.length (serialize s x) /\ SZ.v sz < pow2 64)))
+  (w: LPS.l2r_leaf_writer s)
+: l2r_safe_writer #t #t #t (LPS.eq_as_slprop t) #k #p s (leaf_conv t)
+=
+  (x: t)
+  (#y: Ghost.erased t)
+  (out: slice byte)
+  (#v: Ghost.erased (Seq.seq byte))
+  (perr: R.ref bool)
+{
+  let sz = size x;
+  unfold (LPS.eq_as_slprop t x (Ghost.reveal y));
+  S.pts_to_len out;
+  serialize_length s x;
+  let l = S.len out;
+  if (SZ.lt l sz) {
+    perr := true;
+    fold (LPS.eq_as_slprop t x (Ghost.reveal y));
+    sz
+  } else {
+    let res = w x out 0sz;
+    perr := false;
+    fold (LPS.eq_as_slprop t x (Ghost.reveal y));
+    res
+  }
+}
+
+(* Re-index an [l2r_safe_writer] across an extensionally-equal parser/serializer
+   (mirrors [copyful_parse_ext]). The serialized bytes are unchanged because the
+   precondition demands [serialize s2] agrees pointwise with [serialize s1]; the
+   predicate is re-indexed via the pointwise [vmatch2 == vmatch1] equality. *)
+inline_for_extraction
+fn l2r_safe_writer_ext
+  (#t' #tm #t1: Type0)
+  (#vmatch1: t' -> tm -> slprop)
+  (#conv1: tm -> GTot (option t1))
+  (#k1: parser_kind)
+  (#p1: parser k1 t1)
+  (#s1: serializer p1)
+  (w: l2r_safe_writer vmatch1 s1 conv1)
+  (#k2: parser_kind)
+  (#p2: parser k2 t1)
+  (s2: serializer p2)
+  (vmatch2: t' -> tm -> slprop)
+  (sq: squash (
+    (forall (x: t') (vm: tm) . vmatch2 x vm == vmatch1 x vm) /\
+    (forall (x: t1) . serialize s2 x == serialize s1 x)
+  ))
+: l2r_safe_writer #_ #_ #_ vmatch2 #_ #p2 s2 conv1
+=
+  (x: t')
+  (#y: Ghost.erased tm)
+  (out: slice byte)
+  (#v: Ghost.erased (Seq.seq byte))
+  (perr: R.ref bool)
+{
+  rewrite (vmatch2 x (Ghost.reveal y)) as (vmatch1 x (Ghost.reveal y));
+  let res = w x out perr;
+  with v' err. assert (S.pts_to out v' ** vmatch1 x (Ghost.reveal y) ** R.pts_to perr err ** pure (l2r_safe_writer_postcond conv1 s1 (Ghost.reveal y) v' res err));
+  rewrite (vmatch1 x (Ghost.reveal y)) as (vmatch2 x (Ghost.reveal y));
+  res
+}
+
+(* Re-index an [l2r_safe_writer] across a transformed LOW (left) representation
+   (mirrors [copyful_parse_synth_lhs] / [free_synth_lhs]). The high value, parser,
+   serializer and conv are all unchanged; only the low type is mapped via the
+   runtime backward map [g'] (extensionally equal to the ghost [g]). *)
+inline_for_extraction
+fn l2r_safe_writer_synth_lhs
+  (#t1' #tm #t: Type0)
+  (#vmatch: t1' -> tm -> slprop)
+  (#k: parser_kind)
+  (#p: parser k t)
+  (#s: serializer p)
+  (#conv: tm -> GTot (option t))
+  (w: l2r_safe_writer vmatch s conv)
+  (#t2': Type0)
+  (g: t2' -> GTot t1')
+  (g': t2' -> t1')
+  (sq: squash (forall (x: t2') . g' x == g x))
+: l2r_safe_writer #_ #_ #_ (vmatch_synth_lhs vmatch g) #_ #p s conv
+=
+  (x: t2')
+  (#y: Ghost.erased tm)
+  (out: slice byte)
+  (#v: Ghost.erased (Seq.seq byte))
+  (perr: R.ref bool)
+{
+  rewrite (vmatch_synth_lhs vmatch g x (Ghost.reveal y)) as (vmatch (g' x) (Ghost.reveal y));
+  let res = w (g' x) out perr;
+  rewrite (vmatch (g' x) (Ghost.reveal y)) as (vmatch_synth_lhs vmatch g x (Ghost.reveal y));
+  res
+}
+inline_for_extraction
+fn l2r_safe_writer_coerce_mid
+  (#t' #tm1 #t: Type0)
+  (#vmatch1: t' -> tm1 -> slprop)
+  (#k: parser_kind)
+  (#p: parser k t)
+  (#s: serializer p)
+  (#conv1: tm1 -> GTot (option t))
+  (w: l2r_safe_writer vmatch1 s conv1)
+  (#tm2: Type0)
+  (vmatch2: t' -> tm2 -> slprop)
+  (conv2: tm2 -> GTot (option t))
+  (gf: tm2 -> GTot tm1)
+  (sq: squash (
+    (forall (x: t') (m2: tm2) . vmatch2 x m2 == vmatch1 x (gf m2)) /\
+    (forall (m2: tm2) . conv2 m2 == conv1 (gf m2))
+  ))
+: l2r_safe_writer #t' #tm2 #t vmatch2 #k #p s conv2
+=
+  (x: t')
+  (#y: Ghost.erased tm2)
+  (out: slice byte)
+  (#v: Ghost.erased (Seq.seq byte))
+  (perr: R.ref bool)
+{
+  let y1 : Ghost.erased tm1 = Ghost.hide (gf (Ghost.reveal y));
+  rewrite (vmatch2 x (Ghost.reveal y)) as (vmatch1 x (Ghost.reveal y1));
+  let res = w x out perr;
+  rewrite (vmatch1 x (Ghost.reveal y1)) as (vmatch2 x (Ghost.reveal y));
+  res
+}
+
+(* ---------------------------------------------------------------------------
+   l2r_safe_size: the size-computation analog of l2r_safe_writer. Instead of
+   serializing into an output buffer, it computes the serialized SIZE of the
+   value, signalling an error (err = true) when either the conversion fails or
+   the size does not fit in a machine word (>= pow2 64).
+   --------------------------------------------------------------------------- *)
+
+let l2r_safe_size_postcond
+  (#tm #t: Type0)
+  (conv: tm -> GTot (option t))
+  (#k: parser_kind)
+  (#p: parser k t)
+  (s: serializer p)
+  (y: tm)
+  (sz: SZ.t)
+  (err: bool)
+: Tot prop
+= begin match conv y with
+  | None -> err == true
+  | Some y' ->
+    let len = Seq.length (serialize s y') in
+    (err == false ==> (SZ.v sz == len /\ len < pow2 64)) /\
+    (len < pow2 64 ==> err == false)
+  end
+
+inline_for_extraction
+let l2r_safe_size
+  (#t' #tm #t: Type0)
+  (vmatch: t' -> tm -> slprop)
+  (#k: parser_kind)
+  (#p: parser k t)
+  (s: serializer p)
+  (conv: tm -> GTot (option t))
+=
+  (x: t') ->
+  (#y: Ghost.erased tm) ->
+  (perr: ref bool) ->
+  stt SZ.t
+      (exists* err . vmatch x y ** R.pts_to perr err)
+      (fun sz -> exists* err . vmatch x y ** R.pts_to perr err **
+      	   pure (l2r_safe_size_postcond conv s (Ghost.reveal y) sz err)
+      )
+
+(* Pure helper relating the wrapped (mod pow2 64) sum to overflow. *)
+let add_mod_overflow_lemma (a b: nat)
+: Lemma
+    (requires a < pow2 64 /\ b < pow2 64)
+    (ensures (let s = (a + b) % pow2 64 in
+      (s < a <==> a + b >= pow2 64) /\
+      (a + b < pow2 64 ==> s == a + b)))
+= if a + b < pow2 64
+  then FStar.Math.Lemmas.small_mod (a + b) (pow2 64)
+  else begin
+    FStar.Math.Lemmas.lemma_mod_plus (a + b - pow2 64) 1 (pow2 64);
+    FStar.Math.Lemmas.small_mod (a + b - pow2 64) (pow2 64)
+  end
+
+(* Runtime overflow-checked SizeT addition via U64 wraparound. *)
+inline_for_extraction
+fn size_add_checked (sq: squash FStar.SizeT.fits_u64) (x: SZ.t) (y: SZ.t) (perr: ref bool)
+  requires (exists* e. R.pts_to perr e ** pure (SZ.v x < pow2 64 /\ SZ.v y < pow2 64))
+  returns z: SZ.t
+  ensures (exists* e. R.pts_to perr e ** pure (
+    (SZ.v x + SZ.v y < pow2 64 ==> (e == false /\ SZ.v z == SZ.v x + SZ.v y /\ SZ.v z < pow2 64)) /\
+    (SZ.v x + SZ.v y >= pow2 64 ==> e == true)))
+{
+  FStar.Math.Lemmas.small_mod (SZ.v x) (pow2 64);
+  FStar.Math.Lemmas.small_mod (SZ.v y) (pow2 64);
+  add_mod_overflow_lemma (SZ.v x) (SZ.v y);
+  let xu = SZ.sizet_to_uint64 x;
+  let yu = SZ.sizet_to_uint64 y;
+  let zu = U64.add_mod xu yu;
+  if (U64.lt zu xu) {
+    perr := true;
+    x
+  } else {
+    perr := false;
+    SZ.uint64_to_sizet zu
+  }
+}
+
+(* Leaf safe size: the copyful leaf representation IS the value (eq_as_slprop),
+   and [leaf_conv] never fails. For a constant-size leaf the serialized size is
+   the literal [sz] and never overflows. *)
+inline_for_extraction
+fn l2r_safe_size_leaf
+  (#t: Type0)
+  (#k: parser_kind)
+  (#p: parser k t)
+  (s: serializer p)
+  (sz: SZ.t {
+    k.parser_kind_high == Some k.parser_kind_low /\
+    k.parser_kind_low == SZ.v sz /\
+    SZ.v sz < pow2 64
+  })
+: l2r_safe_size #t #t #t (LPS.eq_as_slprop t) #k #p s (leaf_conv t)
+=
+  (x: t)
+  (#y: Ghost.erased t)
+  (perr: R.ref bool)
+{
+  unfold (LPS.eq_as_slprop t x (Ghost.reveal y));
+  serialize_length s x;
+  perr := false;
+  fold (LPS.eq_as_slprop t x (Ghost.reveal y));
+  sz
+}
+
+(* Variable-length leaf safe size: like [l2r_safe_size_leaf] but for a
+   variable-length leaf. The [size] function computes the exact serialized
+   length (and guarantees it fits in a machine word), so no fixed-size kind is
+   needed. *)
+inline_for_extraction
+fn l2r_safe_size_leaf_vl
+  (#t: Type0)
+  (#k: parser_kind)
+  (#p: parser k t)
+  (s: serializer p)
+  (size: (x: t -> Pure SZ.t (requires True) (ensures fun sz -> SZ.v sz == Seq.length (serialize s x) /\ SZ.v sz < pow2 64)))
+: l2r_safe_size #t #t #t (LPS.eq_as_slprop t) #k #p s (leaf_conv t)
+=
+  (x: t)
+  (#y: Ghost.erased t)
+  (perr: R.ref bool)
+{
+  let sz = size x;
+  unfold (LPS.eq_as_slprop t x (Ghost.reveal y));
+  serialize_length s x;
+  perr := false;
+  fold (LPS.eq_as_slprop t x (Ghost.reveal y));
+  sz
 }
