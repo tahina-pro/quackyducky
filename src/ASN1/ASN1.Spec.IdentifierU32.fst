@@ -788,7 +788,11 @@ let encode_asn1_first_byte
            | _ -> 3uy
            )
   in
+  assert (U8.v b0 <= 3);
   let b0' = U8.shift_left b0 6ul in
+  let _ = UInt.shift_left_value_lemma #8 (U8.v b0) 6 in
+  assert_norm (pow2 6 == 64);
+  assert_norm (pow2 8 == 256);
   assert (U8.v b0' <= 128 + 64);
   let b1 = (match id_flag with
            | PRIMITIVE -> 0uy
@@ -796,7 +800,8 @@ let encode_asn1_first_byte
   in
   assert (U8.v b1 <= 1);
   let b1' = U8.shift_left b1 5ul in
-  assert (U8.v b1' <= U8.v (U8.shift_left 1uy 5ul));
+  let _ = UInt.shift_left_value_lemma #8 (U8.v b1) 5 in
+  assert_norm (pow2 5 == 32);
   assert (U8.v b1' <= 32);
   U8.add b0'
          (U8.add b1'
@@ -817,7 +822,11 @@ let lemma_encode_asn1_first_byte_inverse
              )
   in
   assert (b0 = (U8.shift_right buf) 6ul);
+  assert (U8.v b0 <= 3);
   let b0' = U8.shift_left b0 6ul in
+  let _ = UInt.shift_left_value_lemma #8 (U8.v b0) 6 in
+  assert_norm (pow2 6 == 64);
+  assert_norm (pow2 8 == 256);
   assert (U8.v b0' <= 128 + 64);
   let b1 = (match id_flag with
            | PRIMITIVE -> 0uy
@@ -826,7 +835,8 @@ let lemma_encode_asn1_first_byte_inverse
   assert (U8.v b1 <= 1);
   assert (b1 = U8.rem ((U8.shift_right buf) 5ul) 2uy);
   let b1' = U8.shift_left b1 5ul in
-  assert (U8.v b1' <= U8.v (U8.shift_left 1uy 5ul));
+  let _ = UInt.shift_left_value_lemma #8 (U8.v b1) 5 in
+  assert_norm (pow2 5 == 32);
   assert (U8.v b1' <= 32);
   let _ = UInt.shift_right_value_lemma #8 (U8.v buf) 6 in
   let _ = UInt.shift_right_value_lemma #8 (U8.v buf) 5 in
