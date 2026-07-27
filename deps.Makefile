@@ -158,7 +158,7 @@ endif
 
 krmllib.done: $(NEED_KRML)
 	# Needed by LowParse (Pulse) tests
-	+export KRML_LIBPATH="$$($(KRML_EXE) -locate-krmllib)" && $(MAKE) -C "$$KRML_LIBPATH"/dist/generic -f Makefile.basic
+	+$(with_opam) export KRML_LIBPATH="$$($(KRML_EXE) -locate-krmllib | sed 's!\r!!g')" && $(MAKE) -C "$$KRML_LIBPATH"/dist/generic -f Makefile.basic
 	touch $@
 
 env:
