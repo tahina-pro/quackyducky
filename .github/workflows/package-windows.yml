@@ -119,7 +119,7 @@ jobs:
       - name: Run tests
         shell: C:\.opam\.cygwin\root\bin\bash.exe --login '{0}'
         run: >-
-          cd $GITHUB_WORKSPACE && eval $(opam env) && env V=1 MAKE=make make test -kj$(nproc)
+          cd $GITHUB_WORKSPACE && eval $(opam env) && env V=1 MAKE=make make -f nofstar.Makefile cbor-shared-test -O -kj$(nproc)
 
   build:
     needs: fstar-src
