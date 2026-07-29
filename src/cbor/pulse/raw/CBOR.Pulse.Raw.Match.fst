@@ -129,6 +129,8 @@ let cbor_match0
   | CBOR_Case_Serialized_Array v, Array _ _ -> cbor_match_serialized_array v p r
   | CBOR_Case_Serialized_Map v, Map _ _ -> cbor_match_serialized_map v p r
   | CBOR_Case_Serialized_Tagged v, Tagged _ _ -> cbor_match_serialized_tagged v p r
+  | CBOR_Case_Array_Gen v, Array _ l -> cbor_match_mixed_list_array p v l cbor_match
+  | CBOR_Case_Map_Gen v, Map _ l -> cbor_match_mixed_list_map p v l cbor_match
   | _ -> pure False
 
 let cbor_match1 = cbor_match0
@@ -295,6 +297,8 @@ let cbor_match_cases_pred
     | CBOR_Case_Int _, Int64 _ _
     | CBOR_Case_String _, String _ _ _
     | CBOR_Case_Tagged _, Tagged _ _
+    | CBOR_Case_Array_Gen _, Array _ _
+    | CBOR_Case_Map_Gen _, Map _ _
     | CBOR_Case_Serialized_Array _, Array _ _
     | CBOR_Case_Serialized_Map _, Map _ _
     | CBOR_Case_Serialized_Tagged _, Tagged _ _ ->

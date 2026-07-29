@@ -84,6 +84,8 @@ and cbor_raw =
 | CBOR_Case_Serialized_Tagged: v: cbor_serialized -> cbor_raw
 | CBOR_Case_Serialized_Array: v: cbor_serialized -> cbor_raw
 | CBOR_Case_Serialized_Map: v: cbor_serialized -> cbor_raw
+| CBOR_Case_Array_Gen: v: CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list cbor_raw -> cbor_raw
+| CBOR_Case_Map_Gen: v: CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list cbor_map_entry -> cbor_raw
 
 let cbor_array_iterator
 = CBOR.Pulse.Raw.Iterator.cbor_raw_iterator cbor_raw

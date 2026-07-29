@@ -1,4 +1,5 @@
 module CBOR.Pulse.Raw.Format.Match
+friend CBOR.Pulse.Raw.Format.MixedList
 #lang-pulse
 open CBOR.Spec.Raw.EverParse
 open LowParse.Spec.VCList
@@ -302,3 +303,34 @@ ensures
     unfold (pts_to_serialized (serialize_raw_data_item) c' r')
   };
 }
+
+let cbor_match_bounded
+    (#t: Type0)
+    (r0: t)
+    (cbor_match: perm -> cbor_raw -> (r: raw_data_item { r << r0 }) -> slprop)
+    (p: perm)
+    (c: cbor_raw)
+    (r: raw_data_item)
+: Tot slprop
+= if FStar.IndefiniteDescription.strong_excluded_middle (r << r0)
+  then cbor_match p c r
+  else pure False
+
+let cbor_match_map_entry_bounded
+  (#t: Type0)
+  (r0: t)
+  (cbor_match: perm -> (cbor_raw -> (v': raw_data_item { v' << r0 }) -> slprop))
+  (p: perm)
+  (c: cbor_map_entry)
+  (r: (raw_data_item & raw_data_item))
+: Tot slprop
+= if FStar.IndefiniteDescription.strong_excluded_middle (r << r0)
+  then cbor_match p c.cbor_map_entry_key (fst r) **
+    cbor_match p c.cbor_map_entry_value (snd r)
+  else pure False
+
+let cbor_match_mixed_list_array p c r cbor_match =
+    LowParse.PulseParse.Iterator.mixed_list_match (cbor_match_bounded r cbor_match) parse_raw_data_item p c r
+
+let cbor_match_mixed_list_map p c r cbor_match =
+    LowParse.PulseParse.Iterator.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) p c r

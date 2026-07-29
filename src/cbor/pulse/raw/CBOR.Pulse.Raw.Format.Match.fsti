@@ -157,3 +157,17 @@ val cbor_match_serialized_payload_tagged_copy
         (cbor_match_serialized_payload_tagged c' 1.0R r)
         (exists* v' . pts_to c' v')
     )
+
+val cbor_match_mixed_list_array
+  (p: perm)
+  (c: CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list cbor_raw)
+  (r: list raw_data_item)
+  (cbor_match: perm -> cbor_raw -> (c: raw_data_item { c << r }) -> slprop)
+: Tot slprop
+
+val cbor_match_mixed_list_map
+  (p: perm)
+  (c: CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list cbor_map_entry)
+  (r: list (raw_data_item & raw_data_item))
+  (cbor_match: perm -> cbor_raw -> (c: raw_data_item { c << r }) -> slprop)
+: Tot slprop
