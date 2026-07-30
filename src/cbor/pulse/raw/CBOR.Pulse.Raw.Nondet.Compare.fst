@@ -11,6 +11,49 @@ module Read = CBOR.Pulse.Raw.Read
 module U64 = FStar.UInt64
 module Trade = Pulse.Lib.Trade.Util
 module SZ = FStar.SizeT
+module ML = CBOR.Pulse.Raw.Format.MixedList
+
+// ===== Size-invariant helpers (mirror of CBOR.Pulse.Raw.Compare) =====
+// [size_lt depth e] holds when element [e]'s recursive size is strictly below
+// [depth], hence [<= nat_pred depth] once [depth >= 1]. Threaded through the
+// recursion so the depth destructors need not force [depth >= 1] for _Gen.
+let size_lt (depth: nat) (e: SpecRaw.raw_data_item) : bool =
+  SpecRaw.raw_data_item_size e < depth
+
+let map_size_lt (depth: nat) (e: (SpecRaw.raw_data_item & SpecRaw.raw_data_item)) : bool =
+  SpecRaw.raw_data_item_size (fst e) < depth &&
+  SpecRaw.raw_data_item_size (snd e) < depth
+
+let rec list_elts_size_bound (l: list SpecRaw.raw_data_item) (depth: nat)
+  : Lemma (requires CBOR.Spec.Util.list_sum SpecRaw.raw_data_item_size l + 2 <= depth)
+          (ensures List.Tot.for_all (size_lt depth) l)
+          (decreases l)
+  = match l with
+    | [] -> ()
+    | a :: q -> list_elts_size_bound q depth
+
+let array_elts_size_bound (v: SpecRaw.raw_data_item {SpecRaw.Array? v}) (depth: nat)
+  : Lemma (requires SpecRaw.raw_data_item_size v <= depth)
+          (ensures List.Tot.for_all (size_lt depth) (SpecRaw.Array?.v v))
+  = SpecRaw.raw_data_item_size_eq v;
+    list_elts_size_bound (SpecRaw.Array?.v v) depth
+
+let rec map_entries_size_bound_aux
+  (l: list (SpecRaw.raw_data_item & SpecRaw.raw_data_item)) (depth: nat)
+  : Lemma (requires
+      CBOR.Spec.Util.list_sum
+        (CBOR.Spec.Util.pair_sum SpecRaw.raw_data_item_size SpecRaw.raw_data_item_size) l + 2 <= depth)
+          (ensures List.Tot.for_all (map_size_lt depth) l)
+          (decreases l)
+  = match l with
+    | [] -> ()
+    | a :: q -> map_entries_size_bound_aux q depth
+
+let map_entries_size_bound (v: SpecRaw.raw_data_item {SpecRaw.Map? v}) (depth: nat)
+  : Lemma (requires SpecRaw.raw_data_item_size v <= depth)
+          (ensures List.Tot.for_all (map_size_lt depth) (SpecRaw.Map?.v v))
+  = SpecRaw.raw_data_item_size_eq v;
+    map_entries_size_bound_aux (SpecRaw.Map?.v v) depth
 
 inline_for_extraction
 noextract [@@noextract_to "krml"]
@@ -44,7 +87,7 @@ fn cbor_match_with_depth_to_match
   (#v: Ghost.erased SpecRaw.raw_data_item)
 requires
   cbor_match_with_depth depth p x v **
-  pure (~ (CBOR_Case_Array? x \/ CBOR_Case_Map? x \/ CBOR_Case_Tagged? x))
+  pure (~ (CBOR_Case_Array? x \/ CBOR_Case_Map? x \/ CBOR_Case_Tagged? x \/ CBOR_Case_Array_Gen? x \/ CBOR_Case_Map_Gen? x))
 ensures
   cbor_match p x v **
   Trade.trade (cbor_match p x v) (cbor_match_with_depth depth p x v)
@@ -91,6 +134,14 @@ ensures
     }
     norewrite
     CBOR_Case_Tagged ct -> {
+      unreachable ()
+    }
+    norewrite
+    CBOR_Case_Array_Gen ct -> {
+      unreachable ()
+    }
+    norewrite
+    CBOR_Case_Map_Gen ct -> {
       unreachable ()
     }
   }
@@ -151,6 +202,10 @@ ensures
     CBOR_Case_Map _ -> { Spec.cbor_major_type_map }
     norewrite
     CBOR_Case_Serialized_Map _ -> { Spec.cbor_major_type_map }
+    norewrite
+    CBOR_Case_Array_Gen _ -> { Spec.cbor_major_type_array }
+    norewrite
+    CBOR_Case_Map_Gen _ -> { Spec.cbor_major_type_map }
   }
 }
 
@@ -182,6 +237,16 @@ ensures
       cbor_match_with_depth_to_match depth c;
       let res = cbor_match_array_get_length c;
       Trade.elim (cbor_match p c v) (cbor_match_with_depth depth p c v);
+      res
+    }
+    norewrite
+    CBOR_Case_Array_Gen a -> {
+      rewrite (cbor_match_with_depth depth p c v) as (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v);
+      cbor_match_with_depth_array_gen_elim depth p a v;
+      cbor_match_mixed_list_array_length p a v (depth_cb depth v);
+      let res : SpecRaw.raw_uint64 = { size = a.cbor_array_gen_length_size; value = SZ.sizet_to_uint64 (ML.cbor_raw_mixed_list_length a.cbor_array_gen_ptr) };
+      Trade.elim _ (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v);
+      rewrite (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v) as (cbor_match_with_depth depth p c v);
       res
     }
   }
@@ -232,30 +297,6 @@ fn cbor_match_with_depth_tagged_pos_raw
   rewrite (cbor_match_with_depth depth p (CBOR_Case_Tagged a) v) as (cbor_match_with_depth depth p x v);
 }
 
-ghost
-fn cbor_match_with_depth_array_pos_raw
-  (depth: Ghost.erased nat) (p: perm) (x: cbor_raw) (v: SpecRaw.raw_data_item { SpecRaw.Array? v })
-  requires cbor_match_with_depth depth p x v ** pure (CBOR_Case_Array? x)
-  ensures cbor_match_with_depth depth p x v ** pure (Cons? (SpecRaw.Array?.v v) ==> Ghost.reveal depth >= 1)
-{
-  let a = CBOR_Case_Array?.v x;
-  rewrite (cbor_match_with_depth depth p x v) as (cbor_match_with_depth depth p (CBOR_Case_Array a) v);
-  Read.cbor_match_with_depth_array_pos depth p a v;
-  rewrite (cbor_match_with_depth depth p (CBOR_Case_Array a) v) as (cbor_match_with_depth depth p x v);
-}
-
-ghost
-fn cbor_match_with_depth_map_pos_raw
-  (depth: Ghost.erased nat) (p: perm) (x: cbor_raw) (v: SpecRaw.raw_data_item { SpecRaw.Map? v })
-  requires cbor_match_with_depth depth p x v ** pure (CBOR_Case_Map? x)
-  ensures cbor_match_with_depth depth p x v ** pure (Cons? (SpecRaw.Map?.v v) ==> Ghost.reveal depth >= 1)
-{
-  let a = CBOR_Case_Map?.v x;
-  rewrite (cbor_match_with_depth depth p x v) as (cbor_match_with_depth depth p (CBOR_Case_Map a) v);
-  Read.cbor_match_with_depth_map_pos depth p a v;
-  rewrite (cbor_match_with_depth depth p (CBOR_Case_Map a) v) as (cbor_match_with_depth depth p x v);
-}
-
 inline_for_extraction
 noextract [@@noextract_to "krml"]
 let cbor_nondet_equiv_with_depth_t (depth: Ghost.erased nat) =
@@ -268,7 +309,8 @@ let cbor_nondet_equiv_with_depth_t (depth: Ghost.erased nat) =
   stt bool
   (cbor_match_with_depth depth p1 x1 v1 **
     cbor_match_with_depth depth p2 x2 v2 **
-    pure (SpecRaw.valid_raw_data_item v1 /\ SpecRaw.valid_raw_data_item v2))
+    pure (SpecRaw.valid_raw_data_item v1 /\ SpecRaw.valid_raw_data_item v2 /\
+      SpecRaw.raw_data_item_size v1 <= Ghost.reveal depth /\ SpecRaw.raw_data_item_size v2 <= Ghost.reveal depth))
   (fun res ->
     cbor_match_with_depth depth p1 x1 v1 **
     cbor_match_with_depth depth p2 x2 v2 **
@@ -293,7 +335,8 @@ requires
     List.Tot.for_all SpecRaw.valid_raw_data_item (List.Tot.map snd v1) /\
     SpecRaw.valid_raw_data_item (fst v2) /\
     SpecRaw.valid_raw_data_item (snd v2) /\
-    (Cons? v1 ==> Ghost.reveal depth >= 1)
+    List.Tot.for_all (map_size_lt depth) v1 /\
+    map_size_lt depth v2
   )
 returns res: bool
 ensures
@@ -319,7 +362,8 @@ ensures
     pure (
       List.Tot.for_all SpecRaw.valid_raw_data_item (List.Tot.map fst l1) /\
       List.Tot.for_all SpecRaw.valid_raw_data_item (List.Tot.map snd l1) /\
-      (Cons? l1 ==> Ghost.reveal depth >= 1) /\
+      List.Tot.for_all (map_size_lt depth) l1 /\
+      map_size_lt depth v2 /\
       CBOR.Spec.Util.setoid_assoc_eq SpecRaw.raw_equiv SpecRaw.raw_equiv v1 v2 == (match res with Some r -> r | _ -> CBOR.Spec.Util.setoid_assoc_eq SpecRaw.raw_equiv SpecRaw.raw_equiv l1 v2)
     )
   ) {
@@ -362,7 +406,8 @@ requires
     List.Tot.for_all SpecRaw.valid_raw_data_item (List.Tot.map snd v1) /\
     List.Tot.for_all SpecRaw.valid_raw_data_item (List.Tot.map fst v2) /\
     List.Tot.for_all SpecRaw.valid_raw_data_item (List.Tot.map snd v2) /\
-    ((Cons? v1 /\ Cons? v2) ==> Ghost.reveal depth >= 1)
+    List.Tot.for_all (map_size_lt depth) v1 /\
+    List.Tot.for_all (map_size_lt depth) v2
   )
 returns res: bool
 ensures
@@ -388,7 +433,8 @@ ensures
     pure (
       List.Tot.for_all SpecRaw.valid_raw_data_item (List.Tot.map fst l2) /\
       List.Tot.for_all SpecRaw.valid_raw_data_item (List.Tot.map snd l2) /\
-      ((Cons? v1 /\ Cons? l2) ==> Ghost.reveal depth >= 1) /\
+      List.Tot.for_all (map_size_lt depth) v1 /\
+      List.Tot.for_all (map_size_lt depth) l2 /\
       List.Tot.for_all (CBOR.Spec.Util.setoid_assoc_eq SpecRaw.raw_equiv SpecRaw.raw_equiv v1) v2 == (res && List.Tot.for_all (CBOR.Spec.Util.setoid_assoc_eq SpecRaw.raw_equiv SpecRaw.raw_equiv v1) l2)
     )
   ) {
@@ -399,45 +445,6 @@ ensures
   };
   Trade.elim _ _;
   !pres
-}
-
-ghost
-fn array_pos2
-  (depth: Ghost.erased nat)
-  (p1: perm) (x1: cbor_raw) (v1: SpecRaw.raw_data_item { SpecRaw.Array? v1 })
-  (p2: perm) (x2: cbor_raw) (v2: SpecRaw.raw_data_item { SpecRaw.Array? v2 })
-requires
-  cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
-  pure ((CBOR_Case_Array? x1 \/ CBOR_Case_Array? x2) /\
-        List.Tot.length (SpecRaw.Array?.v v1) == List.Tot.length (SpecRaw.Array?.v v2))
-ensures
-  cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
-  pure (Cons? (SpecRaw.Array?.v v1) ==> Ghost.reveal depth >= 1)
-{
-  if (CBOR_Case_Array? x1) {
-    cbor_match_with_depth_array_pos_raw depth p1 x1 v1;
-  } else {
-    cbor_match_with_depth_array_pos_raw depth p2 x2 v2;
-  }
-}
-
-ghost
-fn map_pos2
-  (depth: Ghost.erased nat)
-  (p1: perm) (x1: cbor_raw) (v1: SpecRaw.raw_data_item { SpecRaw.Map? v1 })
-  (p2: perm) (x2: cbor_raw) (v2: SpecRaw.raw_data_item { SpecRaw.Map? v2 })
-requires
-  cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
-  pure (CBOR_Case_Map? x1 \/ CBOR_Case_Map? x2)
-ensures
-  cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
-  pure ((Cons? (SpecRaw.Map?.v v1) /\ Cons? (SpecRaw.Map?.v v2)) ==> Ghost.reveal depth >= 1)
-{
-  if (CBOR_Case_Map? x1) {
-    cbor_match_with_depth_map_pos_raw depth p1 x1 v1;
-  } else {
-    cbor_match_with_depth_map_pos_raw depth p2 x2 v2;
-  }
 }
 
 #push-options "--z3rlimit 32 --print_implicits"
@@ -456,7 +463,8 @@ fn cbor_nondet_equiv_body_d
 requires
   cbor_match_with_depth depth p1 x1 v1 **
   cbor_match_with_depth depth p2 x2 v2 **
-  pure (SpecRaw.valid_raw_data_item v1 /\ SpecRaw.valid_raw_data_item v2)
+  pure (SpecRaw.valid_raw_data_item v1 /\ SpecRaw.valid_raw_data_item v2 /\
+    SpecRaw.raw_data_item_size v1 <= Ghost.reveal depth /\ SpecRaw.raw_data_item_size v2 <= Ghost.reveal depth)
 returns res: bool
 ensures
   cbor_match_with_depth depth p1 x1 v1 **
@@ -537,6 +545,8 @@ ensures
         } else {
           cbor_match_with_depth_tagged_pos_raw depth p2 x2 v2;
         };
+        size_tagged_child v1;
+        size_tagged_child v2;
         let w1 = Read.cbor_match_tagged_get_payload_with_depth depth x1;
         let w2 = Read.cbor_match_tagged_get_payload_with_depth depth x2;
         let res = req (nat_pred depth) w1 w2;
@@ -570,7 +580,8 @@ ensures
       if ((len1.value <: U64.t) <> len2.value) {
         false
       } else {
-        array_pos2 depth p1 x1 v1 p2 x2 v2;
+        array_elts_size_bound v1 depth;
+        array_elts_size_bound v2 depth;
         let i1 = Read.cbor_array_iterator_init_with_depth depth x1;
         let i2 = Read.cbor_array_iterator_init_with_depth depth x2;
         let mut pi1 = i1;
@@ -596,7 +607,8 @@ ensures
             List.Tot.length l1 == List.Tot.length l2 /\
             List.Tot.for_all SpecRaw.valid_raw_data_item l1 /\
             List.Tot.for_all SpecRaw.valid_raw_data_item l2 /\
-            (Cons? l1 ==> Ghost.reveal depth >= 1) /\
+            List.Tot.for_all (size_lt depth) l1 /\
+            List.Tot.for_all (size_lt depth) l2 /\
             (SpecRaw.raw_equiv v1 v2 == (res && CBOR.Spec.Util.list_for_all2 SpecRaw.raw_equiv l1 l2))
           )
         ) {
@@ -633,7 +645,8 @@ ensures
       Trade.elim (cbor_match p2 x2 v2) (cbor_match_with_depth depth p2 x2 v2);
       res
     } else {
-      map_pos2 depth p1 x1 v1 p2 x2 v2;
+      map_entries_size_bound v1 depth;
+      map_entries_size_bound v2 depth;
       let i1 = Read.cbor_map_iterator_init_with_depth depth x1;
       let i2 = Read.cbor_map_iterator_init_with_depth depth x2;
       if (not (cbor_nondet_list_for_all_setoid_assoc_eq_with_depth depth req i2 i1)) {
@@ -666,7 +679,8 @@ fn rec cbor_nondet_equiv_with_depth
 requires
   cbor_match_with_depth depth p1 x1 v1 **
   cbor_match_with_depth depth p2 x2 v2 **
-  pure (SpecRaw.valid_raw_data_item v1 /\ SpecRaw.valid_raw_data_item v2)
+  pure (SpecRaw.valid_raw_data_item v1 /\ SpecRaw.valid_raw_data_item v2 /\
+    SpecRaw.raw_data_item_size v1 <= Ghost.reveal depth /\ SpecRaw.raw_data_item_size v2 <= Ghost.reveal depth)
 returns res: bool
 ensures
   cbor_match_with_depth depth p1 x1 v1 **
@@ -694,13 +708,9 @@ ensures
   Raw.cbor_match p2 x2 v2 **
   pure (res == SpecRaw.raw_equiv v1 v2)
 {
-  cbor_match_match_with_depth p1 x1 v1;
-  with n1. assert (cbor_match_with_depth n1 p1 x1 v1);
-  cbor_match_match_with_depth p2 x2 v2;
-  with n2. assert (cbor_match_with_depth n2 p2 x2 v2);
-  let m = common_depth n1 n2;
-  cbor_match_with_depth_weaken n1 m p1 x1 v1;
-  cbor_match_with_depth_weaken n2 m p2 x2 v2;
+  let m = common_depth (Ghost.hide (SpecRaw.raw_data_item_size v1)) (Ghost.hide (SpecRaw.raw_data_item_size v2));
+  cbor_match_to_depth m p1 x1 v1;
+  cbor_match_to_depth m p2 x2 v2;
   let res = cbor_nondet_equiv_with_depth m x1 x2;
   cbor_match_with_depth_forget m p1 x1 v1;
   cbor_match_with_depth_forget m p2 x2 v2;

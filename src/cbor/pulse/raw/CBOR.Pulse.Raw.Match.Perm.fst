@@ -257,6 +257,30 @@ fn rec cbor_raw_share
       rewrite (cbor_match_serialized_map v (p /. 2.0R) r)
         as (cbor_match (p /. 2.0R) c r);
     }
+    norewrite
+    CBOR_Case_Array_Gen v -> {
+      cbor_match_eq_array_gen p v r;
+      rewrite (cbor_match p c r)
+        as (cbor_match_mixed_list_array p v r cbor_match);
+      cbor_match_mixed_list_array_share p v r cbor_match cbor_raw_share;
+      cbor_match_eq_array_gen (p /. 2.0R) v r;
+      rewrite (cbor_match_mixed_list_array (p /. 2.0R) v r cbor_match)
+        as (cbor_match (p /. 2.0R) c r);
+      rewrite (cbor_match_mixed_list_array (p /. 2.0R) v r cbor_match)
+        as (cbor_match (p /. 2.0R) c r);
+    }
+    norewrite
+    CBOR_Case_Map_Gen v -> {
+      cbor_match_eq_map_gen p v r;
+      rewrite (cbor_match p c r)
+        as (cbor_match_mixed_list_map p v r cbor_match);
+      cbor_match_mixed_list_map_share p v r cbor_match cbor_raw_share;
+      cbor_match_eq_map_gen (p /. 2.0R) v r;
+      rewrite (cbor_match_mixed_list_map (p /. 2.0R) v r cbor_match)
+        as (cbor_match (p /. 2.0R) c r);
+      rewrite (cbor_match_mixed_list_map (p /. 2.0R) v r cbor_match)
+        as (cbor_match (p /. 2.0R) c r);
+    }
   }
 }
 
@@ -605,6 +629,32 @@ fn rec cbor_raw_gather
         perm_mul p2 v.cbor_serialized_perm) as (perm_mul (p1 +. p2) v.cbor_serialized_perm);
       fold (cbor_match_serialized_map v (p1 +. p2) r1);
       rewrite (cbor_match_serialized_map v (p1 +. p2) r1)
+        as (cbor_match (p1 +. p2) c r1);
+    }
+    norewrite
+    CBOR_Case_Array_Gen v -> {
+      cbor_match_eq_array_gen p1 v r1;
+      rewrite (cbor_match p1 c r1)
+        as (cbor_match_mixed_list_array p1 v r1 cbor_match);
+      cbor_match_eq_array_gen p2 v r2;
+      rewrite (cbor_match p2 c r2)
+        as (cbor_match_mixed_list_array p2 v r2 cbor_match);
+      cbor_match_mixed_list_array_gather p1 p2 v r1 r2 cbor_match cbor_raw_gather;
+      cbor_match_eq_array_gen (p1 +. p2) v r1;
+      rewrite (cbor_match_mixed_list_array (p1 +. p2) v r1 cbor_match)
+        as (cbor_match (p1 +. p2) c r1);
+    }
+    norewrite
+    CBOR_Case_Map_Gen v -> {
+      cbor_match_eq_map_gen p1 v r1;
+      rewrite (cbor_match p1 c r1)
+        as (cbor_match_mixed_list_map p1 v r1 cbor_match);
+      cbor_match_eq_map_gen p2 v r2;
+      rewrite (cbor_match p2 c r2)
+        as (cbor_match_mixed_list_map p2 v r2 cbor_match);
+      cbor_match_mixed_list_map_gather p1 p2 v r1 r2 cbor_match cbor_raw_gather;
+      cbor_match_eq_map_gen (p1 +. p2) v r1;
+      rewrite (cbor_match_mixed_list_map (p1 +. p2) v r1 cbor_match)
         as (cbor_match (p1 +. p2) c r1);
     }
   }

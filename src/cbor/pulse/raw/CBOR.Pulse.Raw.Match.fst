@@ -12,6 +12,7 @@ module SZ = FStar.SizeT
 module U64 = FStar.UInt64
 module U8 = FStar.UInt8
 module Trade = Pulse.Lib.Trade.Util
+module ML = CBOR.Pulse.Raw.Format.MixedList
 
 let cbor_match_int
   (c: cbor_int)
@@ -129,8 +130,8 @@ let cbor_match0
   | CBOR_Case_Serialized_Array v, Array _ _ -> cbor_match_serialized_array v p r
   | CBOR_Case_Serialized_Map v, Map _ _ -> cbor_match_serialized_map v p r
   | CBOR_Case_Serialized_Tagged v, Tagged _ _ -> cbor_match_serialized_tagged v p r
-  | CBOR_Case_Array_Gen v, Array _ l -> cbor_match_mixed_list_array p v l cbor_match
-  | CBOR_Case_Map_Gen v, Map _ l -> cbor_match_mixed_list_map p v l cbor_match
+  | CBOR_Case_Array_Gen v, Array _ _ -> cbor_match_mixed_list_array p v r cbor_match
+  | CBOR_Case_Map_Gen v, Map _ _ -> cbor_match_mixed_list_map p v r cbor_match
   | _ -> pure False
 
 let cbor_match1 = cbor_match0
@@ -859,6 +860,36 @@ let cbor_match_eq_array
     cbor_match_array ct pm (Array (Array?.len r) (Array?.v r)) cbor_match
   )
 
+let cbor_match_eq_array_gen
+  (pm: perm)
+  (ct: cbor_mixed_list_array)
+  (r: raw_data_item)
+: Lemma
+  (requires (Array? r))
+  (ensures
+    cbor_match pm (CBOR_Case_Array_Gen ct) r ==
+    cbor_match_mixed_list_array pm ct r cbor_match
+  )
+=
+  assert_norm (cbor_match pm (CBOR_Case_Array_Gen ct) (Array (Array?.len r) (Array?.v r)) ==
+    cbor_match_mixed_list_array pm ct (Array (Array?.len r) (Array?.v r)) cbor_match
+  )
+
+let cbor_match_eq_map_gen
+  (pm: perm)
+  (ct: cbor_mixed_list_map)
+  (r: raw_data_item)
+: Lemma
+  (requires (Map? r))
+  (ensures
+    cbor_match pm (CBOR_Case_Map_Gen ct) r ==
+    cbor_match_mixed_list_map pm ct r cbor_match
+  )
+=
+  assert_norm (cbor_match pm (CBOR_Case_Map_Gen ct) (Map (Map?.len r) (Map?.v r)) ==
+    cbor_match_mixed_list_map pm ct (Map (Map?.len r) (Map?.v r)) cbor_match
+  )
+
 inline_for_extraction
 fn cbor_match_array_get_length
   (c: cbor_raw)
@@ -888,6 +919,14 @@ ensures
       fold (cbor_match_serialized_array c' p v);
       Trade.elim _ _;
       c'.cbor_serialized_header
+    }
+    norewrite
+    CBOR_Case_Array_Gen c' -> {
+      cbor_match_eq_array_gen p c' v;
+      Trade.rewrite_with_trade (cbor_match p c v) (cbor_match_mixed_list_array p c' v cbor_match);
+      cbor_match_mixed_list_array_length p c' v cbor_match;
+      Trade.elim _ _;
+      ({ size = c'.cbor_array_gen_length_size; value = SZ.sizet_to_uint64 (ML.cbor_raw_mixed_list_length c'.cbor_array_gen_ptr) })
     }
   }
 }
@@ -995,6 +1034,14 @@ ensures
       Trade.elim _ _;
       c'.cbor_serialized_header
     }
+    norewrite
+    CBOR_Case_Map_Gen c' -> {
+      cbor_match_eq_map_gen p c' v;
+      Trade.rewrite_with_trade (cbor_match p c v) (cbor_match_mixed_list_map p c' v cbor_match);
+      cbor_match_mixed_list_map_length p c' v cbor_match;
+      Trade.elim _ _;
+      ({ size = c'.cbor_map_gen_length_size; value = SZ.sizet_to_uint64 (ML.cbor_raw_mixed_list_length c'.cbor_map_gen_ptr) })
+    }
   }
 }
 
@@ -1084,6 +1131,16 @@ let cbor_map_reset_perm (p: perm) (c: cbor_map) : cbor_map = {
     cbor_map_payload_perm = p `perm_mul` c.cbor_map_payload_perm;
 }
 
+let cbor_array_gen_reset_perm (p: perm) (c: cbor_mixed_list_array) : cbor_mixed_list_array = {
+  c with
+    cbor_array_gen_perm = p `perm_mul` c.cbor_array_gen_perm;
+}
+
+let cbor_map_gen_reset_perm (p: perm) (c: cbor_mixed_list_map) : cbor_mixed_list_map = {
+  c with
+    cbor_map_gen_perm = p `perm_mul` c.cbor_map_gen_perm;
+}
+
 let cbor_raw_reset_perm_tot (p: perm) (c: cbor_raw) : cbor_raw = match c with
 | CBOR_Case_String v -> CBOR_Case_String (cbor_string_reset_perm p v)
 | CBOR_Case_Tagged v -> CBOR_Case_Tagged (cbor_tagged_reset_perm p v)
@@ -1092,11 +1149,29 @@ let cbor_raw_reset_perm_tot (p: perm) (c: cbor_raw) : cbor_raw = match c with
 | CBOR_Case_Serialized_Tagged v -> CBOR_Case_Serialized_Tagged (cbor_serialized_reset_perm p v)
 | CBOR_Case_Serialized_Array v -> CBOR_Case_Serialized_Array (cbor_serialized_reset_perm p v)
 | CBOR_Case_Serialized_Map v -> CBOR_Case_Serialized_Map (cbor_serialized_reset_perm p v)
+| CBOR_Case_Array_Gen v -> CBOR_Case_Array_Gen (cbor_array_gen_reset_perm p v)
+| CBOR_Case_Map_Gen v -> CBOR_Case_Map_Gen (cbor_map_gen_reset_perm p v)
 | _ -> c
 
 let perm_q_p_r (q p r: perm) : Lemma
   (q *. ((p /. q) *. r) == p *. r)
 = ()
+
+let cbor_match_mixed_list_array_perm_eq' (p1 p2: perm) (c1 c2: cbor_mixed_list_array) (r: raw_data_item { Array? r })
+  : Lemma
+    (requires (p1 *. c1.cbor_array_gen_perm == p2 *. c2.cbor_array_gen_perm /\
+               c1.cbor_array_gen_length_size == c2.cbor_array_gen_length_size /\
+               c1.cbor_array_gen_ptr == c2.cbor_array_gen_ptr))
+    (ensures cbor_match_mixed_list_array p1 c1 r cbor_match == cbor_match_mixed_list_array p2 c2 r cbor_match)
+  = cbor_match_mixed_list_array_perm_eq p1 p2 c1 c2 r cbor_match
+
+let cbor_match_mixed_list_map_perm_eq' (p1 p2: perm) (c1 c2: cbor_mixed_list_map) (r: raw_data_item { Map? r })
+  : Lemma
+    (requires (p1 *. c1.cbor_map_gen_perm == p2 *. c2.cbor_map_gen_perm /\
+               c1.cbor_map_gen_length_size == c2.cbor_map_gen_length_size /\
+               c1.cbor_map_gen_ptr == c2.cbor_map_gen_ptr))
+    (ensures cbor_match_mixed_list_map p1 c1 r cbor_match == cbor_match_mixed_list_map p2 c2 r cbor_match)
+  = cbor_match_mixed_list_map_perm_eq p1 p2 c1 c2 r cbor_match
 
 ghost
 fn cbor_string_reset_perm_correct
@@ -1368,6 +1443,26 @@ fn cbor_raw_reset_perm_correct
     norewrite
     CBOR_Case_Serialized_Map s -> {
       perm_q_p_r q p s.cbor_serialized_perm;
+      Trade.rewrite_with_trade
+        (cbor_match p c r)
+        (cbor_match q (cbor_raw_reset_perm_tot (p /. q) c) r)
+    }
+    norewrite
+    CBOR_Case_Array_Gen v -> {
+      cbor_match_eq_array_gen p v r;
+      cbor_match_eq_array_gen q (cbor_array_gen_reset_perm (p /. q) v) r;
+      perm_q_p_r q p v.cbor_array_gen_perm;
+      cbor_match_mixed_list_array_perm_eq' p q v (cbor_array_gen_reset_perm (p /. q) v) r;
+      Trade.rewrite_with_trade
+        (cbor_match p c r)
+        (cbor_match q (cbor_raw_reset_perm_tot (p /. q) c) r)
+    }
+    norewrite
+    CBOR_Case_Map_Gen v -> {
+      cbor_match_eq_map_gen p v r;
+      cbor_match_eq_map_gen q (cbor_map_gen_reset_perm (p /. q) v) r;
+      perm_q_p_r q p v.cbor_map_gen_perm;
+      cbor_match_mixed_list_map_perm_eq' p q v (cbor_map_gen_reset_perm (p /. q) v) r;
       Trade.rewrite_with_trade
         (cbor_match p c r)
         (cbor_match q (cbor_raw_reset_perm_tot (p /. q) c) r)
@@ -1663,6 +1758,20 @@ let cbor_match0_eq_ser_tagged (p: perm) (ct: cbor_serialized) (r: raw_data_item)
       (cm <: (perm -> cbor_raw -> (v': raw_data_item { v' << Tagged tag v }) -> slprop))
     == cbor_match_serialized_tagged ct p (Tagged tag v))
 
+let cbor_match0_eq_array_gen (p: perm) (ct: cbor_mixed_list_array) (r: raw_data_item)
+  (cm: (perm -> cbor_raw -> (v': raw_data_item { v' << r }) -> slprop))
+  : Lemma (requires Array? r) (ensures cbor_match0 p (CBOR_Case_Array_Gen ct) r cm == cbor_match_mixed_list_array p ct r cm)
+= assert_norm (cbor_match0 p (CBOR_Case_Array_Gen ct) (Array (Array?.len r) (Array?.v r))
+      (cm <: (perm -> cbor_raw -> (v': raw_data_item { v' << Array (Array?.len r) (Array?.v r) }) -> slprop))
+    == cbor_match_mixed_list_array p ct (Array (Array?.len r) (Array?.v r)) cm)
+
+let cbor_match0_eq_map_gen (p: perm) (ct: cbor_mixed_list_map) (r: raw_data_item)
+  (cm: (perm -> cbor_raw -> (v': raw_data_item { v' << r }) -> slprop))
+  : Lemma (requires Map? r) (ensures cbor_match0 p (CBOR_Case_Map_Gen ct) r cm == cbor_match_mixed_list_map p ct r cm)
+= assert_norm (cbor_match0 p (CBOR_Case_Map_Gen ct) (Map (Map?.len r) (Map?.v r))
+      (cm <: (perm -> cbor_raw -> (v': raw_data_item { v' << Map (Map?.len r) (Map?.v r) }) -> slprop))
+    == cbor_match_mixed_list_map p ct (Map (Map?.len r) (Map?.v r)) cm)
+
 // ===== generic callback weakening for cbor_match0 (provides size bound to imp) =====
 ghost fn cbor_match0_weaken
   (p: perm) (c: cbor_raw) (r: raw_data_item)
@@ -1780,6 +1889,43 @@ ghost fn cbor_match0_weaken
       cbor_match0_eq_ser_tagged p ct r cm2;
       rewrite (cbor_match0 p c r cm1) as (cbor_match_serialized_tagged ct p r);
       rewrite (cbor_match_serialized_tagged ct p r) as (cbor_match0 p c r cm2);
+    }
+    norewrite
+    CBOR_Case_Array_Gen ct -> {
+      cbor_match0_eq_array_gen p ct r cm1;
+      rewrite (cbor_match0 p c r cm1) as (cbor_match_mixed_list_array p ct r cm1);
+      ghost fn arr_gen_prf
+        (p': perm)
+        (c': cbor_raw)
+        (v': raw_data_item { List.Tot.memP v' (Array?.v r) /\ v' << r })
+        requires cm1 p' c' v'
+        ensures cm2 p' c' v'
+      {
+        size_array_elt r v';
+        imp p' c' v'
+      };
+      cbor_match_mixed_list_array_weaken p ct r cm1 cm2 arr_gen_prf;
+      cbor_match0_eq_array_gen p ct r cm2;
+      rewrite (cbor_match_mixed_list_array p ct r cm2) as (cbor_match0 p c r cm2);
+    }
+    norewrite
+    CBOR_Case_Map_Gen ct -> {
+      cbor_match0_eq_map_gen p ct r cm1;
+      rewrite (cbor_match0 p c r cm1) as (cbor_match_mixed_list_map p ct r cm1);
+      ghost fn map_gen_prf
+        (p': perm)
+        (x: cbor_map_entry)
+        (pair: (raw_data_item & raw_data_item) { List.Tot.memP pair (Map?.v r) /\ fst pair << r /\ snd pair << r })
+        requires cm1 p' x.cbor_map_entry_key (fst pair) ** cm1 p' x.cbor_map_entry_value (snd pair)
+        ensures cm2 p' x.cbor_map_entry_key (fst pair) ** cm2 p' x.cbor_map_entry_value (snd pair)
+      {
+        size_map_entry r pair;
+        imp p' x.cbor_map_entry_key (fst pair);
+        imp p' x.cbor_map_entry_value (snd pair)
+      };
+      cbor_match_mixed_list_map_weaken p ct r cm1 cm2 map_gen_prf;
+      cbor_match0_eq_map_gen p ct r cm2;
+      rewrite (cbor_match_mixed_list_map p ct r cm2) as (cbor_match0 p c r cm2);
     }
   }
 }
@@ -2082,13 +2228,56 @@ fn cbor_match_with_depth_map_elim (depth: nat) (p: perm) (a: cbor_map) (r: raw_d
   };
 }
 
+// (C''') Depth-aware destructors for the mixed-list (_Gen) array/map cases.
+let cbor_match_with_depth_eq_array_gen (depth: nat) (p: perm) (a: cbor_mixed_list_array) (r: raw_data_item)
+: Lemma (requires Array? r)
+  (ensures cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) r == cbor_match_mixed_list_array p a r (depth_cb depth r))
+= cbor_match_with_depth_eq0 depth p (CBOR_Case_Array_Gen a) r;
+  cbor_match0_eq_array_gen p a r (depth_cb depth r)
+
+let cbor_match_with_depth_eq_map_gen (depth: nat) (p: perm) (a: cbor_mixed_list_map) (r: raw_data_item)
+: Lemma (requires Map? r)
+  (ensures cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) r == cbor_match_mixed_list_map p a r (depth_cb depth r))
+= cbor_match_with_depth_eq0 depth p (CBOR_Case_Map_Gen a) r;
+  cbor_match0_eq_map_gen p a r (depth_cb depth r)
+
+ghost
+fn cbor_match_with_depth_array_gen_elim (depth: nat) (p: perm) (a: cbor_mixed_list_array) (r: raw_data_item { Array? r })
+  requires cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) r
+  ensures
+    cbor_match_mixed_list_array p a r (depth_cb depth r) **
+    trade
+      (cbor_match_mixed_list_array p a r (depth_cb depth r))
+      (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) r)
+{
+  cbor_match_with_depth_eq_array_gen depth p a r;
+  Trade.rewrite_with_trade
+    (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) r)
+    (cbor_match_mixed_list_array p a r (depth_cb depth r));
+}
+
+ghost
+fn cbor_match_with_depth_map_gen_elim (depth: nat) (p: perm) (a: cbor_mixed_list_map) (r: raw_data_item { Map? r })
+  requires cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) r
+  ensures
+    cbor_match_mixed_list_map p a r (depth_cb depth r) **
+    trade
+      (cbor_match_mixed_list_map p a r (depth_cb depth r))
+      (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) r)
+{
+  cbor_match_with_depth_eq_map_gen depth p a r;
+  Trade.rewrite_with_trade
+    (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) r)
+    (cbor_match_mixed_list_map p a r (depth_cb depth r));
+}
+
 // (D) A non-inline-composite cbor_raw (leaf or serialized) matches the same at
 // any depth: bump plain cbor_match to cbor_match_with_depth n (with a trade back).
 // Used to lift elements yielded by the serialized iterators (cbor_read always
 // returns a leaf or a CBOR_Case_Serialized_* node) into the depth-indexed world.
 ghost
 fn cbor_match_with_depth_intro_noninline (n: nat) (p: perm) (c: cbor_raw) (v: raw_data_item)
-  requires cbor_match p c v ** pure (~ (CBOR_Case_Array? c \/ CBOR_Case_Map? c \/ CBOR_Case_Tagged? c))
+  requires cbor_match p c v ** pure (~ (CBOR_Case_Array? c \/ CBOR_Case_Map? c \/ CBOR_Case_Tagged? c \/ CBOR_Case_Array_Gen? c \/ CBOR_Case_Map_Gen? c))
   ensures cbor_match_with_depth n p c v ** trade (cbor_match_with_depth n p c v) (cbor_match p c v)
 {
   cbor_match_cases c;
@@ -2124,6 +2313,12 @@ fn cbor_match_with_depth_intro_noninline (n: nat) (p: perm) (c: cbor_raw) (v: ra
       Trade.rewrite_with_trade (cbor_match p c v) (cbor_match_with_depth n p c v);
     }
     norewrite CBOR_Case_Tagged ct -> {
+      Trade.rewrite_with_trade (cbor_match p c v) (cbor_match_with_depth n p c v);
+    }
+    norewrite CBOR_Case_Array_Gen ct -> {
+      Trade.rewrite_with_trade (cbor_match p c v) (cbor_match_with_depth n p c v);
+    }
+    norewrite CBOR_Case_Map_Gen ct -> {
       Trade.rewrite_with_trade (cbor_match p c v) (cbor_match_with_depth n p c v);
     }
   }

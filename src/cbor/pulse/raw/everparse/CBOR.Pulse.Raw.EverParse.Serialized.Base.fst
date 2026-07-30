@@ -166,7 +166,7 @@ fn cbor_read
   ensures
       cbor_match 1.0R res v **
       trade (cbor_match 1.0R res v) (pts_to_serialized serialize_raw_data_item input #pm v) **
-      pure (~ (CBOR_Case_Array? res \/ CBOR_Case_Map? res \/ CBOR_Case_Tagged? res))
+      pure (~ (CBOR_Case_Array? res \/ CBOR_Case_Map? res \/ CBOR_Case_Tagged? res \/ CBOR_Case_Array_Gen? res \/ CBOR_Case_Map_Gen? res))
 {
   let mut ph = dummy_header;
   let pc = get_header_and_contents input ph;

@@ -16,6 +16,45 @@ module U8 = FStar.UInt8
 module U64 = FStar.UInt64
 module Ser = CBOR.Pulse.Raw.Format.Compare
 module Sl = Pulse.Lib.Slice
+module ML = CBOR.Pulse.Raw.Format.MixedList
+
+let size_lt (depth: nat) (e: raw_data_item) : bool =
+  raw_data_item_size e < depth
+
+let map_size_lt (depth: nat) (e: (raw_data_item & raw_data_item)) : bool =
+  raw_data_item_size (fst e) < depth &&
+  raw_data_item_size (snd e) < depth
+
+let rec list_elts_size_bound (l: list raw_data_item) (depth: nat)
+  : Lemma (requires CBOR.Spec.Util.list_sum raw_data_item_size l + 2 <= depth)
+          (ensures List.Tot.for_all (size_lt depth) l)
+          (decreases l)
+  = match l with
+    | [] -> ()
+    | a :: q -> list_elts_size_bound q depth
+
+let array_elts_size_bound (v: raw_data_item {Array? v}) (depth: nat)
+  : Lemma (requires raw_data_item_size v <= depth)
+          (ensures List.Tot.for_all (size_lt depth) (Array?.v v))
+  = raw_data_item_size_eq v;
+    list_elts_size_bound (Array?.v v) depth
+
+let rec map_entries_size_bound_aux
+  (l: list (raw_data_item & raw_data_item)) (depth: nat)
+  : Lemma (requires
+      CBOR.Spec.Util.list_sum
+        (CBOR.Spec.Util.pair_sum raw_data_item_size raw_data_item_size) l + 2 <= depth)
+          (ensures List.Tot.for_all (map_size_lt depth) l)
+          (decreases l)
+  = match l with
+    | [] -> ()
+    | a :: q -> map_entries_size_bound_aux q depth
+
+let map_entries_size_bound (v: raw_data_item {Map? v}) (depth: nat)
+  : Lemma (requires raw_data_item_size v <= depth)
+          (ensures List.Tot.for_all (map_size_lt depth) (Map?.v v))
+  = raw_data_item_size_eq v;
+    map_entries_size_bound_aux (Map?.v v) depth
 
 let rec cbor_compare_array_eq
   (x1 x2: list raw_data_item)
@@ -195,6 +234,14 @@ ensures
     CBOR_Case_Serialized_Map _ -> {
       cbor_major_type_map
     }
+    norewrite
+    CBOR_Case_Array_Gen _ -> {
+      cbor_major_type_array
+    }
+    norewrite
+    CBOR_Case_Map_Gen _ -> {
+      cbor_major_type_map
+    }
   }
 }
 
@@ -235,7 +282,8 @@ fn cbor_match_with_depth_to_match
   (#v: Ghost.erased raw_data_item)
 requires
   cbor_match_with_depth depth p x v **
-  pure (~ (CBOR_Case_Array? x \/ CBOR_Case_Map? x \/ CBOR_Case_Tagged? x))
+  pure (~ (CBOR_Case_Array? x \/ CBOR_Case_Map? x \/ CBOR_Case_Tagged? x \/
+           CBOR_Case_Array_Gen? x \/ CBOR_Case_Map_Gen? x))
 ensures
   cbor_match p x v **
   Trade.trade (cbor_match p x v) (cbor_match_with_depth depth p x v)
@@ -284,6 +332,14 @@ ensures
     CBOR_Case_Tagged ct -> {
       unreachable ()
     }
+    norewrite
+    CBOR_Case_Array_Gen ct -> {
+      unreachable ()
+    }
+    norewrite
+    CBOR_Case_Map_Gen ct -> {
+      unreachable ()
+    }
   }
 }
 
@@ -308,70 +364,6 @@ fn cbor_match_with_depth_tagged_pos_raw
   rewrite (cbor_match_with_depth depth p x v) as (cbor_match_with_depth depth p (CBOR_Case_Tagged a) v);
   cbor_match_with_depth_tagged_pos depth p a v;
   rewrite (cbor_match_with_depth depth p (CBOR_Case_Tagged a) v) as (cbor_match_with_depth depth p x v);
-}
-
-ghost
-fn cbor_match_with_depth_array_pos_raw
-  (depth: Ghost.erased nat) (p: perm) (x: cbor_raw) (v: raw_data_item { Array? v })
-  requires cbor_match_with_depth depth p x v ** pure (CBOR_Case_Array? x)
-  ensures cbor_match_with_depth depth p x v ** pure (Cons? (Array?.v v) ==> Ghost.reveal depth >= 1)
-{
-  let a = CBOR_Case_Array?.v x;
-  rewrite (cbor_match_with_depth depth p x v) as (cbor_match_with_depth depth p (CBOR_Case_Array a) v);
-  cbor_match_with_depth_array_pos depth p a v;
-  rewrite (cbor_match_with_depth depth p (CBOR_Case_Array a) v) as (cbor_match_with_depth depth p x v);
-}
-
-ghost
-fn cbor_match_with_depth_map_pos_raw
-  (depth: Ghost.erased nat) (p: perm) (x: cbor_raw) (v: raw_data_item { Map? v })
-  requires cbor_match_with_depth depth p x v ** pure (CBOR_Case_Map? x)
-  ensures cbor_match_with_depth depth p x v ** pure (Cons? (Map?.v v) ==> Ghost.reveal depth >= 1)
-{
-  let a = CBOR_Case_Map?.v x;
-  rewrite (cbor_match_with_depth depth p x v) as (cbor_match_with_depth depth p (CBOR_Case_Map a) v);
-  cbor_match_with_depth_map_pos depth p a v;
-  rewrite (cbor_match_with_depth depth p (CBOR_Case_Map a) v) as (cbor_match_with_depth depth p x v);
-}
-
-ghost
-fn array_pos2
-  (depth: Ghost.erased nat)
-  (p1: perm) (x1: cbor_raw) (v1: raw_data_item { Array? v1 })
-  (p2: perm) (x2: cbor_raw) (v2: raw_data_item { Array? v2 })
-requires
-  cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
-  pure ((CBOR_Case_Array? x1 \/ CBOR_Case_Array? x2) /\
-        List.Tot.length (Array?.v v1) == List.Tot.length (Array?.v v2))
-ensures
-  cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
-  pure (Cons? (Array?.v v1) ==> Ghost.reveal depth >= 1)
-{
-  if (CBOR_Case_Array? x1) {
-    cbor_match_with_depth_array_pos_raw depth p1 x1 v1;
-  } else {
-    cbor_match_with_depth_array_pos_raw depth p2 x2 v2;
-  }
-}
-
-ghost
-fn map_pos2
-  (depth: Ghost.erased nat)
-  (p1: perm) (x1: cbor_raw) (v1: raw_data_item { Map? v1 })
-  (p2: perm) (x2: cbor_raw) (v2: raw_data_item { Map? v2 })
-requires
-  cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
-  pure ((CBOR_Case_Map? x1 \/ CBOR_Case_Map? x2) /\
-        List.Tot.length (Map?.v v1) == List.Tot.length (Map?.v v2))
-ensures
-  cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
-  pure (Cons? (Map?.v v1) ==> Ghost.reveal depth >= 1)
-{
-  if (CBOR_Case_Map? x1) {
-    cbor_match_with_depth_map_pos_raw depth p1 x1 v1;
-  } else {
-    cbor_match_with_depth_map_pos_raw depth p2 x2 v2;
-  }
 }
 
 ghost
@@ -435,6 +427,10 @@ ensures
     CBOR_Case_Map _ -> { cbor_major_type_map }
     norewrite
     CBOR_Case_Serialized_Map _ -> { cbor_major_type_map }
+    norewrite
+    CBOR_Case_Array_Gen _ -> { cbor_major_type_array }
+    norewrite
+    CBOR_Case_Map_Gen _ -> { cbor_major_type_map }
   }
 }
 
@@ -468,6 +464,16 @@ ensures
       Trade.elim (cbor_match p c v) (cbor_match_with_depth depth p c v);
       res
     }
+    norewrite
+    CBOR_Case_Array_Gen a -> {
+      rewrite (cbor_match_with_depth depth p c v) as (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v);
+      cbor_match_with_depth_array_gen_elim depth p a v;
+      cbor_match_mixed_list_array_length p a v (depth_cb depth v);
+      let res : raw_uint64 = { size = a.cbor_array_gen_length_size; value = SZ.sizet_to_uint64 (ML.cbor_raw_mixed_list_length a.cbor_array_gen_ptr) };
+      Trade.elim _ (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v);
+      rewrite (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v) as (cbor_match_with_depth depth p c v);
+      res
+    }
   }
 }
 
@@ -499,6 +505,16 @@ ensures
       cbor_match_with_depth_to_match depth c;
       let res = cbor_match_map_get_length c;
       Trade.elim (cbor_match p c v) (cbor_match_with_depth depth p c v);
+      res
+    }
+    norewrite
+    CBOR_Case_Map_Gen a -> {
+      rewrite (cbor_match_with_depth depth p c v) as (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v);
+      cbor_match_with_depth_map_gen_elim depth p a v;
+      cbor_match_mixed_list_map_length p a v (depth_cb depth v);
+      let res : raw_uint64 = { size = a.cbor_map_gen_length_size; value = SZ.sizet_to_uint64 (ML.cbor_raw_mixed_list_length a.cbor_map_gen_ptr) };
+      Trade.elim _ (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v);
+      rewrite (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v) as (cbor_match_with_depth depth p c v);
       res
     }
   }
@@ -548,61 +564,169 @@ let cbor_compare_with_depth_t (depth: Ghost.erased nat) =
   (#v1: Ghost.erased raw_data_item) ->
   (#v2: Ghost.erased raw_data_item) ->
   stt I16.t
-    (cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2)
+    (cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
+      pure (raw_data_item_size v1 <= Ghost.reveal depth /\ raw_data_item_size v2 <= Ghost.reveal depth))
     (fun res -> cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
       pure (
         same_sign (I16.v res) (cbor_compare v1 v2)
       )
     )
 
+// Lexicographic comparison of two array iterators at [nat_pred depth], reusing
+// the recursive comparator [ih] on elements. The [for_all size_lt] preconditions
+// give, for each yielded element, [size elt < depth] hence [size elt <= nat_pred depth]
+// (so [ih (nat_pred depth)] applies) and [depth >= 1] (so [nat_pred depth < depth]).
+// Handles inline, serialized, and _Gen arrays uniformly (via the depth iterators).
 inline_for_extraction
-fn impl_compare_of_cbor_compare_with_depth
-  (d: Ghost.erased nat)
-  (ih_d: cbor_compare_with_depth_t d)
-: A.impl_compare_t u#0 u#0 #_ #_ (vmatch_with_perm (cbor_match_with_depth d)) cbor_compare
-=
-  (x1: with_perm cbor_raw)
-  (x2: with_perm cbor_raw)
-  (#v1: Ghost.erased raw_data_item)
-  (#v2: Ghost.erased raw_data_item)
+fn lex_compare_array_iterator_with_depth
+  (depth: Ghost.erased nat)
+  (ih: (depth': Ghost.erased nat { depth' < depth }) -> cbor_compare_with_depth_t depth')
+  (i1: cbor_array_iterator)
+  (i2: cbor_array_iterator)
+  (#p1: perm)
+  (#p2: perm)
+  (#l1: Ghost.erased (list raw_data_item))
+  (#l2: Ghost.erased (list raw_data_item))
+requires
+  cbor_array_iterator_match_with_depth (nat_pred depth) p1 i1 l1 **
+  cbor_array_iterator_match_with_depth (nat_pred depth) p2 i2 l2 **
+  pure (
+    List.Tot.length l1 == List.Tot.length l2 /\
+    List.Tot.for_all (size_lt depth) l1 /\
+    List.Tot.for_all (size_lt depth) l2
+  )
+returns res: I16.t
+ensures
+  cbor_array_iterator_match_with_depth (nat_pred depth) p1 i1 l1 **
+  cbor_array_iterator_match_with_depth (nat_pred depth) p2 i2 l2 **
+  pure (same_sign (I16.v res) (lex_compare cbor_compare l1 l2))
 {
-  unfold (vmatch_with_perm (cbor_match_with_depth d) x1 v1);
-  unfold (vmatch_with_perm (cbor_match_with_depth d) x2 v2);
-  let res = ih_d x1.v x2.v;
-  fold (vmatch_with_perm (cbor_match_with_depth d) x1 v1);
-  fold (vmatch_with_perm (cbor_match_with_depth d) x2 v2);
-  res
+  let mut pi1 = i1;
+  let mut pi2 = i2;
+  let mut pres = 0s;
+  Trade.refl (cbor_array_iterator_match_with_depth (nat_pred depth) p1 i1 l1);
+  Trade.refl (cbor_array_iterator_match_with_depth (nat_pred depth) p2 i2 l2);
+  while (
+    let res = !pres;
+    let ci1 = !pi1;
+    (res = 0s && not (cbor_array_iterator_is_empty_with_depth (nat_pred depth) ci1))
+  ) invariant exists* gi1 gi2 res m1 m2 pj1 pj2 . (
+    pts_to pi1 gi1 **
+    pts_to pi2 gi2 **
+    pts_to pres res **
+    cbor_array_iterator_match_with_depth (nat_pred depth) pj1 gi1 m1 **
+    cbor_array_iterator_match_with_depth (nat_pred depth) pj2 gi2 m2 **
+    Trade.trade
+      (cbor_array_iterator_match_with_depth (nat_pred depth) pj1 gi1 m1)
+      (cbor_array_iterator_match_with_depth (nat_pred depth) p1 i1 l1) **
+    Trade.trade
+      (cbor_array_iterator_match_with_depth (nat_pred depth) pj2 gi2 m2)
+      (cbor_array_iterator_match_with_depth (nat_pred depth) p2 i2 l2) **
+    pure (
+      List.Tot.length m1 == List.Tot.length m2 /\
+      List.Tot.for_all (size_lt depth) m1 /\
+      List.Tot.for_all (size_lt depth) m2 /\
+      same_sign (lex_compare cbor_compare l1 l2)
+        (if res = 0s then lex_compare cbor_compare m1 m2 else I16.v res)
+    )
+  ) {
+    let y1 = cbor_array_iterator_next_with_depth (nat_pred depth) pi1;
+    Trade.trans _ _ (cbor_array_iterator_match_with_depth (nat_pred depth) p1 i1 l1);
+    let y2 = cbor_array_iterator_next_with_depth (nat_pred depth) pi2;
+    Trade.trans _ _ (cbor_array_iterator_match_with_depth (nat_pred depth) p2 i2 l2);
+    let c = ih (nat_pred depth) y1 y2;
+    Trade.elim_hyp_l _ _ (cbor_array_iterator_match_with_depth (nat_pred depth) p1 i1 l1);
+    Trade.elim_hyp_l _ _ (cbor_array_iterator_match_with_depth (nat_pred depth) p2 i2 l2);
+    pres := c;
+  };
+  Trade.elim _ (cbor_array_iterator_match_with_depth (nat_pred depth) p1 i1 l1);
+  Trade.elim _ (cbor_array_iterator_match_with_depth (nat_pred depth) p2 i2 l2);
+  !pres
 }
 
+// Lexicographic comparison of two map iterators at [nat_pred depth]. Each entry
+// is compared key-first then value ([cbor_compare_key_value]); the [map_size_lt]
+// preconditions bound both key and value sizes below depth.
 inline_for_extraction
-fn impl_cbor_compare_key_value_with_depth
-  (d: Ghost.erased nat)
-  (ih_d: cbor_compare_with_depth_t d)
-: A.impl_compare_t u#0 u#0 #_ #_ (vmatch_with_perm (cbor_match_map_entry_with_depth d)) cbor_compare_key_value
-= (x1: _)
-  (x2: _)
-  (#v1: _)
-  (#v2: _)
+fn lex_compare_map_iterator_with_depth
+  (depth: Ghost.erased nat)
+  (ih: (depth': Ghost.erased nat { depth' < depth }) -> cbor_compare_with_depth_t depth')
+  (i1: cbor_map_iterator)
+  (i2: cbor_map_iterator)
+  (#p1: perm)
+  (#p2: perm)
+  (#l1: Ghost.erased (list (raw_data_item & raw_data_item)))
+  (#l2: Ghost.erased (list (raw_data_item & raw_data_item)))
+requires
+  cbor_map_iterator_match_with_depth (nat_pred depth) p1 i1 l1 **
+  cbor_map_iterator_match_with_depth (nat_pred depth) p2 i2 l2 **
+  pure (
+    List.Tot.length l1 == List.Tot.length l2 /\
+    List.Tot.for_all (map_size_lt depth) l1 /\
+    List.Tot.for_all (map_size_lt depth) l2
+  )
+returns res: I16.t
+ensures
+  cbor_map_iterator_match_with_depth (nat_pred depth) p1 i1 l1 **
+  cbor_map_iterator_match_with_depth (nat_pred depth) p2 i2 l2 **
+  pure (same_sign (I16.v res) (lex_compare cbor_compare_key_value l1 l2))
 {
-  unfold (vmatch_with_perm (cbor_match_map_entry_with_depth d) x1 v1);
-  unfold (vmatch_with_perm (cbor_match_map_entry_with_depth d) x2 v2);
-  unfold (cbor_match_map_entry_with_depth d x1.p x1.v v1);
-  unfold (cbor_match_map_entry_with_depth d x2.p x2.v v2);
-  let c = ih_d x1.v.cbor_map_entry_key x2.v.cbor_map_entry_key;
-  if (c = 0s) {
-    let c = ih_d x1.v.cbor_map_entry_value x2.v.cbor_map_entry_value;
-    fold (cbor_match_map_entry_with_depth d x1.p x1.v v1);
-    fold (cbor_match_map_entry_with_depth d x2.p x2.v v2);
-    fold (vmatch_with_perm (cbor_match_map_entry_with_depth d) x1 v1);
-    fold (vmatch_with_perm (cbor_match_map_entry_with_depth d) x2 v2);
-    c
-  } else {
-    fold (cbor_match_map_entry_with_depth d x1.p x1.v v1);
-    fold (cbor_match_map_entry_with_depth d x2.p x2.v v2);
-    fold (vmatch_with_perm (cbor_match_map_entry_with_depth d) x1 v1);
-    fold (vmatch_with_perm (cbor_match_map_entry_with_depth d) x2 v2);
-    c
-  }
+  let mut pi1 = i1;
+  let mut pi2 = i2;
+  let mut pres = 0s;
+  Trade.refl (cbor_map_iterator_match_with_depth (nat_pred depth) p1 i1 l1);
+  Trade.refl (cbor_map_iterator_match_with_depth (nat_pred depth) p2 i2 l2);
+  while (
+    let res = !pres;
+    let ci1 = !pi1;
+    (res = 0s && not (cbor_map_iterator_is_empty_with_depth (nat_pred depth) ci1))
+  ) invariant exists* gi1 gi2 res m1 m2 pj1 pj2 . (
+    pts_to pi1 gi1 **
+    pts_to pi2 gi2 **
+    pts_to pres res **
+    cbor_map_iterator_match_with_depth (nat_pred depth) pj1 gi1 m1 **
+    cbor_map_iterator_match_with_depth (nat_pred depth) pj2 gi2 m2 **
+    Trade.trade
+      (cbor_map_iterator_match_with_depth (nat_pred depth) pj1 gi1 m1)
+      (cbor_map_iterator_match_with_depth (nat_pred depth) p1 i1 l1) **
+    Trade.trade
+      (cbor_map_iterator_match_with_depth (nat_pred depth) pj2 gi2 m2)
+      (cbor_map_iterator_match_with_depth (nat_pred depth) p2 i2 l2) **
+    pure (
+      List.Tot.length m1 == List.Tot.length m2 /\
+      List.Tot.for_all (map_size_lt depth) m1 /\
+      List.Tot.for_all (map_size_lt depth) m2 /\
+      same_sign (lex_compare cbor_compare_key_value l1 l2)
+        (if res = 0s then lex_compare cbor_compare_key_value m1 m2 else I16.v res)
+    )
+  ) {
+    let y1 = cbor_map_iterator_next_with_depth (nat_pred depth) pi1;
+    Trade.trans _ _ (cbor_map_iterator_match_with_depth (nat_pred depth) p1 i1 l1);
+    let y2 = cbor_map_iterator_next_with_depth (nat_pred depth) pi2;
+    Trade.trans _ _ (cbor_map_iterator_match_with_depth (nat_pred depth) p2 i2 l2);
+    with pe1 e1. assert (cbor_match_map_entry_with_depth (nat_pred depth) pe1 y1 e1);
+    with pe2 e2. assert (cbor_match_map_entry_with_depth (nat_pred depth) pe2 y2 e2);
+    unfold (cbor_match_map_entry_with_depth (nat_pred depth) pe1 y1 e1);
+    unfold (cbor_match_map_entry_with_depth (nat_pred depth) pe2 y2 e2);
+    let ck = ih (nat_pred depth) y1.cbor_map_entry_key y2.cbor_map_entry_key;
+    if (ck = 0s) {
+      let cv = ih (nat_pred depth) y1.cbor_map_entry_value y2.cbor_map_entry_value;
+      fold (cbor_match_map_entry_with_depth (nat_pred depth) pe1 y1 e1);
+      fold (cbor_match_map_entry_with_depth (nat_pred depth) pe2 y2 e2);
+      Trade.elim_hyp_l _ _ (cbor_map_iterator_match_with_depth (nat_pred depth) p1 i1 l1);
+      Trade.elim_hyp_l _ _ (cbor_map_iterator_match_with_depth (nat_pred depth) p2 i2 l2);
+      pres := cv;
+    } else {
+      fold (cbor_match_map_entry_with_depth (nat_pred depth) pe1 y1 e1);
+      fold (cbor_match_map_entry_with_depth (nat_pred depth) pe2 y2 e2);
+      Trade.elim_hyp_l _ _ (cbor_map_iterator_match_with_depth (nat_pred depth) p1 i1 l1);
+      Trade.elim_hyp_l _ _ (cbor_map_iterator_match_with_depth (nat_pred depth) p2 i2 l2);
+      pres := ck;
+    }
+  };
+  Trade.elim _ (cbor_map_iterator_match_with_depth (nat_pred depth) p1 i1 l1);
+  Trade.elim _ (cbor_map_iterator_match_with_depth (nat_pred depth) p2 i2 l2);
+  !pres
 }
 
 #restart-solver
@@ -617,7 +741,8 @@ fn cbor_compare_body_d
   (#v1: Ghost.erased raw_data_item)
   (#v2: Ghost.erased raw_data_item)
 requires
-  (cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2)
+  (cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
+    pure (raw_data_item_size v1 <= Ghost.reveal depth /\ raw_data_item_size v2 <= Ghost.reveal depth))
 returns res: I16.t
 ensures
   (cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
@@ -685,6 +810,8 @@ ensures
           res
         } else {
           tagged_pos2 depth p1 x1 v1 p2 x2 v2;
+          size_tagged_child v1;
+          size_tagged_child v2;
           let pl1 = cbor_match_tagged_get_payload_with_depth depth x1;
           let pl2 = cbor_match_tagged_get_payload_with_depth depth x2;
           let res = ih (nat_pred depth) pl1 pl2;
@@ -719,23 +846,14 @@ ensures
           res
         } else {
           cbor_compare_array_eq (Array?.v v1) (Array?.v v2);
-          if (len1.value = 0uL) {
-            0s
-          } else {
-            array_pos2 depth p1 x1 v1 p2 x2 v2;
-            let i1 = cbor_array_iterator_init_with_depth depth x1;
-            with p1' . assert (cbor_array_iterator_match_with_depth (nat_pred depth) p1' i1 (Array?.v v1));
-            unfold (cbor_array_iterator_match_with_depth (nat_pred depth) p1' i1 (Array?.v v1));
-            let i2 = cbor_array_iterator_init_with_depth depth x2;
-            with p2' . assert (cbor_array_iterator_match_with_depth (nat_pred depth) p2' i2 (Array?.v v2));
-            unfold (cbor_array_iterator_match_with_depth (nat_pred depth) p2' i2 (Array?.v v2));
-            let res = lex_compare_iterator_peel_perm (cbor_match_with_depth (nat_pred depth)) cbor_serialized_array_iterator_match cbor_serialized_array_iterator_is_empty (cbor_serialized_array_iterator_next_with_depth (nat_pred depth)) cbor_compare (impl_compare_of_cbor_compare_with_depth (nat_pred depth) (ih (nat_pred depth))) i1 i2;
-            fold (cbor_array_iterator_match_with_depth (nat_pred depth) p1' i1 (Array?.v v1));
-            fold (cbor_array_iterator_match_with_depth (nat_pred depth) p2' i2 (Array?.v v2));
-            Trade.elim _ (cbor_match_with_depth depth p1 x1 v1);
-            Trade.elim _ (cbor_match_with_depth depth p2 x2 v2);
-            res
-          }
+          array_elts_size_bound v1 depth;
+          array_elts_size_bound v2 depth;
+          let i1 = cbor_array_iterator_init_with_depth depth x1;
+          let i2 = cbor_array_iterator_init_with_depth depth x2;
+          let res = lex_compare_array_iterator_with_depth depth ih i1 i2;
+          Trade.elim _ (cbor_match_with_depth depth p1 x1 v1);
+          Trade.elim _ (cbor_match_with_depth depth p2 x2 v2);
+          res
         }
       } else {
         c
@@ -764,23 +882,14 @@ ensures
           res
         } else {
           cbor_compare_map_eq (Map?.v v1) (Map?.v v2);
-          if (len1.value = 0uL) {
-            0s
-          } else {
-            map_pos2 depth p1 x1 v1 p2 x2 v2;
-            let i1 = cbor_map_iterator_init_with_depth depth x1;
-            with p1' . assert (cbor_map_iterator_match_with_depth (nat_pred depth) p1' i1 (Map?.v v1));
-            unfold (cbor_map_iterator_match_with_depth (nat_pred depth) p1' i1 (Map?.v v1));
-            let i2 = cbor_map_iterator_init_with_depth depth x2;
-            with p2' . assert (cbor_map_iterator_match_with_depth (nat_pred depth) p2' i2 (Map?.v v2));
-            unfold (cbor_map_iterator_match_with_depth (nat_pred depth) p2' i2 (Map?.v v2));
-            let res = lex_compare_iterator_peel_perm (cbor_match_map_entry_with_depth (nat_pred depth)) cbor_serialized_map_iterator_match cbor_serialized_map_iterator_is_empty (cbor_serialized_map_iterator_next_with_depth (nat_pred depth)) cbor_compare_key_value (impl_cbor_compare_key_value_with_depth (nat_pred depth) (ih (nat_pred depth))) i1 i2;
-            fold (cbor_map_iterator_match_with_depth (nat_pred depth) p1' i1 (Map?.v v1));
-            fold (cbor_map_iterator_match_with_depth (nat_pred depth) p2' i2 (Map?.v v2));
-            Trade.elim _ (cbor_match_with_depth depth p1 x1 v1);
-            Trade.elim _ (cbor_match_with_depth depth p2 x2 v2);
-            res
-          }
+          map_entries_size_bound v1 depth;
+          map_entries_size_bound v2 depth;
+          let i1 = cbor_map_iterator_init_with_depth depth x1;
+          let i2 = cbor_map_iterator_init_with_depth depth x2;
+          let res = lex_compare_map_iterator_with_depth depth ih i1 i2;
+          Trade.elim _ (cbor_match_with_depth depth p1 x1 v1);
+          Trade.elim _ (cbor_match_with_depth depth p2 x2 v2);
+          res
         }
       } else {
         c
@@ -817,7 +926,8 @@ fn rec cbor_compare_with_depth
   (#v1: Ghost.erased raw_data_item)
   (#v2: Ghost.erased raw_data_item)
 requires
-  (cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2)
+  (cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
+    pure (raw_data_item_size v1 <= Ghost.reveal depth /\ raw_data_item_size v2 <= Ghost.reveal depth))
 returns res: I16.t
 ensures
   (cbor_match_with_depth depth p1 x1 v1 ** cbor_match_with_depth depth p2 x2 v2 **
@@ -847,13 +957,9 @@ ensures
         )
       )
 {
-  cbor_match_match_with_depth p1 x1 v1;
-  with n1. assert (cbor_match_with_depth n1 p1 x1 v1);
-  cbor_match_match_with_depth p2 x2 v2;
-  with n2. assert (cbor_match_with_depth n2 p2 x2 v2);
-  let m = common_depth n1 n2;
-  cbor_match_with_depth_weaken n1 m p1 x1 v1;
-  cbor_match_with_depth_weaken n2 m p2 x2 v2;
+  let m = common_depth (Ghost.hide (raw_data_item_size v1)) (Ghost.hide (raw_data_item_size v2));
+  cbor_match_to_depth m p1 x1 v1;
+  cbor_match_to_depth m p2 x2 v2;
   let res = cbor_compare_with_depth m x1 x2;
   cbor_match_with_depth_forget m p1 x1 v1;
   cbor_match_with_depth_forget m p2 x2 v2;

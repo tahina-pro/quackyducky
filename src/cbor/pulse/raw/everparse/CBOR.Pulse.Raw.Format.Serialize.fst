@@ -10,6 +10,13 @@ open LowParse.Pulse.Base
 open CBOR.Pulse.Raw.Match
 module LP = LowParse.Pulse.Combinators
 module LPI = LowParse.Pulse.Int
+module MLI = LowParse.PulseParse.Iterator
+module WML = LowParse.Pulse.Iterator
+module DEP = CBOR.Pulse.Raw.Format.Match.Depth
+module FM = CBOR.Pulse.Raw.Format.Match
+module ML = CBOR.Pulse.Raw.Format.MixedList
+module SG = CBOR.Pulse.Raw.Format.Serialize.Gen
+module R = Pulse.Lib.Reference
 
 inline_for_extraction
 let write_initial_byte' : l2r_leaf_writer serialize_initial_byte_t =
@@ -414,6 +421,16 @@ ensures
       let v = cbor_match_simple_elim xl;
       simple_value_as_argument v
     }
+    norewrite
+    CBOR_Case_Array_Gen _ -> {
+      let len = cbor_match_array_get_length xl;
+      raw_uint64_as_argument cbor_major_type_array len
+    }
+    norewrite
+    CBOR_Case_Map_Gen _ -> {
+      let len = cbor_match_map_get_length xl;
+      raw_uint64_as_argument cbor_major_type_map len
+    }
   }
 }
 
@@ -525,7 +542,7 @@ fn cbor_match_with_depth_to_match
   (#v: Ghost.erased raw_data_item)
 requires
   cbor_match_with_depth depth p x v **
-  pure (~ (CBOR_Case_Array? x \/ CBOR_Case_Map? x \/ CBOR_Case_Tagged? x))
+  pure (~ (CBOR_Case_Array? x \/ CBOR_Case_Map? x \/ CBOR_Case_Tagged? x \/ CBOR_Case_Array_Gen? x \/ CBOR_Case_Map_Gen? x))
 ensures
   cbor_match p x v **
   Trade.trade (cbor_match p x v) (cbor_match_with_depth depth p x v)
@@ -568,6 +585,10 @@ ensures
     CBOR_Case_Map ct -> { unreachable () }
     norewrite
     CBOR_Case_Tagged ct -> { unreachable () }
+    norewrite
+    CBOR_Case_Array_Gen ct -> { unreachable () }
+    norewrite
+    CBOR_Case_Map_Gen ct -> { unreachable () }
   }
 }
 
@@ -597,6 +618,16 @@ ensures cbor_match_with_depth depth p c v ** pure (Array? v /\ res == Array?.len
       Trade.elim (cbor_match p c v) (cbor_match_with_depth depth p c v);
       res
     }
+    norewrite
+    CBOR_Case_Array_Gen a -> {
+      rewrite (cbor_match_with_depth depth p c v) as (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v);
+      cbor_match_with_depth_array_gen_elim depth p a v;
+      FM.cbor_match_mixed_list_array_length p a v _;
+      let res : raw_uint64 = { size = a.cbor_array_gen_length_size; value = SZ.sizet_to_uint64 (ML.cbor_raw_mixed_list_length a.cbor_array_gen_ptr) };
+      Trade.elim _ (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v);
+      rewrite (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v) as (cbor_match_with_depth depth p c v);
+      res
+    }
   }
 }
 
@@ -622,6 +653,16 @@ ensures cbor_match_with_depth depth p c v ** pure (Map? v /\ res == Map?.len v)
       cbor_match_with_depth_to_match depth c;
       let res = cbor_match_map_get_length c;
       Trade.elim (cbor_match p c v) (cbor_match_with_depth depth p c v);
+      res
+    }
+    norewrite
+    CBOR_Case_Map_Gen a -> {
+      rewrite (cbor_match_with_depth depth p c v) as (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v);
+      cbor_match_with_depth_map_gen_elim depth p a v;
+      FM.cbor_match_mixed_list_map_length p a v _;
+      let res : raw_uint64 = { size = a.cbor_map_gen_length_size; value = SZ.sizet_to_uint64 (ML.cbor_raw_mixed_list_length a.cbor_map_gen_ptr) };
+      Trade.elim _ (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v);
+      rewrite (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v) as (cbor_match_with_depth depth p c v);
       res
     }
   }
@@ -724,6 +765,16 @@ ensures
       let v = cbor_match_simple_elim xl;
       Trade.elim (cbor_match p xl xh) (cbor_match_with_depth n p xl xh);
       simple_value_as_argument v
+    }
+    norewrite
+    CBOR_Case_Array_Gen _ -> {
+      let len = cbor_match_array_get_length_with_depth n xl;
+      raw_uint64_as_argument cbor_major_type_array len
+    }
+    norewrite
+    CBOR_Case_Map_Gen _ -> {
+      let len = cbor_match_map_get_length_with_depth n xl;
+      raw_uint64_as_argument cbor_major_type_map len
     }
   }
 }
@@ -1474,6 +1525,22 @@ let cbor_with_perm_case_array
   | _ -> false
 
 inline_for_extraction
+let cbor_with_perm_case_array_gen
+  (c: with_perm cbor_raw)
+: Tot bool
+= match c.v with
+  | CBOR_Case_Array_Gen _ -> true
+  | _ -> false
+
+inline_for_extraction
+let cbor_with_perm_case_map_gen
+  (c: with_perm cbor_raw)
+: Tot bool
+= match c.v with
+  | CBOR_Case_Map_Gen _ -> true
+  | _ -> false
+
+inline_for_extraction
 let cbor_with_perm_case_array_get
   (c: with_perm cbor_raw)
 : Tot (option (with_perm (S.slice cbor_raw)))
@@ -1723,7 +1790,7 @@ fn ser_payload_array_not_array_lens
                       xh1)
                   (get_header_long_argument xh1)))
           raw_data_item)
-      (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)))
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) (pnot cbor_with_perm_case_array_gen)))
   (pts_to_serialized_with_perm (LowParse.Spec.VCList.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte
                       xh1)
                   (get_header_long_argument xh1)))
@@ -1735,7 +1802,9 @@ fn ser_payload_array_not_array_lens
                       xh1)
                   (get_header_long_argument xh1)))
           raw_data_item)
-      (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) _ _;
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) (pnot cbor_with_perm_case_array_gen)) _ _;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) (pnot cbor_with_perm_case_array_gen) _ _;
+  Trade.trans (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array) _ _) _ _;
   vmatch_with_cond_elim_trade (match_cbor_payload xh1) (pnot cbor_with_perm_case_array) _ _;
   Trade.trans (match_cbor_payload xh1 _ _) _ _;
   let xh0 = match_cbor_payload_elim_trade xh1 xl _;
@@ -1803,7 +1872,7 @@ let ser_payload_array_not_array
   (xh1: header)
   (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
 :
-l2r_writer (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array))
+l2r_writer (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) (pnot cbor_with_perm_case_array_gen))
   (serialize_content xh1)
 = l2r_writer_ext_gen
     (l2r_writer_lens
@@ -1819,7 +1888,7 @@ let size_payload_array_not_array
   (xh1: header)
   (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
 :
-compute_remaining_size (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array))
+compute_remaining_size (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) (pnot cbor_with_perm_case_array_gen))
   (serialize_content xh1)
 = compute_remaining_size_ext_gen
     (compute_remaining_size_lens
@@ -1829,6 +1898,262 @@ compute_remaining_size (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_wit
       ))
     )
     _
+
+#pop-options
+
+// ============================================================================
+// GEN-case (CBOR_Case_Array_Gen / CBOR_Case_Map_Gen) writers.
+// These add a THIRD sub-case to the array/map payload dispatch, alongside the
+// inline-slice (`_array`/`_map`) and serialized-bytes (`_not_array`/`_not_map`)
+// sub-cases.  A gen node holds a `mixed_list` of children plus a permission,
+// and is serialized by recursively writing each child via the shared element
+// writer `f`.  The heavy lifting lives in CBOR.Pulse.Raw.Format.Serialize.Gen
+// (`write_gen_array_core_nd` / `size_gen_array_core_nd` / map twins).
+// ============================================================================
+
+// Pure bridge: recover the array/map content and element-count of the decoded
+// `xh0` from the header/content synthesis relation exposed by
+// `match_cbor_payload_elim_trade`.
+#push-options "--split_queries always --fuel 2 --ifuel 2 --z3rlimit 30"
+
+let array_gen_content_facts
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
+  (xh_c: content xh1)
+  (xh0: raw_data_item)
+: Lemma
+  (requires synth_raw_data_item_recip xh0 == (| xh1, xh_c |))
+  (ensures
+    Array? xh0 /\
+    Array?.v xh0 == xh_c /\
+    U64.v (Array?.len xh0).value ==
+      U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1)))
+= let _ = synth_raw_data_item_recip_inverse in
+  assert (synth_raw_data_item (synth_raw_data_item_recip xh0) == xh0)
+
+let map_gen_content_facts
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
+  (xh_c: content xh1)
+  (xh0: raw_data_item)
+: Lemma
+  (requires synth_raw_data_item_recip xh0 == (| xh1, xh_c |))
+  (ensures
+    Map? xh0 /\
+    Map?.v xh0 == xh_c /\
+    U64.v (Map?.len xh0).value ==
+      U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1)))
+= let _ = synth_raw_data_item_recip_inverse in
+  assert (synth_raw_data_item (synth_raw_data_item_recip xh0) == xh0)
+
+#pop-options
+
+// Refine an erased `raw_data_item` known to be an `Array`/`Map` into the
+// refined-erased type the gen cores expect.  Pulse's type-ascription coercion
+// does NOT consult the ambient pure context, so a direct
+// `let xh0r : Ghost.erased (r{Array? r}) = xh0` fails under real SMT even when
+// `Array? xh0` is a proven hypothesis.  Routing through a helper whose squash
+// argument is discharged as an ordinary application obligation (which DOES use
+// the ambient context) sidesteps that limitation.
+let refine_erased_array (xh0: Ghost.erased raw_data_item)
+  (_sq: squash (Array? (Ghost.reveal xh0)))
+: Ghost.erased (r: raw_data_item { Array? r })
+= Ghost.hide #(r: raw_data_item { Array? r }) (Ghost.reveal xh0)
+
+let refine_erased_map (xh0: Ghost.erased raw_data_item)
+  (_sq: squash (Map? (Ghost.reveal xh0)))
+: Ghost.erased (r: raw_data_item { Map? r })
+= Ghost.hide #(r: raw_data_item { Map? r }) (Ghost.reveal xh0)
+
+// Element writer adapter: the shared child writer `f` operates on
+// `cbor_match_with_perm`; the gen cores expect a per-permission
+// `(pm') -> l2r_writer (cbor_match pm')`.  These are the same slprop
+// (`cbor_match_with_perm { v = c1; p = pm' } y == cbor_match pm' c1 y`).
+inline_for_extraction
+fn w_of_f
+  (f: l2r_writer cbor_match_with_perm serialize_raw_data_item)
+  (pm': perm)
+  (c1: cbor_raw)
+  (#v1: Ghost.erased raw_data_item)
+  (out: S.slice byte)
+  (offset: SZ.t)
+  (#vb: Ghost.erased bytes)
+requires
+  pts_to out vb ** cbor_match pm' c1 v1 **
+  pure (l2r_writer_for_pre serialize_raw_data_item v1 offset vb)
+returns res: SZ.t
+ensures exists* vb'.
+  pts_to out vb' ** cbor_match pm' c1 v1 **
+  pure (l2r_writer_for_post serialize_raw_data_item v1 offset vb res vb')
+{
+  let xl : with_perm cbor_raw = { v = c1; p = pm' };
+  rewrite (cbor_match pm' c1 v1) as (cbor_match_with_perm xl v1);
+  let res = f xl out offset;
+  rewrite (cbor_match_with_perm xl v1) as (cbor_match pm' c1 v1);
+  res
+}
+
+inline_for_extraction
+fn cr_of_f
+  (g: compute_remaining_size cbor_match_with_perm serialize_raw_data_item)
+  (pm': perm)
+  (c1: cbor_raw)
+  (#v1: Ghost.erased raw_data_item)
+  (out: R.ref SZ.t)
+  (#vb: Ghost.erased SZ.t)
+requires
+  R.pts_to out vb ** cbor_match pm' c1 v1
+returns res: bool
+ensures exists* vb'.
+  R.pts_to out vb' ** cbor_match pm' c1 v1 **
+  pure (
+    let bs = Seq.length (bare_serialize serialize_raw_data_item v1) in
+    (res == true <==> bs <= SZ.v vb) /\
+    (res == true ==> bs + SZ.v vb' == SZ.v vb))
+{
+  let xl : with_perm cbor_raw = { v = c1; p = pm' };
+  rewrite (cbor_match pm' c1 v1) as (cbor_match_with_perm xl v1);
+  let res = g xl out;
+  rewrite (cbor_match_with_perm xl v1) as (cbor_match pm' c1 v1);
+  res
+}
+
+module VCL = LowParse.Spec.VCList
+
+#push-options "--z3rlimit 64 --fuel 2 --ifuel 2"
+
+// Inner writer for the array-gen sub-case, consuming the [vmatch_ext]-wrapped
+// double-conditioned payload match and driving the generic mixed-list writer.
+inline_for_extraction
+fn ser_payload_array_gen_inner
+  (f: l2r_writer cbor_match_with_perm serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
+  (xl': with_perm cbor_raw)
+  (#xarg: Ghost.erased (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item))
+  (out: S.slice byte)
+  (offset: SZ.t)
+  (#v: Ghost.erased bytes)
+requires
+  pts_to out v **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg **
+  pure (l2r_writer_for_pre (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) serialize_raw_data_item) xarg offset v)
+returns res: SZ.t
+ensures exists* v'.
+  pts_to out v' **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg **
+  pure (l2r_writer_for_post (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) serialize_raw_data_item) xarg offset v res v')
+{
+  let xh_c = vmatch_ext_elim_trade (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen xl' xh_c;
+  Trade.trans (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array) xl' xh_c) _ _;
+  vmatch_with_cond_elim_trade (match_cbor_payload xh1) (pnot cbor_with_perm_case_array) xl' xh_c;
+  Trade.trans (match_cbor_payload xh1 xl' xh_c) _ _;
+  let xh0 = match_cbor_payload_elim_trade xh1 xl' xh_c;
+  Trade.trans (cbor_match_with_perm xl' xh0) _ _;
+  Trade.rewrite_with_trade
+    (cbor_match_with_perm xl' xh0)
+    (cbor_match xl'.p xl'.v xh0);
+  Trade.trans (cbor_match xl'.p xl'.v xh0) (cbor_match_with_perm xl' xh0) _;
+  cbor_match_cases xl'.v;
+  let CBOR_Case_Array_Gen a = xl'.v;
+  array_gen_content_facts xh1 sq xh_c xh0;
+  let xh0r = refine_erased_array xh0 ();
+  cbor_match_eq_array_gen xl'.p a xh0r;
+  Trade.rewrite_with_trade
+    (cbor_match xl'.p xl'.v xh0)
+    (cbor_match_mixed_list_array xl'.p a xh0r cbor_match);
+  Trade.trans (cbor_match_mixed_list_array xl'.p a xh0r cbor_match) (cbor_match xl'.p xl'.v xh0) _;
+  let res = SG.write_gen_array_core_nd (w_of_f f) a xl'.p xh0r out offset;
+  elim_trade
+    (cbor_match_mixed_list_array xl'.p a xh0r cbor_match)
+    (vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+      xl' xarg);
+  res
+}
+
+inline_for_extraction
+let ser_payload_array_gen
+  (f: l2r_writer cbor_match_with_perm serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
+: l2r_writer (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen) (serialize_content xh1)
+= l2r_writer_ext_gen
+    (ser_payload_array_gen_inner f xh1 sq)
+    (serialize_content xh1)
+
+inline_for_extraction
+fn size_payload_array_gen_inner
+  (g: compute_remaining_size cbor_match_with_perm serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
+  (xl': with_perm cbor_raw)
+  (#xarg: Ghost.erased (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item))
+  (out: R.ref SZ.t)
+  (#v: Ghost.erased SZ.t)
+requires
+  R.pts_to out v **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg
+returns res: bool
+ensures exists* v'.
+  R.pts_to out v' **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg **
+  pure (
+    let bs = Seq.length (bare_serialize (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) serialize_raw_data_item) xarg) in
+    (res == true <==> bs <= SZ.v v) /\
+    (res == true ==> bs + SZ.v v' == SZ.v v))
+{
+  let xh_c = vmatch_ext_elim_trade (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen xl' xh_c;
+  Trade.trans (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array) xl' xh_c) _ _;
+  vmatch_with_cond_elim_trade (match_cbor_payload xh1) (pnot cbor_with_perm_case_array) xl' xh_c;
+  Trade.trans (match_cbor_payload xh1 xl' xh_c) _ _;
+  let xh0 = match_cbor_payload_elim_trade xh1 xl' xh_c;
+  Trade.trans (cbor_match_with_perm xl' xh0) _ _;
+  Trade.rewrite_with_trade
+    (cbor_match_with_perm xl' xh0)
+    (cbor_match xl'.p xl'.v xh0);
+  Trade.trans (cbor_match xl'.p xl'.v xh0) (cbor_match_with_perm xl' xh0) _;
+  cbor_match_cases xl'.v;
+  let CBOR_Case_Array_Gen a = xl'.v;
+  array_gen_content_facts xh1 sq xh_c xh0;
+  let xh0r = refine_erased_array xh0 ();
+  cbor_match_eq_array_gen xl'.p a xh0r;
+  Trade.rewrite_with_trade
+    (cbor_match xl'.p xl'.v xh0)
+    (cbor_match_mixed_list_array xl'.p a xh0r cbor_match);
+  Trade.trans (cbor_match_mixed_list_array xl'.p a xh0r cbor_match) (cbor_match xl'.p xl'.v xh0) _;
+  let res = SG.size_gen_array_core_nd (cr_of_f g) a xl'.p xh0r out;
+  elim_trade
+    (cbor_match_mixed_list_array xl'.p a xh0r cbor_match)
+    (vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+      xl' xarg);
+  res
+}
+
+inline_for_extraction
+let size_payload_array_gen
+  (g: compute_remaining_size cbor_match_with_perm serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
+: compute_remaining_size (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen) (serialize_content xh1)
+= compute_remaining_size_ext_gen
+    (size_payload_array_gen_inner g xh1 sq)
+    (serialize_content xh1)
 
 #pop-options
 
@@ -1842,7 +2167,11 @@ let ser_payload_array
     _ _
     cbor_with_perm_case_array
     (ser_payload_array_array f xh1 sq)
-    (ser_payload_array_not_array xh1 sq)
+    (l2r_writer_ifthenelse_low
+      _ _
+      cbor_with_perm_case_array_gen
+      (ser_payload_array_gen f xh1 sq)
+      (ser_payload_array_not_array xh1 sq))
 
 inline_for_extraction
 let size_payload_array
@@ -1854,7 +2183,11 @@ let size_payload_array
     _ _
     cbor_with_perm_case_array
     (size_payload_array_array f xh1 sq)
-    (size_payload_array_not_array xh1 sq)
+    (compute_remaining_size_ifthenelse_low
+      _ _
+      cbor_with_perm_case_array_gen
+      (size_payload_array_gen f xh1 sq)
+      (size_payload_array_not_array xh1 sq))
 
 // ============================================================================
 // DEPTH-AWARE array-case writers (`_d` twins). The node is at ghost depth `n`;
@@ -2076,6 +2409,345 @@ let size_payload_array_array_d
 
 #pop-options
 
+// ============================================================================
+// GEN-case depth-aware writers (`_d` twins of the non-depth gen writers) plus
+// the depth<->depth_match element-writer adapters they need.
+//
+// A gen node at ghost depth `n` matches its INLINE children at `depth_cb n`
+// (= `cbor_match_with_depth (nat_pred n)` when n>=1, else `pure False`).  The
+// generic mixed-list cores (`SG.write_gen_array_core` / map / size) drive the
+// per-element writer at `DEP.depth_match n` (the unrefined twin of `depth_cb
+// n`).  We adapt:
+//   * `depth_match_writer_of_f n f` : threads the recursive depth-(nat_pred n)
+//     element writer `f` through `DEP.depth_match n` (valid because
+//     `DEP.depth_match n = cbor_match_with_depth (nat_pred n)` when n>=1, and
+//     `depth_match_to_depth_pos` exposes the n>=1 the reverse conversion needs).
+//   * `depth_match_writer_zero` : a VACUOUS element writer at depth 0 (where
+//     `DEP.depth_match 0 = pure False`), used by the depth-0 base gen path.
+// ============================================================================
+
+#push-options "--z3rlimit 32"
+
+inline_for_extraction
+fn depth_match_writer_of_f
+  (n: Ghost.erased nat)
+  (f: l2r_writer (cbor_match_with_perm_d (nat_pred n)) serialize_raw_data_item)
+  (pm': perm)
+  (c1: cbor_raw)
+  (#v1: Ghost.erased raw_data_item)
+  (out: S.slice byte)
+  (offset: SZ.t)
+  (#vb: Ghost.erased bytes)
+requires
+  pts_to out vb ** DEP.depth_match n pm' c1 v1 **
+  pure (l2r_writer_for_pre serialize_raw_data_item v1 offset vb)
+returns res: SZ.t
+ensures exists* vb'.
+  pts_to out vb' ** DEP.depth_match n pm' c1 v1 **
+  pure (l2r_writer_for_post serialize_raw_data_item v1 offset vb res vb')
+{
+  DEP.depth_match_to_depth_pos n pm' c1 v1;
+  let xl : with_perm cbor_raw = { v = c1; p = pm' };
+  rewrite (cbor_match_with_depth (nat_pred n) pm' c1 v1)
+    as (cbor_match_with_perm_d (nat_pred n) xl v1);
+  let res = f xl out offset;
+  rewrite (cbor_match_with_perm_d (nat_pred n) xl v1)
+    as (cbor_match_with_depth (nat_pred n) pm' c1 v1);
+  DEP.depth_to_depth_match n pm' c1 v1;
+  res
+}
+
+inline_for_extraction
+fn cr_of_f_d
+  (n: Ghost.erased nat)
+  (g: compute_remaining_size (cbor_match_with_perm_d (nat_pred n)) serialize_raw_data_item)
+  (pm': perm)
+  (c1: cbor_raw)
+  (#v1: Ghost.erased raw_data_item)
+  (out: R.ref SZ.t)
+  (#vb: Ghost.erased SZ.t)
+requires
+  R.pts_to out vb ** DEP.depth_match n pm' c1 v1
+returns res: bool
+ensures exists* vb'.
+  R.pts_to out vb' ** DEP.depth_match n pm' c1 v1 **
+  pure (
+    let bs = Seq.length (bare_serialize serialize_raw_data_item v1) in
+    (res == true <==> bs <= SZ.v vb) /\
+    (res == true ==> bs + SZ.v vb' == SZ.v vb))
+{
+  DEP.depth_match_to_depth_pos n pm' c1 v1;
+  let xl : with_perm cbor_raw = { v = c1; p = pm' };
+  rewrite (cbor_match_with_depth (nat_pred n) pm' c1 v1)
+    as (cbor_match_with_perm_d (nat_pred n) xl v1);
+  let res = g xl out;
+  rewrite (cbor_match_with_perm_d (nat_pred n) xl v1)
+    as (cbor_match_with_depth (nat_pred n) pm' c1 v1);
+  DEP.depth_to_depth_match n pm' c1 v1;
+  res
+}
+
+inline_for_extraction
+fn depth_match_writer_zero
+  (pm': perm)
+  (c1: cbor_raw)
+  (#v1: Ghost.erased raw_data_item)
+  (out: S.slice byte)
+  (offset: SZ.t)
+  (#vb: Ghost.erased bytes)
+requires
+  pts_to out vb ** DEP.depth_match 0 pm' c1 v1 **
+  pure (l2r_writer_for_pre serialize_raw_data_item v1 offset vb)
+returns res: SZ.t
+ensures exists* vb'.
+  pts_to out vb' ** DEP.depth_match 0 pm' c1 v1 **
+  pure (l2r_writer_for_post serialize_raw_data_item v1 offset vb res vb')
+{
+  DEP.depth_match_zero pm' c1 v1;
+  rewrite (DEP.depth_match 0 pm' c1 v1) as (pure False);
+  unreachable ();
+  offset
+}
+
+inline_for_extraction
+fn cr_zero
+  (pm': perm)
+  (c1: cbor_raw)
+  (#v1: Ghost.erased raw_data_item)
+  (out: R.ref SZ.t)
+  (#vb: Ghost.erased SZ.t)
+requires
+  R.pts_to out vb ** DEP.depth_match 0 pm' c1 v1
+returns res: bool
+ensures exists* vb'.
+  R.pts_to out vb' ** DEP.depth_match 0 pm' c1 v1 **
+  pure (
+    let bs = Seq.length (bare_serialize serialize_raw_data_item v1) in
+    (res == true <==> bs <= SZ.v vb) /\
+    (res == true ==> bs + SZ.v vb' == SZ.v vb))
+{
+  DEP.depth_match_zero pm' c1 v1;
+  rewrite (DEP.depth_match 0 pm' c1 v1) as (pure False);
+  unreachable ();
+  false
+}
+
+// ----------------------------------------------------------------------------
+// DEFERRED element-writer adapters.  Unlike `depth_match_writer_of_f`/`cr_of_f_d`
+// (which take an already-formed depth-(nat_pred n) writer `f`, hence need n>=1
+// GLOBALLY), these take the recursion knot `recf` directly and form
+// `recf (nat_pred n)` INTERNALLY -- AFTER `DEP.depth_match_to_depth_pos`
+// establishes n>=1 -- so they are constructible at ANY n (including n=0, where
+// `DEP.depth_match 0 = pure False` makes the body unreachable and `recf` is
+// never applied).  This is what lets a gen node be serialized at ANY depth
+// without the (impossible, for a Serialized-backed gen) global `n>=1`.
+inline_for_extraction
+fn depth_match_writer_of_recf
+  (n: Ghost.erased nat)
+  (recf: (n': Ghost.erased nat { Ghost.reveal n' < Ghost.reveal n }) -> l2r_writer (cbor_match_with_perm_d n') serialize_raw_data_item)
+  (pm': perm)
+  (c1: cbor_raw)
+  (#v1: Ghost.erased raw_data_item)
+  (out: S.slice byte)
+  (offset: SZ.t)
+  (#vb: Ghost.erased bytes)
+requires
+  pts_to out vb ** DEP.depth_match n pm' c1 v1 **
+  pure (l2r_writer_for_pre serialize_raw_data_item v1 offset vb)
+returns res: SZ.t
+ensures exists* vb'.
+  pts_to out vb' ** DEP.depth_match n pm' c1 v1 **
+  pure (l2r_writer_for_post serialize_raw_data_item v1 offset vb res vb')
+{
+  DEP.depth_match_to_depth_pos n pm' c1 v1;
+  nat_pred_succ n;
+  let xl : with_perm cbor_raw = { v = c1; p = pm' };
+  rewrite (cbor_match_with_depth (nat_pred n) pm' c1 v1)
+    as (cbor_match_with_perm_d (nat_pred n) xl v1);
+  let res = recf (nat_pred n) xl out offset;
+  rewrite (cbor_match_with_perm_d (nat_pred n) xl v1)
+    as (cbor_match_with_depth (nat_pred n) pm' c1 v1);
+  DEP.depth_to_depth_match n pm' c1 v1;
+  res
+}
+
+inline_for_extraction
+fn cr_of_recf_d
+  (n: Ghost.erased nat)
+  (recg: (n': Ghost.erased nat { Ghost.reveal n' < Ghost.reveal n }) -> compute_remaining_size (cbor_match_with_perm_d n') serialize_raw_data_item)
+  (pm': perm)
+  (c1: cbor_raw)
+  (#v1: Ghost.erased raw_data_item)
+  (out: R.ref SZ.t)
+  (#vb: Ghost.erased SZ.t)
+requires
+  R.pts_to out vb ** DEP.depth_match n pm' c1 v1
+returns res: bool
+ensures exists* vb'.
+  R.pts_to out vb' ** DEP.depth_match n pm' c1 v1 **
+  pure (
+    let bs = Seq.length (bare_serialize serialize_raw_data_item v1) in
+    (res == true <==> bs <= SZ.v vb) /\
+    (res == true ==> bs + SZ.v vb' == SZ.v vb))
+{
+  DEP.depth_match_to_depth_pos n pm' c1 v1;
+  nat_pred_succ n;
+  let xl : with_perm cbor_raw = { v = c1; p = pm' };
+  rewrite (cbor_match_with_depth (nat_pred n) pm' c1 v1)
+    as (cbor_match_with_perm_d (nat_pred n) xl v1);
+  let res = recg (nat_pred n) xl out;
+  rewrite (cbor_match_with_perm_d (nat_pred n) xl v1)
+    as (cbor_match_with_depth (nat_pred n) pm' c1 v1);
+  DEP.depth_to_depth_match n pm' c1 v1;
+  res
+}
+
+#pop-options
+
+#push-options "--z3rlimit 64 --fuel 2 --ifuel 2"
+
+// Inner writer for the depth-aware array-gen sub-case (mirrors
+// `ser_payload_array_gen_inner`, threading depth `n` through the payload match
+// and driving `SG.write_gen_array_core n w`).  Parametric over the element
+// writer `w` so the depth-`n` path (`depth_match_writer_of_f n f`) and the
+// depth-0 base path (`depth_match_writer_zero`) share this code.
+inline_for_extraction
+fn ser_payload_array_gen_inner_d
+  (n: Ghost.erased nat)
+  (w: (pm': perm) -> l2r_writer (DEP.depth_match n pm') serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
+  (xl': with_perm cbor_raw)
+  (#xarg: Ghost.erased (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item))
+  (out: S.slice byte)
+  (offset: SZ.t)
+  (#v: Ghost.erased bytes)
+requires
+  pts_to out v **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg **
+  pure (l2r_writer_for_pre (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) serialize_raw_data_item) xarg offset v)
+returns res: SZ.t
+ensures exists* v'.
+  pts_to out v' **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg **
+  pure (l2r_writer_for_post (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) serialize_raw_data_item) xarg offset v res v')
+{
+  let xh_c = vmatch_ext_elim_trade (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen xl' xh_c;
+  Trade.trans (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array) xl' xh_c) _ _;
+  vmatch_with_cond_elim_trade (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array) xl' xh_c;
+  Trade.trans (match_cbor_payload_d n xh1 xl' xh_c) _ _;
+  let xh0 = match_cbor_payload_elim_trade_d n xh1 xl' xh_c;
+  Trade.trans (cbor_match_with_perm_d n xl' xh0) _ _;
+  Trade.rewrite_with_trade
+    (cbor_match_with_perm_d n xl' xh0)
+    (cbor_match_with_depth n xl'.p xl'.v xh0);
+  Trade.trans (cbor_match_with_depth n xl'.p xl'.v xh0) (cbor_match_with_perm_d n xl' xh0) _;
+  cbor_match_with_depth_cases n xl'.p xl'.v xh0;
+  let CBOR_Case_Array_Gen a = xl'.v;
+  array_gen_content_facts xh1 sq xh_c xh0;
+  let xh0r = refine_erased_array xh0 ();
+  cbor_match_with_depth_eq_array_gen n xl'.p a xh0r;
+  Trade.rewrite_with_trade
+    (cbor_match_with_depth n xl'.p xl'.v xh0)
+    (cbor_match_mixed_list_array xl'.p a xh0r (depth_cb n xh0r));
+  Trade.trans (cbor_match_mixed_list_array xl'.p a xh0r (depth_cb n xh0r)) (cbor_match_with_depth n xl'.p xl'.v xh0) _;
+  let res = SG.write_gen_array_core n w a xl'.p xh0r out offset;
+  elim_trade
+    (cbor_match_mixed_list_array xl'.p a xh0r (depth_cb n xh0r))
+    (vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+      xl' xarg);
+  res
+}
+
+inline_for_extraction
+let ser_payload_array_gen_d
+  (n: Ghost.erased nat)
+  (w: (pm': perm) -> l2r_writer (DEP.depth_match n pm') serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
+: l2r_writer (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen) (serialize_content xh1)
+= l2r_writer_ext_gen
+    (ser_payload_array_gen_inner_d n w xh1 sq)
+    (serialize_content xh1)
+
+inline_for_extraction
+fn size_payload_array_gen_inner_d
+  (n: Ghost.erased nat)
+  (cr: (pm': perm) -> compute_remaining_size (DEP.depth_match n pm') serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
+  (xl': with_perm cbor_raw)
+  (#xarg: Ghost.erased (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item))
+  (out: R.ref SZ.t)
+  (#v: Ghost.erased SZ.t)
+requires
+  R.pts_to out v **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg
+returns res: bool
+ensures exists* v'.
+  R.pts_to out v' **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg **
+  pure (
+    let bs = Seq.length (bare_serialize (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) serialize_raw_data_item) xarg) in
+    (res == true <==> bs <= SZ.v v) /\
+    (res == true ==> bs + SZ.v v' == SZ.v v))
+{
+  let xh_c = vmatch_ext_elim_trade (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+    xl' xarg;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen xl' xh_c;
+  Trade.trans (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array) xl' xh_c) _ _;
+  vmatch_with_cond_elim_trade (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array) xl' xh_c;
+  Trade.trans (match_cbor_payload_d n xh1 xl' xh_c) _ _;
+  let xh0 = match_cbor_payload_elim_trade_d n xh1 xl' xh_c;
+  Trade.trans (cbor_match_with_perm_d n xl' xh0) _ _;
+  Trade.rewrite_with_trade
+    (cbor_match_with_perm_d n xl' xh0)
+    (cbor_match_with_depth n xl'.p xl'.v xh0);
+  Trade.trans (cbor_match_with_depth n xl'.p xl'.v xh0) (cbor_match_with_perm_d n xl' xh0) _;
+  cbor_match_with_depth_cases n xl'.p xl'.v xh0;
+  let CBOR_Case_Array_Gen a = xl'.v;
+  array_gen_content_facts xh1 sq xh_c xh0;
+  let xh0r = refine_erased_array xh0 ();
+  cbor_match_with_depth_eq_array_gen n xl'.p a xh0r;
+  Trade.rewrite_with_trade
+    (cbor_match_with_depth n xl'.p xl'.v xh0)
+    (cbor_match_mixed_list_array xl'.p a xh0r (depth_cb n xh0r));
+  Trade.trans (cbor_match_mixed_list_array xl'.p a xh0r (depth_cb n xh0r)) (cbor_match_with_depth n xl'.p xl'.v xh0) _;
+  let res = SG.size_gen_array_core n cr a xl'.p xh0r out;
+  elim_trade
+    (cbor_match_mixed_list_array xl'.p a xh0r (depth_cb n xh0r))
+    (vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) raw_data_item)
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen)
+      xl' xarg);
+  res
+}
+
+inline_for_extraction
+let size_payload_array_gen_d
+  (n: Ghost.erased nat)
+  (cr: (pm': perm) -> compute_remaining_size (DEP.depth_match n pm') serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
+: compute_remaining_size (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen) (serialize_content xh1)
+= compute_remaining_size_ext_gen
+    (size_payload_array_gen_inner_d n cr xh1 sq)
+    (serialize_content xh1)
+
+#pop-options
+
 #push-options "--z3rlimit 32"
 
 // DELIVERABLE 6: depth-aware serialized-array (not-array) case. Bridges the depth
@@ -2091,7 +2763,7 @@ fn ser_payload_array_not_array_lens_d
                       xh1)
                   (get_header_long_argument xh1)))
           raw_data_item)
-      (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)))
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) (pnot cbor_with_perm_case_array_gen)))
   (pts_to_serialized_with_perm (LowParse.Spec.VCList.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte
                       xh1)
                   (get_header_long_argument xh1)))
@@ -2099,14 +2771,17 @@ fn ser_payload_array_not_array_lens_d
 = (xl: _)
   (v: _)
 {
-  let _ = vmatch_ext_elim_trade (LowParse.Spec.VCList.nlist (U64.v (argument_as_uint64 (get_header_initial_byte
+  let xh_c = vmatch_ext_elim_trade (LowParse.Spec.VCList.nlist (U64.v (argument_as_uint64 (get_header_initial_byte
                       xh1)
                   (get_header_long_argument xh1)))
           raw_data_item)
-      (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) _ _;
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) (pnot cbor_with_perm_case_array_gen)) _ _;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) (pnot cbor_with_perm_case_array_gen) _ _;
+  Trade.trans (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array) _ _) _ _;
   vmatch_with_cond_elim_trade (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array) _ _;
   Trade.trans (match_cbor_payload_d n xh1 _ _) _ _;
   let xh0 = match_cbor_payload_elim_trade_d n xh1 xl _;
+  array_gen_content_facts xh1 sq xh_c xh0;
   Trade.trans (cbor_match_with_perm_d n xl xh0) _ _;
   Trade.rewrite_with_trade
     (cbor_match_with_perm_d n xl xh0)
@@ -2175,7 +2850,7 @@ let ser_payload_array_not_array_d
   (xh1: header)
   (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
 :
-l2r_writer (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array))
+l2r_writer (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) (pnot cbor_with_perm_case_array_gen))
   (serialize_content xh1)
 = l2r_writer_ext_gen
     (l2r_writer_lens
@@ -2192,7 +2867,7 @@ let size_payload_array_not_array_d
   (xh1: header)
   (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_array))
 :
-compute_remaining_size (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array))
+compute_remaining_size (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) (pnot cbor_with_perm_case_array_gen))
   (serialize_content xh1)
 = compute_remaining_size_ext_gen
     (compute_remaining_size_lens
@@ -2205,7 +2880,8 @@ compute_remaining_size (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor
 
 #pop-options
 
-// DELIVERABLE 7: depth-aware array payload dispatcher.
+// DELIVERABLE 7: depth-aware array payload dispatcher (three sub-cases:
+// inline-slice array / gen mixed-list / serialized-bytes).
 inline_for_extraction
 let ser_payload_array_d
   (n: Ghost.erased nat)
@@ -2217,7 +2893,11 @@ let ser_payload_array_d
     _ _
     cbor_with_perm_case_array
     (ser_payload_array_array_d n f xh1 sq)
-    (ser_payload_array_not_array_d n xh1 sq)
+    (l2r_writer_ifthenelse_low
+      _ _
+      cbor_with_perm_case_array_gen
+      (ser_payload_array_gen_d n (depth_match_writer_of_f n f) xh1 sq)
+      (ser_payload_array_not_array_d n xh1 sq))
 
 inline_for_extraction
 let size_payload_array_d
@@ -2230,7 +2910,11 @@ let size_payload_array_d
     _ _
     cbor_with_perm_case_array
     (size_payload_array_array_d n f xh1 sq)
-    (size_payload_array_not_array_d n xh1 sq)
+    (compute_remaining_size_ifthenelse_low
+      _ _
+      cbor_with_perm_case_array_gen
+      (size_payload_array_gen_d n (cr_of_f_d n f) xh1 sq)
+      (size_payload_array_not_array_d n xh1 sq))
 
 inline_for_extraction
 let cbor_with_perm_case_map
@@ -2543,6 +3227,144 @@ ensures
   };
 }
 
+#push-options "--z3rlimit 64 --fuel 2 --ifuel 2"
+
+// Non-depth MAP gen-case inner writer (mirror of `ser_payload_array_gen_inner`;
+// map entries are pairs serialized with `serialize_nondep_then`, and the generic
+// map core splits each pair internally, reusing the shared element writer `f`).
+inline_for_extraction
+fn ser_payload_map_gen_inner
+  (f: l2r_writer cbor_match_with_perm serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
+  (xl': with_perm cbor_raw)
+  (#xarg: Ghost.erased (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item)))
+  (out: S.slice byte)
+  (offset: SZ.t)
+  (#v: Ghost.erased bytes)
+requires
+  pts_to out v **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg **
+  pure (l2r_writer_for_pre (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (LP.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)) xarg offset v)
+returns res: SZ.t
+ensures exists* v'.
+  pts_to out v' **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg **
+  pure (l2r_writer_for_post (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (LP.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)) xarg offset v res v')
+{
+  let xh_c = vmatch_ext_elim_trade (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen xl' xh_c;
+  Trade.trans (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map) xl' xh_c) _ _;
+  vmatch_with_cond_elim_trade (match_cbor_payload xh1) (pnot cbor_with_perm_case_map) xl' xh_c;
+  Trade.trans (match_cbor_payload xh1 xl' xh_c) _ _;
+  let xh0 = match_cbor_payload_elim_trade xh1 xl' xh_c;
+  Trade.trans (cbor_match_with_perm xl' xh0) _ _;
+  Trade.rewrite_with_trade
+    (cbor_match_with_perm xl' xh0)
+    (cbor_match xl'.p xl'.v xh0);
+  Trade.trans (cbor_match xl'.p xl'.v xh0) (cbor_match_with_perm xl' xh0) _;
+  cbor_match_cases xl'.v;
+  let CBOR_Case_Map_Gen a = xl'.v;
+  map_gen_content_facts xh1 sq xh_c xh0;
+  let xh0r = refine_erased_map xh0 ();
+  cbor_match_eq_map_gen xl'.p a xh0r;
+  Trade.rewrite_with_trade
+    (cbor_match xl'.p xl'.v xh0)
+    (cbor_match_mixed_list_map xl'.p a xh0r cbor_match);
+  Trade.trans (cbor_match_mixed_list_map xl'.p a xh0r cbor_match) (cbor_match xl'.p xl'.v xh0) _;
+  let res = SG.write_gen_map_core_nd (w_of_f f) a xl'.p xh0r out offset;
+  elim_trade
+    (cbor_match_mixed_list_map xl'.p a xh0r cbor_match)
+    (vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+      xl' xarg);
+  res
+}
+
+inline_for_extraction
+let ser_payload_map_gen
+  (f: l2r_writer cbor_match_with_perm serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
+: l2r_writer (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen) (serialize_content xh1)
+= l2r_writer_ext_gen
+    (ser_payload_map_gen_inner f xh1 sq)
+    (serialize_content xh1)
+
+inline_for_extraction
+fn size_payload_map_gen_inner
+  (g: compute_remaining_size cbor_match_with_perm serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
+  (xl': with_perm cbor_raw)
+  (#xarg: Ghost.erased (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item)))
+  (out: R.ref SZ.t)
+  (#v: Ghost.erased SZ.t)
+requires
+  R.pts_to out v **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg
+returns res: bool
+ensures exists* v'.
+  R.pts_to out v' **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg **
+  pure (
+    let bs = Seq.length (bare_serialize (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (LP.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)) xarg) in
+    (res == true <==> bs <= SZ.v v) /\
+    (res == true ==> bs + SZ.v v' == SZ.v v))
+{
+  let xh_c = vmatch_ext_elim_trade (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen xl' xh_c;
+  Trade.trans (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map) xl' xh_c) _ _;
+  vmatch_with_cond_elim_trade (match_cbor_payload xh1) (pnot cbor_with_perm_case_map) xl' xh_c;
+  Trade.trans (match_cbor_payload xh1 xl' xh_c) _ _;
+  let xh0 = match_cbor_payload_elim_trade xh1 xl' xh_c;
+  Trade.trans (cbor_match_with_perm xl' xh0) _ _;
+  Trade.rewrite_with_trade
+    (cbor_match_with_perm xl' xh0)
+    (cbor_match xl'.p xl'.v xh0);
+  Trade.trans (cbor_match xl'.p xl'.v xh0) (cbor_match_with_perm xl' xh0) _;
+  cbor_match_cases xl'.v;
+  let CBOR_Case_Map_Gen a = xl'.v;
+  map_gen_content_facts xh1 sq xh_c xh0;
+  let xh0r = refine_erased_map xh0 ();
+  cbor_match_eq_map_gen xl'.p a xh0r;
+  Trade.rewrite_with_trade
+    (cbor_match xl'.p xl'.v xh0)
+    (cbor_match_mixed_list_map xl'.p a xh0r cbor_match);
+  Trade.trans (cbor_match_mixed_list_map xl'.p a xh0r cbor_match) (cbor_match xl'.p xl'.v xh0) _;
+  let res = SG.size_gen_map_core_nd (cr_of_f g) a xl'.p xh0r out;
+  elim_trade
+    (cbor_match_mixed_list_map xl'.p a xh0r cbor_match)
+    (vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+      xl' xarg);
+  res
+}
+
+inline_for_extraction
+let size_payload_map_gen
+  (g: compute_remaining_size cbor_match_with_perm serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
+: compute_remaining_size (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen) (serialize_content xh1)
+= compute_remaining_size_ext_gen
+    (size_payload_map_gen_inner g xh1 sq)
+    (serialize_content xh1)
+
+#pop-options
+
 #push-options "--z3rlimit 32"
 
 inline_for_extraction
@@ -2553,7 +3375,7 @@ fn ser_payload_map_not_map_lens
                       xh1)
                   (get_header_long_argument xh1)))
           (raw_data_item & raw_data_item))
-      (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)))
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) (pnot cbor_with_perm_case_map_gen)))
   (pts_to_serialized_with_perm (LowParse.Spec.VCList.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte
                       xh1)
                   (get_header_long_argument xh1)))
@@ -2565,7 +3387,9 @@ fn ser_payload_map_not_map_lens
                       xh1)
                   (get_header_long_argument xh1)))
           (raw_data_item & raw_data_item))
-      (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) _ _;
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) (pnot cbor_with_perm_case_map_gen)) _ _;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) (pnot cbor_with_perm_case_map_gen) _ _;
+  Trade.trans (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map) _ _) _ _;
   vmatch_with_cond_elim_trade (match_cbor_payload xh1) (pnot cbor_with_perm_case_map) _ _;
   Trade.trans (match_cbor_payload xh1 _ _) _ _;
   let xh0 = match_cbor_payload_elim_trade xh1 xl _;
@@ -2638,7 +3462,7 @@ let ser_payload_map_not_map
   (xh1: header)
   (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
 :
-l2r_writer (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map))
+l2r_writer (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) (pnot cbor_with_perm_case_map_gen))
   (serialize_content xh1)
 = l2r_writer_ext_gen
     (l2r_writer_lens
@@ -2654,7 +3478,7 @@ let size_payload_map_not_map
   (xh1: header)
   (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
 :
-compute_remaining_size (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map))
+compute_remaining_size (vmatch_with_cond (vmatch_with_cond (match_cbor_payload xh1) (pnot cbor_with_perm_case_map)) (pnot cbor_with_perm_case_map_gen))
   (serialize_content xh1)
 = compute_remaining_size_ext_gen
     (compute_remaining_size_lens
@@ -2677,7 +3501,11 @@ let ser_payload_map
     _ _
     cbor_with_perm_case_map
     (ser_payload_map_map f xh1 sq)
-    (ser_payload_map_not_map xh1 sq)
+    (l2r_writer_ifthenelse_low
+      _ _
+      cbor_with_perm_case_map_gen
+      (ser_payload_map_gen f xh1 sq)
+      (ser_payload_map_not_map xh1 sq))
 
 inline_for_extraction
 let size_payload_map
@@ -2689,7 +3517,11 @@ let size_payload_map
     _ _
     cbor_with_perm_case_map
     (size_payload_map_map f xh1 sq)
-    (size_payload_map_not_map xh1 sq)
+    (compute_remaining_size_ifthenelse_low
+      _ _
+      cbor_with_perm_case_map_gen
+      (size_payload_map_gen f xh1 sq)
+      (size_payload_map_not_map xh1 sq))
 
 ///////////////////////////////////////////////////////////////////////////////
 // DEPTH-AWARE MAP writer twins (mirror the array _d template; entries are pairs)
@@ -2966,6 +3798,151 @@ let size_payload_map_map_d
 
 #pop-options
 
+#push-options "--z3rlimit 64 --fuel 2 --ifuel 2"
+
+// Depth-aware MAP gen-case inner writer (mirror of `ser_payload_array_gen_inner_d`;
+// map entries are pairs serialized with `serialize_nondep_then`, and the generic
+// map core `SG.write_gen_map_core` splits each pair internally, reusing the shared
+// depth element writer `w`). Parametric over `w` so the depth-`n` path
+// (`depth_match_writer_of_f n f`) and the depth-0 base path
+// (`depth_match_writer_zero`) share this code.
+inline_for_extraction
+fn ser_payload_map_gen_inner_d
+  (n: Ghost.erased nat)
+  (w: (pm': perm) -> l2r_writer (DEP.depth_match n pm') serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
+  (xl': with_perm cbor_raw)
+  (#xarg: Ghost.erased (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item)))
+  (out: S.slice byte)
+  (offset: SZ.t)
+  (#v: Ghost.erased bytes)
+requires
+  pts_to out v **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg **
+  pure (l2r_writer_for_pre (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (LP.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)) xarg offset v)
+returns res: SZ.t
+ensures exists* v'.
+  pts_to out v' **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg **
+  pure (l2r_writer_for_post (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (LP.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)) xarg offset v res v')
+{
+  let xh_c = vmatch_ext_elim_trade (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen xl' xh_c;
+  Trade.trans (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map) xl' xh_c) _ _;
+  vmatch_with_cond_elim_trade (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map) xl' xh_c;
+  Trade.trans (match_cbor_payload_d n xh1 xl' xh_c) _ _;
+  let xh0 = match_cbor_payload_elim_trade_d n xh1 xl' xh_c;
+  Trade.trans (cbor_match_with_perm_d n xl' xh0) _ _;
+  Trade.rewrite_with_trade
+    (cbor_match_with_perm_d n xl' xh0)
+    (cbor_match_with_depth n xl'.p xl'.v xh0);
+  Trade.trans (cbor_match_with_depth n xl'.p xl'.v xh0) (cbor_match_with_perm_d n xl' xh0) _;
+  cbor_match_with_depth_cases n xl'.p xl'.v xh0;
+  let CBOR_Case_Map_Gen a = xl'.v;
+  map_gen_content_facts xh1 sq xh_c xh0;
+  let xh0r = refine_erased_map xh0 ();
+  cbor_match_with_depth_eq_map_gen n xl'.p a xh0r;
+  Trade.rewrite_with_trade
+    (cbor_match_with_depth n xl'.p xl'.v xh0)
+    (cbor_match_mixed_list_map xl'.p a xh0r (depth_cb n xh0r));
+  Trade.trans (cbor_match_mixed_list_map xl'.p a xh0r (depth_cb n xh0r)) (cbor_match_with_depth n xl'.p xl'.v xh0) _;
+  let res = SG.write_gen_map_core n w a xl'.p xh0r out offset;
+  elim_trade
+    (cbor_match_mixed_list_map xl'.p a xh0r (depth_cb n xh0r))
+    (vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+      xl' xarg);
+  res
+}
+
+inline_for_extraction
+let ser_payload_map_gen_d
+  (n: Ghost.erased nat)
+  (w: (pm': perm) -> l2r_writer (DEP.depth_match n pm') serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
+: l2r_writer (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen) (serialize_content xh1)
+= l2r_writer_ext_gen
+    (ser_payload_map_gen_inner_d n w xh1 sq)
+    (serialize_content xh1)
+
+inline_for_extraction
+fn size_payload_map_gen_inner_d
+  (n: Ghost.erased nat)
+  (cr: (pm': perm) -> compute_remaining_size (DEP.depth_match n pm') serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
+  (xl': with_perm cbor_raw)
+  (#xarg: Ghost.erased (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item)))
+  (out: R.ref SZ.t)
+  (#v: Ghost.erased SZ.t)
+requires
+  R.pts_to out v **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg
+returns res: bool
+ensures exists* v'.
+  R.pts_to out v' **
+  vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg **
+  pure (
+    let bs = Seq.length (bare_serialize (VCL.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (LP.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)) xarg) in
+    (res == true <==> bs <= SZ.v v) /\
+    (res == true ==> bs + SZ.v v' == SZ.v v))
+{
+  let xh_c = vmatch_ext_elim_trade (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+    (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+    xl' xarg;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen xl' xh_c;
+  Trade.trans (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map) xl' xh_c) _ _;
+  vmatch_with_cond_elim_trade (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map) xl' xh_c;
+  Trade.trans (match_cbor_payload_d n xh1 xl' xh_c) _ _;
+  let xh0 = match_cbor_payload_elim_trade_d n xh1 xl' xh_c;
+  Trade.trans (cbor_match_with_perm_d n xl' xh0) _ _;
+  Trade.rewrite_with_trade
+    (cbor_match_with_perm_d n xl' xh0)
+    (cbor_match_with_depth n xl'.p xl'.v xh0);
+  Trade.trans (cbor_match_with_depth n xl'.p xl'.v xh0) (cbor_match_with_perm_d n xl' xh0) _;
+  cbor_match_with_depth_cases n xl'.p xl'.v xh0;
+  let CBOR_Case_Map_Gen a = xl'.v;
+  map_gen_content_facts xh1 sq xh_c xh0;
+  let xh0r = refine_erased_map xh0 ();
+  cbor_match_with_depth_eq_map_gen n xl'.p a xh0r;
+  Trade.rewrite_with_trade
+    (cbor_match_with_depth n xl'.p xl'.v xh0)
+    (cbor_match_mixed_list_map xl'.p a xh0r (depth_cb n xh0r));
+  Trade.trans (cbor_match_mixed_list_map xl'.p a xh0r (depth_cb n xh0r)) (cbor_match_with_depth n xl'.p xl'.v xh0) _;
+  let res = SG.size_gen_map_core n cr a xl'.p xh0r out;
+  elim_trade
+    (cbor_match_mixed_list_map xl'.p a xh0r (depth_cb n xh0r))
+    (vmatch_ext (VCL.nlist (U64.v (argument_as_uint64 (get_header_initial_byte xh1) (get_header_long_argument xh1))) (raw_data_item & raw_data_item))
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen)
+      xl' xarg);
+  res
+}
+
+inline_for_extraction
+let size_payload_map_gen_d
+  (n: Ghost.erased nat)
+  (cr: (pm': perm) -> compute_remaining_size (DEP.depth_match n pm') serialize_raw_data_item)
+  (xh1: header)
+  (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
+: compute_remaining_size (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen) (serialize_content xh1)
+= compute_remaining_size_ext_gen
+    (size_payload_map_gen_inner_d n cr xh1 sq)
+    (serialize_content xh1)
+
+#pop-options
+
 #push-options "--z3rlimit 32"
 
 // DELIVERABLE 7 (map): depth-aware serialized-map (not-map) case. Bridges the
@@ -2980,7 +3957,7 @@ fn ser_payload_map_not_map_lens_d
                       xh1)
                   (get_header_long_argument xh1)))
           (raw_data_item & raw_data_item))
-      (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)))
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) (pnot cbor_with_perm_case_map_gen)))
   (pts_to_serialized_with_perm (LowParse.Spec.VCList.serialize_nlist (U64.v (argument_as_uint64 (get_header_initial_byte
                       xh1)
                   (get_header_long_argument xh1)))
@@ -2988,14 +3965,17 @@ fn ser_payload_map_not_map_lens_d
 = (xl: _)
   (v: _)
 {
-  let _ = vmatch_ext_elim_trade (LowParse.Spec.VCList.nlist (U64.v (argument_as_uint64 (get_header_initial_byte
+  let xh_c = vmatch_ext_elim_trade (LowParse.Spec.VCList.nlist (U64.v (argument_as_uint64 (get_header_initial_byte
                       xh1)
                   (get_header_long_argument xh1)))
           (raw_data_item & raw_data_item))
-      (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) _ _;
+      (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) (pnot cbor_with_perm_case_map_gen)) _ _;
+  vmatch_with_cond_elim_trade (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) (pnot cbor_with_perm_case_map_gen) _ _;
+  Trade.trans (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map) _ _) _ _;
   vmatch_with_cond_elim_trade (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map) _ _;
   Trade.trans (match_cbor_payload_d n xh1 _ _) _ _;
   let xh0 = match_cbor_payload_elim_trade_d n xh1 xl _;
+  map_gen_content_facts xh1 sq xh_c xh0;
   Trade.trans (cbor_match_with_perm_d n xl xh0) _ _;
   Trade.rewrite_with_trade
     (cbor_match_with_perm_d n xl xh0)
@@ -3069,7 +4049,7 @@ let ser_payload_map_not_map_d
   (xh1: header)
   (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
 :
-l2r_writer (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map))
+l2r_writer (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) (pnot cbor_with_perm_case_map_gen))
   (serialize_content xh1)
 = l2r_writer_ext_gen
     (l2r_writer_lens
@@ -3086,7 +4066,7 @@ let size_payload_map_not_map_d
   (xh1: header)
   (sq: squash (let b = get_header_initial_byte xh1 in b.major_type = cbor_major_type_map))
 :
-compute_remaining_size (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map))
+compute_remaining_size (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) (pnot cbor_with_perm_case_map_gen))
   (serialize_content xh1)
 = compute_remaining_size_ext_gen
     (compute_remaining_size_lens
@@ -3099,7 +4079,8 @@ compute_remaining_size (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor
 
 #pop-options
 
-// DELIVERABLE 8 (map): depth-aware map payload dispatcher.
+// DELIVERABLE 8 (map): depth-aware map payload dispatcher (three sub-cases:
+// inline-slice map / gen mixed-list / serialized-bytes).
 inline_for_extraction
 let ser_payload_map_d
   (n: Ghost.erased nat)
@@ -3111,7 +4092,11 @@ let ser_payload_map_d
     _ _
     cbor_with_perm_case_map
     (ser_payload_map_map_d n f xh1 sq)
-    (ser_payload_map_not_map_d n xh1 sq)
+    (l2r_writer_ifthenelse_low
+      _ _
+      cbor_with_perm_case_map_gen
+      (ser_payload_map_gen_d n (depth_match_writer_of_f n f) xh1 sq)
+      (ser_payload_map_not_map_d n xh1 sq))
 
 inline_for_extraction
 let size_payload_map_d
@@ -3124,7 +4109,11 @@ let size_payload_map_d
     _ _
     cbor_with_perm_case_map
     (size_payload_map_map_d n f xh1 sq)
-    (size_payload_map_not_map_d n xh1 sq)
+    (compute_remaining_size_ifthenelse_low
+      _ _
+      cbor_with_perm_case_map_gen
+      (size_payload_map_gen_d n (cr_of_f_d n f) xh1 sq)
+      (size_payload_map_not_map_d n xh1 sq))
 
 inline_for_extraction
 let cbor_with_perm_case_tagged
@@ -3997,7 +4986,11 @@ let ser_payload_array_base_d
     _ _
     cbor_with_perm_case_array
     (ser_payload_array_array_empty_d xh1 sq)
-    (ser_payload_array_not_array_d 0 xh1 sq)
+    (l2r_writer_ifthenelse_low
+      _ _
+      cbor_with_perm_case_array_gen
+      (ser_payload_array_gen_d 0 depth_match_writer_zero xh1 sq)
+      (ser_payload_array_not_array_d 0 xh1 sq))
 
 inline_for_extraction
 let size_payload_array_base_d
@@ -4008,7 +5001,11 @@ let size_payload_array_base_d
     _ _
     cbor_with_perm_case_array
     (size_payload_array_array_empty_d xh1 sq)
-    (size_payload_array_not_array_d 0 xh1 sq)
+    (compute_remaining_size_ifthenelse_low
+      _ _
+      cbor_with_perm_case_array_gen
+      (size_payload_array_gen_d 0 cr_zero xh1 sq)
+      (size_payload_array_not_array_d 0 xh1 sq))
 
 inline_for_extraction
 let ser_payload_map_base_d
@@ -4019,7 +5016,11 @@ let ser_payload_map_base_d
     _ _
     cbor_with_perm_case_map
     (ser_payload_map_map_empty_d xh1 sq)
-    (ser_payload_map_not_map_d 0 xh1 sq)
+    (l2r_writer_ifthenelse_low
+      _ _
+      cbor_with_perm_case_map_gen
+      (ser_payload_map_gen_d 0 depth_match_writer_zero xh1 sq)
+      (ser_payload_map_not_map_d 0 xh1 sq))
 
 inline_for_extraction
 let size_payload_map_base_d
@@ -4030,7 +5031,11 @@ let size_payload_map_base_d
     _ _
     cbor_with_perm_case_map
     (size_payload_map_map_empty_d xh1 sq)
-    (size_payload_map_not_map_d 0 xh1 sq)
+    (compute_remaining_size_ifthenelse_low
+      _ _
+      cbor_with_perm_case_map_gen
+      (size_payload_map_gen_d 0 cr_zero xh1 sq)
+      (size_payload_map_not_map_d 0 xh1 sq))
 
 #push-options "--z3rlimit 32"
 inline_for_extraction
@@ -4502,6 +5507,296 @@ ensures
   size_unfold_d 0 size_body_base_d x' x out v
 }
 
+// ============================================================================
+// PHASE E: GEN-node (CBOR_Case_Array_Gen / CBOR_Case_Map_Gen) recursion-knot
+// wiring.  A gen node cannot be classified `deep` (its `compute_deep` is false,
+// so `estab_deep_pos` gives no `n >= 1`) nor `shallow` (it genuinely recurses,
+// so it cannot be re-indexed to depth 0 by `shallow_to_zero`).  It therefore
+// needs a THIRD dispatch path in the recursion knot, using the DEFERRED element
+// writer `depth_match_writer_of_recf` (which is constructible at ANY depth `n`).
+//
+// The `genmatch_d` vmatch bundles `cbor_match_with_perm_d n` with the pure fact
+// `is_gen`, so its payload dispatch NARROWS to exactly the two gen sub-cases
+// (array-gen / map-gen), both of which use only the deferred writer -- avoiding
+// the (globally unprovable, for a Serialized-backed gen) need for an
+// already-formed depth-(nat_pred n) writer `f`.
+// ============================================================================
+
+let is_gen (c: cbor_raw) : Tot bool =
+  match c with
+  | CBOR_Case_Array_Gen _ -> true
+  | CBOR_Case_Map_Gen _ -> true
+  | _ -> false
+
+let genmatch_d
+  (n: nat)
+  (xl: with_perm cbor_raw)
+  (x: raw_data_item)
+: Tot slprop
+= cbor_match_with_perm_d n xl x ** pure (is_gen xl.v == true)
+
+// V_G := vmatch_dep_proj2 (vmatch_synth (genmatch_d n) synth) xh1 xl xh2 and
+// `match_cbor_payload_d n xh1 xl xh2 ** pure (is_gen xl.v)` are the same slprop
+// (both are plain-let unfoldings of
+//   cbor_match_with_perm_d n xl (synth_raw_data_item (| xh1, xh2 |)) ** pure is_gen).
+// These two ghost fns convert between them by layered unfold/fold (the same
+// idiom used by cbor_raw_get_header'_d for vmatch_synth).
+ghost
+fn genmatch_to_payload
+  (n: Ghost.erased nat)
+  (xh1: header)
+  (xl: with_perm cbor_raw)
+  (xh2: content xh1)
+requires
+  LP.vmatch_dep_proj2 (LP.vmatch_synth (genmatch_d n) synth_raw_data_item) xh1 xl xh2
+ensures
+  match_cbor_payload_d n xh1 xl xh2 ** pure (is_gen xl.v == true)
+{
+  unfold (LP.vmatch_dep_proj2 (LP.vmatch_synth (genmatch_d n) synth_raw_data_item) xh1 xl xh2);
+  unfold (LP.vmatch_synth (genmatch_d n) synth_raw_data_item xl (| xh1, xh2 |));
+  unfold (genmatch_d n xl (synth_raw_data_item (| xh1, xh2 |)));
+  fold (LP.vmatch_synth (cbor_match_with_perm_d n) synth_raw_data_item xl (| xh1, xh2 |));
+  fold (LP.vmatch_dep_proj2 (LP.vmatch_synth (cbor_match_with_perm_d n) synth_raw_data_item) xh1 xl xh2);
+  fold (match_cbor_payload_d n xh1 xl xh2);
+}
+
+ghost
+fn payload_to_genmatch
+  (n: Ghost.erased nat)
+  (xh1: header)
+  (xl: with_perm cbor_raw)
+  (xh2: content xh1)
+requires
+  match_cbor_payload_d n xh1 xl xh2 ** pure (is_gen xl.v == true)
+ensures
+  LP.vmatch_dep_proj2 (LP.vmatch_synth (genmatch_d n) synth_raw_data_item) xh1 xl xh2
+{
+  unfold (match_cbor_payload_d n xh1 xl xh2);
+  unfold (LP.vmatch_dep_proj2 (LP.vmatch_synth (cbor_match_with_perm_d n) synth_raw_data_item) xh1 xl xh2);
+  unfold (LP.vmatch_synth (cbor_match_with_perm_d n) synth_raw_data_item xl (| xh1, xh2 |));
+  fold (genmatch_d n xl (synth_raw_data_item (| xh1, xh2 |)));
+  fold (LP.vmatch_synth (genmatch_d n) synth_raw_data_item xl (| xh1, xh2 |));
+  fold (LP.vmatch_dep_proj2 (LP.vmatch_synth (genmatch_d n) synth_raw_data_item) xh1 xl xh2);
+}
+
+// Header reader for the genmatch vmatch (mirror of cbor_raw_get_header'_d).
+inline_for_extraction
+fn gen_raw_get_header'_d
+  (n: Ghost.erased nat)
+  (xl: with_perm cbor_raw)
+  (xh: erased (dtuple2 header content))
+requires
+  (LP.vmatch_synth (genmatch_d n) synth_raw_data_item xl (reveal xh))
+returns res: header
+ensures
+  LP.vmatch_synth (genmatch_d n) synth_raw_data_item xl (reveal xh) **
+  pure (res == dfst (reveal xh))
+{
+  synth_raw_data_item_recip_synth_raw_data_item xh;
+  unfold (LP.vmatch_synth (genmatch_d n) synth_raw_data_item xl (reveal xh));
+  unfold (genmatch_d n xl (synth_raw_data_item (reveal xh)));
+  let res = cbor_raw_with_perm_get_header_d n xl _;
+  fold (genmatch_d n xl (synth_raw_data_item (reveal xh)));
+  fold (LP.vmatch_synth (genmatch_d n) synth_raw_data_item xl (reveal xh));
+  res
+}
+
+// Pure bridge: the header/content synthesis relation determines the node's
+// major type.
+let synth_recip_major
+  (xh1: header)
+  (xh2: content xh1)
+  (xh0: raw_data_item)
+: Lemma
+  (requires synth_raw_data_item_recip xh0 == (| xh1, xh2 |))
+  (ensures get_major_type xh0 == (get_header_initial_byte xh1).major_type)
+= let _ = synth_raw_data_item_recip_inverse in
+  assert (synth_raw_data_item (synth_raw_data_item_recip xh0) == xh0)
+
+// From `is_gen`, determine WHICH gen sub-case (array-gen / map-gen) applies and
+// tie it to the header's major type, exposing the case-booleans (in terms of
+// `xl`, in scope for the caller) rather than the local decoded `xh0`.
+#push-options "--z3rlimit 40 --fuel 2 --ifuel 4"
+ghost
+fn gen_payload_which
+  (n: Ghost.erased nat)
+  (xh1: header)
+  (xl: with_perm cbor_raw)
+  (xh2: content xh1)
+requires
+  match_cbor_payload_d n xh1 xl xh2 ** pure (is_gen xl.v == true)
+ensures
+  match_cbor_payload_d n xh1 xl xh2 ** pure (
+    is_gen xl.v == true /\
+    cbor_with_perm_case_array xl == false /\
+    cbor_with_perm_case_map xl == false /\
+    ( (cbor_with_perm_case_array_gen xl == true /\ cbor_with_perm_case_map_gen xl == false /\ (get_header_initial_byte xh1).major_type == cbor_major_type_array) \/
+      (cbor_with_perm_case_array_gen xl == false /\ cbor_with_perm_case_map_gen xl == true /\ (get_header_initial_byte xh1).major_type == cbor_major_type_map) )
+  )
+{
+  let xh0 = match_cbor_payload_elim_trade_d n xh1 xl xh2;
+  synth_recip_major xh1 xh2 xh0;
+  unfold (cbor_match_with_perm_d n xl xh0);
+  cbor_match_with_depth_cases n xl.p xl.v xh0;
+  fold (cbor_match_with_perm_d n xl xh0);
+  Trade.elim (cbor_match_with_perm_d n xl xh0) (match_cbor_payload_d n xh1 xl xh2);
+}
+#pop-options
+
+// Payload writer for the genmatch vmatch: 2-way dispatch on the header's major
+// type (array-gen vs map-gen), each routed to the corresponding gen sub-writer
+// with the DEFERRED element writer.
+#push-options "--z3rlimit 40"
+inline_for_extraction
+fn ser_gen_payload_d
+  (n: Ghost.erased nat)
+  (recf: (n': Ghost.erased nat { Ghost.reveal n' < Ghost.reveal n }) -> l2r_writer (cbor_match_with_perm_d n') serialize_raw_data_item)
+  (xh1: header)
+: l2r_writer (LP.vmatch_dep_proj2 (LP.vmatch_synth (genmatch_d n) synth_raw_data_item) xh1) (serialize_content xh1)
+=
+  (xl: with_perm cbor_raw) (#xh2: content xh1) (out: S.slice LP.byte) (offset: SZ.t) (#v: Ghost.erased LP.bytes)
+{
+  genmatch_to_payload n xh1 xl xh2;
+  gen_payload_which n xh1 xl xh2;
+  let b = get_header_initial_byte xh1;
+  if (b.major_type = cbor_major_type_array) {
+    fold (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array) xl xh2);
+    fold (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen xl xh2);
+    let res = ser_payload_array_gen_d n (depth_match_writer_of_recf n recf) xh1 () xl out offset;
+    unfold (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen xl xh2);
+    unfold (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array) xl xh2);
+    payload_to_genmatch n xh1 xl xh2;
+    res
+  } else {
+    fold (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map) xl xh2);
+    fold (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen xl xh2);
+    let res = ser_payload_map_gen_d n (depth_match_writer_of_recf n recf) xh1 () xl out offset;
+    unfold (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen xl xh2);
+    unfold (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map) xl xh2);
+    payload_to_genmatch n xh1 xl xh2;
+    res
+  }
+}
+#pop-options
+
+#push-options "--z3rlimit 40"
+inline_for_extraction
+fn size_gen_payload_d
+  (n: Ghost.erased nat)
+  (recg: (n': Ghost.erased nat { Ghost.reveal n' < Ghost.reveal n }) -> compute_remaining_size (cbor_match_with_perm_d n') serialize_raw_data_item)
+  (xh1: header)
+: compute_remaining_size (LP.vmatch_dep_proj2 (LP.vmatch_synth (genmatch_d n) synth_raw_data_item) xh1) (serialize_content xh1)
+=
+  (xl: with_perm cbor_raw) (#xh2: content xh1) (out: R.ref SZ.t) (#v: Ghost.erased SZ.t)
+{
+  genmatch_to_payload n xh1 xl xh2;
+  gen_payload_which n xh1 xl xh2;
+  let b = get_header_initial_byte xh1;
+  if (b.major_type = cbor_major_type_array) {
+    fold (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array) xl xh2);
+    fold (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen xl xh2);
+    let res = size_payload_array_gen_d n (cr_of_recf_d n recg) xh1 () xl out;
+    unfold (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array)) cbor_with_perm_case_array_gen xl xh2);
+    unfold (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_array) xl xh2);
+    payload_to_genmatch n xh1 xl xh2;
+    res
+  } else {
+    fold (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map) xl xh2);
+    fold (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen xl xh2);
+    let res = size_payload_map_gen_d n (cr_of_recf_d n recg) xh1 () xl out;
+    unfold (vmatch_with_cond (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map)) cbor_with_perm_case_map_gen xl xh2);
+    unfold (vmatch_with_cond (match_cbor_payload_d n xh1) (pnot cbor_with_perm_case_map) xl xh2);
+    payload_to_genmatch n xh1 xl xh2;
+    res
+  }
+}
+#pop-options
+
+// Synth/dtuple2 assembly for the genmatch writer (mirror of ser_body_d).
+inline_for_extraction
+let ser_gen_body_d
+  (n: Ghost.erased nat)
+  (recf: (n': Ghost.erased nat { Ghost.reveal n' < Ghost.reveal n }) -> l2r_writer (cbor_match_with_perm_d n') serialize_raw_data_item)
+: l2r_writer (genmatch_d n) serialize_raw_data_item
+= LP.l2r_writer_ext #_ #_ #_ #_ #_ #serialize_raw_data_item_aux
+    (LP.l2r_write_synth_recip
+      _
+      synth_raw_data_item
+      synth_raw_data_item_recip
+      (LP.l2r_write_dtuple2_recip_explicit_header
+        write_header
+        (gen_raw_get_header'_d n)
+        ()
+        (ser_gen_payload_d n recf)
+      )
+    )
+    (Classical.forall_intro parse_raw_data_item_eq; serialize_raw_data_item)
+
+inline_for_extraction
+let size_gen_body_d
+  (n: Ghost.erased nat)
+  (recg: (n': Ghost.erased nat { Ghost.reveal n' < Ghost.reveal n }) -> compute_remaining_size (cbor_match_with_perm_d n') serialize_raw_data_item)
+: compute_remaining_size (genmatch_d n) serialize_raw_data_item
+= LP.compute_remaining_size_ext #_ #_ #_ #_ #_ #serialize_raw_data_item_aux
+    (LP.compute_remaining_size_synth_recip
+      _
+      synth_raw_data_item
+      synth_raw_data_item_recip
+      (LP.compute_remaining_size_dtuple2_recip_explicit_header
+        size_header
+        (gen_raw_get_header'_d n)
+        ()
+        (size_gen_payload_d n recg)
+      )
+    )
+    (Classical.forall_intro parse_raw_data_item_eq; serialize_raw_data_item)
+
+// Driver for the gen path: adapts ser_pre_d/ser_post_d to the genmatch writer.
+inline_for_extraction
+fn ser_gen_unfold_d
+  (n: Ghost.erased nat)
+  (recf: (n': Ghost.erased nat { Ghost.reveal n' < Ghost.reveal n }) -> l2r_writer (cbor_match_with_perm_d n') serialize_raw_data_item)
+  (x': with_perm cbor_raw)
+  (x: Ghost.erased raw_data_item)
+  (out: S.slice LP.byte)
+  (offset: SZ.t)
+  (v: Ghost.erased LP.bytes)
+requires
+  ser_pre_d n x' x out offset v ** pure (is_gen x'.v == true)
+returns res: SZ.t
+ensures
+  ser_post_d n x' x out offset v res
+{
+  unfold (ser_pre_d n x' x out offset v);
+  fold (genmatch_d n x' x);
+  let res = ser_gen_body_d n recf x' out offset;
+  unfold (genmatch_d n x' x);
+  fold (ser_post_d n x' x out offset v res);
+  res
+}
+
+inline_for_extraction
+fn size_gen_unfold_d
+  (n: Ghost.erased nat)
+  (recg: (n': Ghost.erased nat { Ghost.reveal n' < Ghost.reveal n }) -> compute_remaining_size (cbor_match_with_perm_d n') serialize_raw_data_item)
+  (x': with_perm cbor_raw)
+  (x: Ghost.erased raw_data_item)
+  (out: ref SZ.t)
+  (v: Ghost.erased SZ.t)
+requires
+  size_pre_d n x' x out v ** pure (is_gen x'.v == true)
+returns res: bool
+ensures
+  size_post_d n x' x out v res
+{
+  unfold (size_pre_d n x' x out v);
+  fold (genmatch_d n x' x);
+  let res = size_gen_body_d n recg x' out;
+  unfold (genmatch_d n x' x);
+  fold (size_post_d n x' x out v res);
+  res
+}
+
 // `compute_deep c` is true exactly when serializing `c` recurses into children:
 // an inline tagged, or a NON-EMPTY inline array/map.  (Empty inline containers,
 // leaves, strings and serialized nodes are NOT deep and are handled by ser_base_d.)
@@ -4594,7 +5889,7 @@ fn shallow_to_zero
   (x': with_perm cbor_raw)
   (x: Ghost.erased raw_data_item)
 requires
-  cbor_match_with_perm_d n x' x ** pure (compute_deep x'.v == false)
+  cbor_match_with_perm_d n x' x ** pure (compute_deep x'.v == false /\ is_gen x'.v == false)
 ensures
   cbor_match_with_perm_d 0 x' x ** Trade.trade (cbor_match_with_perm_d 0 x' x) (cbor_match_with_perm_d n x' x)
 {
@@ -4763,6 +6058,9 @@ returns res: SZ.t
 ensures
   ser_post_d n x' x out offset v res
 {
+  if (is_gen x'.v) {
+    ser_gen_unfold_d n (fun (n': Ghost.erased nat { Ghost.reveal n' < Ghost.reveal n }) -> ser_fold_d n' (recf n')) x' x out offset v
+  } else {
   let deep = compute_deep x'.v;
   if (deep) {
     unfold (ser_pre_d n x' x out offset v);
@@ -4779,6 +6077,7 @@ ensures
     Trade.elim (cbor_match_with_perm_d 0 x' x) (cbor_match_with_perm_d n x' x);
     fold (ser_post_d n x' x out offset v res);
     res
+  }
   }
 }
 
@@ -4813,6 +6112,9 @@ returns res: bool
 ensures
   size_post_d n x' x out v res
 {
+  if (is_gen x'.v) {
+    size_gen_unfold_d n (fun (n': Ghost.erased nat { Ghost.reveal n' < Ghost.reveal n }) -> size_fold_d n' (recf n')) x' x out v
+  } else {
   let deep = compute_deep x'.v;
   if (deep) {
     unfold (size_pre_d n x' x out v);
@@ -4829,6 +6131,7 @@ ensures
     Trade.elim (cbor_match_with_perm_d 0 x' x) (cbor_match_with_perm_d n x' x);
     fold (size_post_d n x' x out v res);
     res
+  }
   }
 }
 

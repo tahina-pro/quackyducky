@@ -349,17 +349,75 @@ ensures
 
 open CBOR.Pulse.Raw.Read
 module Trade = Pulse.Lib.Trade.Util
+module ML = CBOR.Pulse.Raw.Format.MixedList
+module Match = CBOR.Pulse.Raw.Match
+
+// ===== PURE size-bound helpers (mirror CBOR.Pulse.Raw.Compare) =====
+// A [size]-bound threaded as a precondition keeps [decreases depth] working
+// for the open recursion: a non-empty container of size <= depth forces
+// depth >= 1, so its elements copy at [nat_pred depth < depth].
+let size_lt (depth: nat) (e: raw_data_item) : bool =
+  raw_data_item_size e < depth
+
+let map_size_lt (depth: nat) (e: (raw_data_item & raw_data_item)) : bool =
+  raw_data_item_size (fst e) < depth &&
+  raw_data_item_size (snd e) < depth
+
+let rec list_elts_size_bound (l: list raw_data_item) (depth: nat)
+  : Lemma (requires CBOR.Spec.Util.list_sum raw_data_item_size l + 2 <= depth)
+          (ensures List.Tot.for_all (size_lt depth) l)
+          (decreases l)
+  = match l with
+    | [] -> ()
+    | a :: q -> list_elts_size_bound q depth
+
+let array_elts_size_bound (v: raw_data_item {Array? v}) (depth: nat)
+  : Lemma (requires raw_data_item_size v <= depth)
+          (ensures List.Tot.for_all (size_lt depth) (Array?.v v))
+  = raw_data_item_size_eq v;
+    list_elts_size_bound (Array?.v v) depth
+
+let rec map_entries_size_bound_aux
+  (l: list (raw_data_item & raw_data_item)) (depth: nat)
+  : Lemma (requires
+      CBOR.Spec.Util.list_sum
+        (CBOR.Spec.Util.pair_sum raw_data_item_size raw_data_item_size) l + 2 <= depth)
+          (ensures List.Tot.for_all (map_size_lt depth) l)
+          (decreases l)
+  = match l with
+    | [] -> ()
+    | a :: q -> map_entries_size_bound_aux q depth
+
+let map_entries_size_bound (v: raw_data_item {Map? v}) (depth: nat)
+  : Lemma (requires raw_data_item_size v <= depth)
+          (ensures List.Tot.for_all (map_size_lt depth) (Map?.v v))
+  = raw_data_item_size_eq v;
+    map_entries_size_bound_aux (Map?.v v) depth
+
+// Ordering helper for the streaming (iterator-based) _Gen copy loops.
+// The loop tracks [m == snd (splitAt i l)] (the suffix of the spec list at
+// position i), recovering [m] from the iterator slprop. This single lemma
+// exposes the head (== index l i) and the one-step advance in one shot, and
+// its statement is always well-typed (no hd/tl refinement obligation).
+let rec splitAt_snd_cons (#t: Type) (n: nat) (l: list t)
+  : Lemma (requires n < List.Tot.length l)
+          (ensures snd (List.Tot.splitAt n l) == List.Tot.index l n :: snd (List.Tot.splitAt (n + 1) l))
+          (decreases n)
+  = if n = 0 then ()
+    else (match l with | _ :: q -> splitAt_snd_cons (n - 1) q)
 
 // Depth-indexed copy type for open recursion: the INPUT is preserved at
 // [cbor_match_with_depth depth]; the freshly-built OUTPUT copy is plain
 // [cbor_match 1.0R] (a full copy carries no depth obligation).
+// The [pure (raw_data_item_size v <= depth)] precondition threads the size
+// bound needed to keep [decreases depth] valid across the recursion.
 inline_for_extraction
 let cbor_copy_with_depth_t (depth: Ghost.erased nat) =
   (x: cbor_raw) ->
   (#p: perm) ->
   (#v: Ghost.erased raw_data_item) ->
   stt cbor_freeable
-    (cbor_match_with_depth depth p x v)
+    (cbor_match_with_depth depth p x v ** pure (raw_data_item_size v <= Ghost.reveal depth))
     (fun res ->
       cbor_match_with_depth depth p x v **
       cbor_match 1.0R res.cbor v **
@@ -603,7 +661,8 @@ fn cbor_copy_map_entry_d
   (x: cbor_map_entry)
   (#v: Ghost.erased (raw_data_item & raw_data_item))
 requires
-    cbor_match_map_entry_with_depth d' pl x v
+    cbor_match_map_entry_with_depth d' pl x v **
+    pure (raw_data_item_size (fst v) <= Ghost.reveal d' /\ raw_data_item_size (snd v) <= Ghost.reveal d')
 returns res: (cbor_freeable & cbor_freeable)
 ensures
     cbor_match_map_entry_with_depth d' pl x v **
@@ -639,7 +698,7 @@ fn cbor_copy_array_d
   (#p: perm)
   (#v: Ghost.erased raw_data_item)
 requires
-    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Array? x))
+    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Array? x /\ raw_data_item_size v <= Ghost.reveal depth))
 returns res: cbor_freeable
 ensures
     (
@@ -716,6 +775,7 @@ ensures
     rewrite each j as (SZ.v i);
     let c = ar.(i);
     SM.seq_list_match_index_trade (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_array_payload_perm)) s (Array?.v v) (SZ.v i);
+    size_array_elt v (List.Tot.index (Array?.v v) (SZ.v i));
     let c' = copy (nat_pred depth) c;
     rewrite each Seq.index s (SZ.v i) as c;
     Trade.elim _ (SM.seq_list_match s (Array?.v v) (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_array_payload_perm)));
@@ -827,7 +887,7 @@ fn cbor_copy_map_d
   (#p: perm)
   (#v: Ghost.erased raw_data_item)
 requires
-    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Map? x))
+    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Map? x /\ raw_data_item_size v <= Ghost.reveal depth))
 returns res: cbor_freeable
 ensures
     (
@@ -914,6 +974,7 @@ ensures
     rewrite each j as (SZ.v i);
     let c = S.op_Array_Access ar i;
     SM.seq_list_match_index_trade (cbor_match_map_entry_with_depth (nat_pred depth) (p `perm_mul` a.cbor_map_payload_perm)) s (Map?.v v) (SZ.v i);
+    size_map_entry v (List.Tot.index (Map?.v v) (SZ.v i));
     with v1 . assert (cbor_match_map_entry_with_depth (nat_pred depth) (p `perm_mul` a.cbor_map_payload_perm) c v1);
     let key', value' = cbor_copy_map_entry_d (nat_pred depth) (copy (nat_pred depth)) (p `perm_mul` a.cbor_map_payload_perm) c;
     Trade.elim _ (SM.seq_list_match s (Map?.v v) (cbor_match_map_entry_with_depth (nat_pred depth) (p `perm_mul` a.cbor_map_payload_perm)));
@@ -1035,13 +1096,460 @@ ensures
 }
 
 inline_for_extraction
+let get_cbor_raw_array_gen
+  (x: cbor_raw { CBOR_Case_Array_Gen? x })
+: Tot cbor_mixed_list_array
+= let CBOR_Case_Array_Gen v = x in v
+
+inline_for_extraction
+let get_cbor_raw_map_gen
+  (x: cbor_raw { CBOR_Case_Map_Gen? x })
+: Tot cbor_mixed_list_map
+= let CBOR_Case_Map_Gen v = x in v
+
+// Deep-copy a _Gen array by streaming its elements through the depth-aware
+// array iterator (which dispatches CBOR_Case_Array_Gen internally) into the
+// same CBOR_Copy_Array footprint the inline arm builds.
+#restart-solver
+inline_for_extraction
+fn cbor_copy_array_gen_d
+  (depth: Ghost.erased nat)
+  (copy: (depth': Ghost.erased nat { depth' < depth }) -> cbor_copy_with_depth_t depth')
+  (x: cbor_raw)
+  (#p: perm)
+  (#v: Ghost.erased raw_data_item)
+requires
+    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Array_Gen? x /\ raw_data_item_size v <= Ghost.reveal depth))
+returns res: cbor_freeable
+ensures
+    (
+      cbor_match_with_depth depth p x v **
+      cbor_match 1.0R res.cbor v **
+      Trade.trade
+        (cbor_match 1.0R res.cbor v)
+        (freeable res)
+    )
+{
+  cbor_match_with_depth_cases depth p x v;
+  let a = get_cbor_raw_array_gen x;
+  rewrite (cbor_match_with_depth depth p x v)
+    as (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v);
+  // --- get element count as SZ.t and relate it to List.length (Array?.v v) ---
+  cbor_match_with_depth_array_gen_elim depth p a v;
+  let count = ML.cbor_raw_mixed_list_length a.cbor_array_gen_ptr;
+  cbor_match_mixed_list_array_length p a v (depth_cb depth v);
+  Trade.elim _ (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v);
+  rewrite (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v)
+    as (cbor_match_with_depth depth p x v);
+  // --- initialize the depth-aware array iterator (dispatches _Gen) ---
+  let it = cbor_array_iterator_init_with_depth depth x;
+  with p_it . assert (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
+  // --- pre-allocate destination vectors ---
+  let len = count;
+  let len64 : raw_uint64 = { size = a.cbor_array_gen_length_size; value = SZ.sizet_to_uint64 len };
+  assert (pure (len64 == Array?.len v));
+  let v' = V.alloc (CBOR_Case_Simple 0uy (* dummy *)) len;
+  V.pts_to_len v';
+  let vf = V.alloc CBOR_Copy_Unit (* dummy *) len;
+  V.pts_to_len vf;
+  with s0 . assert (pts_to v' s0);
+  with sf0 . assert (pts_to vf sf0);
+  let sl = Ghost.hide (Seq.seq_of_list (Array?.v v));
+  SM.seq_seq_match_empty_intro (cbor_match 1.0R) s0 sl 0;
+  intro
+    (Trade.trade
+      (SM.seq_seq_match (cbor_match 1.0R) s0 sl 0 0)
+      (SM.seq_seq_match freeable_match' sf0 (Seq.create (SZ.v len) FTUnit (* dummy *)) 0 0)
+    )
+    #emp
+    fn _
+  {
+    SM.seq_seq_match_empty_elim (cbor_match 1.0R) s0 sl 0;
+    SM.seq_seq_match_empty_intro freeable_match' sf0 (Seq.create (SZ.v len) FTUnit (* dummy *)) 0;
+  };
+  // --- streaming copy loop ---
+  let mut pi = 0sz;
+  let mut pit = it;
+  Trade.refl (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
+  while (
+    let i = !pi;
+    (SZ.lt i len)
+  ) invariant exists* i gi m pj s1 j sf st . (
+    pts_to pi i **
+    pts_to pit gi **
+    cbor_array_iterator_match_with_depth (nat_pred depth) pj gi m **
+    Trade.trade
+      (cbor_array_iterator_match_with_depth (nat_pred depth) pj gi m)
+      (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v)) **
+    pts_to v' s1 **
+    SM.seq_seq_match (cbor_match 1.0R) s1 sl 0 j **
+    pts_to vf sf **
+    Trade.trade
+      (SM.seq_seq_match (cbor_match 1.0R) s1 sl 0 j)
+      (SM.seq_seq_match freeable_match' sf st 0 j) **
+    pure (
+      j == SZ.v i /\
+      SZ.v i <= SZ.v len /\
+      SZ.v len == List.Tot.length (Ghost.reveal (Array?.v v)) /\
+      Ghost.reveal m == snd (List.Tot.splitAt (SZ.v i) (Ghost.reveal (Array?.v v))) /\
+      Seq.length st == SZ.v len
+    )
+  ) {
+    V.pts_to_len v';
+    V.pts_to_len vf;
+    let i = !pi;
+    with s1 j sf st . assert (pts_to v' s1 ** pts_to vf sf ** Trade.trade
+      (SM.seq_seq_match (cbor_match 1.0R) s1 sl 0 j)
+      (SM.seq_seq_match freeable_match' sf st 0 j)
+    );
+    rewrite each j as (SZ.v i);
+    // identify the head of the remaining suffix with the element at index i,
+    // and expose the one-step advance [snd (splitAt i) == index i :: snd (splitAt (i+1))]
+    splitAt_snd_cons (SZ.v i) (Array?.v v);
+    let c = cbor_array_iterator_next_with_depth (nat_pred depth) pit;
+    Trade.trans _ _ (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
+    // size bound for the recursive copy
+    size_array_elt v (List.Tot.index (Array?.v v) (SZ.v i));
+    let c' = copy (nat_pred depth) c;
+    Trade.elim_hyp_l _ _ (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
+    with v1 . assert (cbor_match 1.0R c'.cbor v1 ** Trade.trade (cbor_match 1.0R c'.cbor v1) (freeable c'));
+    V.op_Array_Assignment v' i c'.cbor;
+    with s1' . assert (pts_to v' s1');
+    V.op_Array_Assignment vf i c'.footprint;
+    with sf' . assert (pts_to vf sf');
+    SM.seq_seq_match_rewrite_seq_trade (cbor_match 1.0R) s1 s1' sl sl 0 (SZ.v i);
+    Trade.trans (SM.seq_seq_match (cbor_match 1.0R) s1' sl 0 (SZ.v i)) _ _;
+    Trade.prod (SM.seq_seq_match (cbor_match 1.0R) s1' sl 0 (SZ.v i)) _ (cbor_match 1.0R c'.cbor v1) _;
+    SM.seq_seq_match_enqueue_right_trade (cbor_match 1.0R) s1' sl 0 (SZ.v i) c'.cbor v1;
+    Trade.trans (SM.seq_seq_match (cbor_match 1.0R) s1' sl 0 (SZ.v i + 1)) _ _;
+    let st' = Ghost.hide (Seq.upd st (SZ.v i) c'.tree);
+    intro
+      (Trade.trade
+        (SM.seq_seq_match freeable_match' sf st 0 (SZ.v i) ** freeable c')
+        (SM.seq_seq_match freeable_match' sf' st' 0 (SZ.v i + 1))
+      )
+      #emp
+      fn _
+    {
+      SM.seq_seq_match_rewrite_seq freeable_match' sf sf' st st' 0 (SZ.v i);
+      unfold (freeable c');
+      SM.seq_seq_match_enqueue_right freeable_match' sf' st' 0 (SZ.v i) c'.footprint c'.tree;
+    };
+    Trade.trans (SM.seq_seq_match (cbor_match 1.0R) s1' sl 0 (SZ.v i + 1)) _ _;
+    pi := (SZ.add i 1sz);
+  };
+  // --- restore the source node from the loop trade and the init trade ---
+  Trade.elim _ (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
+  Trade.elim _ (cbor_match_with_depth depth p x v);
+  // --- finalize destination into a CBOR_Copy_Array (mirrors cbor_copy_array_d) ---
+  with s1 j sf st . assert (pts_to v' s1 ** pts_to vf sf **
+    SM.seq_seq_match (cbor_match 1.0R) s1 sl 0 j **
+    Trade.trade
+      (SM.seq_seq_match (cbor_match 1.0R) s1 sl 0 j)
+      (SM.seq_seq_match freeable_match' sf st 0 j)
+  );
+  rewrite each j as (SZ.v len);
+  V.pts_to_len v';
+  SM.seq_seq_match_seq_list_match_trade (cbor_match 1.0R) s1 sl;
+  CBOR.Pulse.Raw.Iterator.trade_trans_nounify _ _ _ (SM.seq_seq_match freeable_match' sf st 0 (SZ.v len));
+  V.pts_to_len vf;
+  let lt = Ghost.hide (Seq.seq_to_list st);
+  intro
+    (Trade.trade
+      (SM.seq_seq_match freeable_match' sf st 0 (SZ.v len))
+      (SM.seq_list_match sf lt freeable_match')
+    )
+    #emp
+    fn _
+  {
+    rewrite (SM.seq_seq_match freeable_match' sf st 0 (SZ.v len))
+      as (SM.seq_seq_match freeable_match' sf (Seq.seq_of_list lt) 0 (SZ.v len));
+    SM.seq_seq_match_seq_list_match freeable_match' sf lt;
+  };
+  Trade.trans _ _ (SM.seq_list_match sf lt freeable_match');
+  V.to_array_pts_to v';
+  let ar' = S.from_array (V.vec_to_array v') len;
+  S.pts_to_len ar';
+  let c' = cbor_match_array_intro len64 ar';
+  Trade.trans_concl_r _ _ _ _;
+  let fa = {
+    array_cbor = v';
+    array_footprint = vf;
+    array_len = len;
+  };
+  let res = {
+    cbor = c';
+    footprint = CBOR_Copy_Array fa;
+    tree = FTArray lt;
+  };
+  intro
+    (Trade.trade
+      (pts_to ar' s1 ** SM.seq_list_match sf lt freeable_match')
+      (freeable res)
+    )
+    #(S.is_from_array (V.vec_to_array v') ar' ** pts_to vf sf)
+    fn _
+  {
+   S.to_array ar';
+   V.to_vec_pts_to v';
+   rewrite (pts_to v' s1) as (pts_to fa.array_cbor s1);
+   rewrite (pts_to vf sf) as (pts_to fa.array_footprint sf);
+   fold (freeable_match' (CBOR_Copy_Array fa) (FTArray lt));
+   rewrite freeable_match' (CBOR_Copy_Array fa) (FTArray lt) as
+     freeable_match' res.footprint res.tree;
+   fold (freeable res)
+  };
+  Trade.trans _ _ (freeable res);
+  with r' . assert cbor_match 1.0R c' (Array len64 r');
+  rewrite each cbor_match 1.0R c' (Array len64 r') as cbor_match 1.0R res.cbor v;
+  res
+}
+
+// Deep-copy a _Gen map by streaming its entries through the depth-aware map
+// iterator into the same CBOR_Copy_Map footprint the inline arm builds.
+#restart-solver
+inline_for_extraction
+fn cbor_copy_map_gen_d
+  (depth: Ghost.erased nat)
+  (copy: (depth': Ghost.erased nat { depth' < depth }) -> cbor_copy_with_depth_t depth')
+  (x: cbor_raw)
+  (#p: perm)
+  (#v: Ghost.erased raw_data_item)
+requires
+    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Map_Gen? x /\ raw_data_item_size v <= Ghost.reveal depth))
+returns res: cbor_freeable
+ensures
+    (
+      cbor_match_with_depth depth p x v **
+      cbor_match 1.0R res.cbor v **
+      Trade.trade
+        (cbor_match 1.0R res.cbor v)
+        (freeable res)
+    )
+{
+  cbor_match_with_depth_cases depth p x v;
+  let a = get_cbor_raw_map_gen x;
+  rewrite (cbor_match_with_depth depth p x v)
+    as (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v);
+  // --- get entry count as SZ.t and relate it to List.length (Map?.v v) ---
+  cbor_match_with_depth_map_gen_elim depth p a v;
+  let count = ML.cbor_raw_mixed_list_length a.cbor_map_gen_ptr;
+  cbor_match_mixed_list_map_length p a v (depth_cb depth v);
+  Trade.elim _ (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v);
+  rewrite (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v)
+    as (cbor_match_with_depth depth p x v);
+  // --- initialize the depth-aware map iterator (dispatches _Gen) ---
+  let it = cbor_map_iterator_init_with_depth depth x;
+  with p_it . assert (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
+  // --- pre-allocate destination vectors ---
+  let len = count;
+  let len64 : raw_uint64 = { size = a.cbor_map_gen_length_size; value = SZ.sizet_to_uint64 len };
+  assert (pure (len64 == Map?.len v));
+  let v' = V.alloc
+    ({
+      cbor_map_entry_key = CBOR_Case_Simple 0uy; (* dummy *)
+      cbor_map_entry_value = CBOR_Case_Simple 0uy;
+    })
+    len;
+  V.pts_to_len v';
+  let vf = V.alloc
+    ({
+      map_entry_key = CBOR_Copy_Unit;
+      map_entry_value = CBOR_Copy_Unit;
+    })
+    len;
+  V.pts_to_len vf;
+  with s0 . assert (pts_to v' s0);
+  with sf0 . assert (pts_to vf sf0);
+  let sl = Ghost.hide (Seq.seq_of_list (Map?.v v));
+  SM.seq_seq_match_empty_intro (cbor_match_map_entry 1.0R) s0 sl 0;
+  intro
+    (Trade.trade
+      (SM.seq_seq_match (cbor_match_map_entry 1.0R) s0 sl 0 0)
+      (SM.seq_seq_match freeable_match_map_entry sf0 (Seq.create (SZ.v len) (FTUnit, FTUnit) (* dummy *)) 0 0)
+    )
+    #emp
+    fn _
+  {
+    SM.seq_seq_match_empty_elim (cbor_match_map_entry 1.0R) s0 sl 0;
+    SM.seq_seq_match_empty_intro freeable_match_map_entry sf0 (Seq.create (SZ.v len) (FTUnit, FTUnit) (* dummy *)) 0;
+  };
+  // --- streaming copy loop ---
+  let mut pi = 0sz;
+  let mut pit = it;
+  Trade.refl (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
+  while (
+    let i = !pi;
+    (SZ.lt i len)
+  ) invariant exists* i gi m pj s1 j sf st . (
+    pts_to pi i **
+    pts_to pit gi **
+    cbor_map_iterator_match_with_depth (nat_pred depth) pj gi m **
+    Trade.trade
+      (cbor_map_iterator_match_with_depth (nat_pred depth) pj gi m)
+      (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v)) **
+    pts_to v' s1 **
+    SM.seq_seq_match (cbor_match_map_entry 1.0R) s1 sl 0 j **
+    pts_to vf sf **
+    Trade.trade
+      (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1 sl 0 j)
+      (SM.seq_seq_match freeable_match_map_entry sf st 0 j) **
+    pure (
+      j == SZ.v i /\
+      SZ.v i <= SZ.v len /\
+      SZ.v len == List.Tot.length (Ghost.reveal (Map?.v v)) /\
+      Ghost.reveal m == snd (List.Tot.splitAt (SZ.v i) (Ghost.reveal (Map?.v v))) /\
+      Seq.length st == SZ.v len
+    )
+  ) {
+    V.pts_to_len v';
+    V.pts_to_len vf;
+    let i = !pi;
+    with s1 j sf st . assert (pts_to v' s1 ** pts_to vf sf ** Trade.trade
+      (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1 sl 0 j)
+      (SM.seq_seq_match freeable_match_map_entry sf st 0 j)
+    );
+    rewrite each j as (SZ.v i);
+    // identify the head entry with index i and expose the one-step advance
+    splitAt_snd_cons (SZ.v i) (Map?.v v);
+    let c = cbor_map_iterator_next_with_depth (nat_pred depth) pit;
+    Trade.trans _ _ (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
+    // size bounds for the recursive key/value copies
+    size_map_entry v (List.Tot.index (Map?.v v) (SZ.v i));
+    // the iterator yields Match's depth-entry predicate; unfold/copy/fold under
+    // that (qualified) name to keep it matched against the iterator's trade.
+    with pe a1 . assert (Match.cbor_match_map_entry_with_depth (nat_pred depth) pe c a1);
+    unfold (Match.cbor_match_map_entry_with_depth (nat_pred depth) pe c a1);
+    let key' = copy (nat_pred depth) c.cbor_map_entry_key;
+    let value' = copy (nat_pred depth) c.cbor_map_entry_value;
+    fold (Match.cbor_match_map_entry_with_depth (nat_pred depth) pe c a1);
+    Trade.elim_hyp_l _ _ (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
+    // --- accumulate the copied entry into the destination (mirrors cbor_copy_map_d) ---
+    Trade.prod
+      (cbor_match 1.0R key'.cbor (fst a1))
+      (freeable key')
+      (cbor_match 1.0R value'.cbor (snd a1))
+      (freeable value');
+    let cme' = {
+      cbor_map_entry_key = key'.cbor;
+      cbor_map_entry_value = value'.cbor;
+    };
+    Trade.rewrite_with_trade
+      (cbor_match 1.0R key'.cbor (fst a1) **
+        cbor_match 1.0R value'.cbor (snd a1)
+      )
+      (cbor_match_map_entry 1.0R cme' a1);
+    Trade.trans (cbor_match_map_entry 1.0R cme' a1) _ _;
+    V.op_Array_Assignment v' i cme';
+    with s1' . assert (pts_to v' s1');
+    let cfp' = {
+      map_entry_key = key'.footprint;
+      map_entry_value = value'.footprint;
+    };
+    V.op_Array_Assignment vf i cfp';
+    with sf' . assert (pts_to vf sf');
+    SM.seq_seq_match_rewrite_seq_trade (cbor_match_map_entry 1.0R) s1 s1' sl sl 0 (SZ.v i);
+    Trade.trans (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1' sl 0 (SZ.v i)) _ _;
+    Trade.prod (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1' sl 0 (SZ.v i)) _ (cbor_match_map_entry 1.0R cme' a1) _;
+    SM.seq_seq_match_enqueue_right_trade (cbor_match_map_entry 1.0R) s1' sl 0 (SZ.v i) cme' a1;
+    Trade.trans (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1' sl 0 (SZ.v i + 1)) _ _;
+    let tree = Ghost.hide (key'.tree, value'.tree);
+    let st' = Ghost.hide (Seq.upd st (SZ.v i) tree);
+    intro
+      (Trade.trade
+        (SM.seq_seq_match freeable_match_map_entry sf st 0 (SZ.v i) ** (freeable key' ** freeable value'))
+        (SM.seq_seq_match freeable_match_map_entry sf' st' 0 (SZ.v i + 1))
+      )
+      #emp
+      fn _
+    {
+      SM.seq_seq_match_rewrite_seq freeable_match_map_entry sf sf' st st' 0 (SZ.v i);
+      unfold (freeable key');
+      unfold (freeable value');
+      rewrite each key'.footprint as cfp'.map_entry_key;
+      rewrite each value'.footprint as cfp'.map_entry_value;
+      fold (freeable_match_map_entry cfp' (key'.tree, value'.tree));
+      SM.seq_seq_match_enqueue_right freeable_match_map_entry sf' st' 0 (SZ.v i) cfp' (key'.tree, value'.tree);
+    };
+    Trade.trans (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1' sl 0 (SZ.v i + 1)) _ _;
+    pi := (SZ.add i 1sz);
+  };
+  // --- restore the source node from the loop trade and the init trade ---
+  Trade.elim _ (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
+  Trade.elim _ (cbor_match_with_depth depth p x v);
+  // --- finalize destination into a CBOR_Copy_Map (mirrors cbor_copy_map_d) ---
+  with s1 j sf st . assert (pts_to v' s1 ** pts_to vf sf **
+    SM.seq_seq_match (cbor_match_map_entry 1.0R) s1 sl 0 j **
+    Trade.trade
+      (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1 sl 0 j)
+      (SM.seq_seq_match freeable_match_map_entry sf st 0 j)
+  );
+  rewrite each j as (SZ.v len);
+  V.pts_to_len v';
+  SM.seq_seq_match_seq_list_match_trade (cbor_match_map_entry 1.0R) s1 sl;
+  CBOR.Pulse.Raw.Iterator.trade_trans_nounify _ _ _ (SM.seq_seq_match freeable_match_map_entry sf st 0 (SZ.v len));
+  V.pts_to_len vf;
+  let lt = Ghost.hide (Seq.seq_to_list st);
+  intro
+    (Trade.trade
+      (SM.seq_seq_match freeable_match_map_entry sf st 0 (SZ.v len))
+      (SM.seq_list_match sf lt (freeable_match_map_entry' (FTMap lt) freeable_match'))
+    )
+    #emp
+    fn _
+  {
+    rewrite (SM.seq_seq_match freeable_match_map_entry sf st 0 (SZ.v len))
+      as (SM.seq_seq_match freeable_match_map_entry sf (Seq.seq_of_list lt) 0 (SZ.v len));
+    SM.seq_seq_match_seq_list_match freeable_match_map_entry sf lt;
+    SM.seq_list_match_weaken sf lt freeable_match_map_entry (freeable_match_map_entry' (FTMap lt) freeable_match') (freeable_match_map_entry_weaken_recip lt);
+  };
+  Trade.trans _ _ (SM.seq_list_match sf lt (freeable_match_map_entry' (FTMap lt) freeable_match'));
+  V.to_array_pts_to v';
+  let ar' = S.from_array (V.vec_to_array v') len;
+  S.pts_to_len ar';
+  let c' = cbor_match_map_intro len64 ar';
+  Trade.trans_concl_r _ _ _ _;
+  let fa = {
+    map_cbor = v';
+    map_footprint = vf;
+    map_len = len;
+  };
+  let res = {
+    cbor = c';
+    footprint = CBOR_Copy_Map fa;
+    tree = FTMap lt;
+  };
+  intro
+    (Trade.trade
+      (pts_to ar' s1 ** SM.seq_list_match sf lt (freeable_match_map_entry' (FTMap lt) freeable_match'))
+      (freeable res)
+    )
+    #(S.is_from_array (V.vec_to_array v') ar' ** pts_to vf sf)
+    fn _
+  {
+   S.to_array ar';
+   V.to_vec_pts_to v';
+   rewrite (pts_to v' s1) as (pts_to fa.map_cbor s1);
+   rewrite (pts_to vf sf) as (pts_to fa.map_footprint sf);
+   fold (freeable_match' (CBOR_Copy_Map fa) (FTMap lt));
+   rewrite (freeable_match' (CBOR_Copy_Map fa) (FTMap lt)) as freeable_match' res.footprint res.tree;
+   fold (freeable res)
+  };
+  Trade.trans _ _ (freeable res);
+  with r' . assert cbor_match 1.0R c' (Map len64 r');
+  rewrite each cbor_match 1.0R c' (Map len64 r') as
+  cbor_match 1.0R res.cbor v;
+  res
+}
+
+inline_for_extraction
 fn cbor_copy0_body
   (depth: Ghost.erased nat)
   (copy: (depth': Ghost.erased nat { depth' < depth }) -> cbor_copy_with_depth_t depth')
   (x: cbor_raw)
   (#p: perm)
   (#v: Ghost.erased raw_data_item)
-requires cbor_match_with_depth depth p x v
+requires cbor_match_with_depth depth p x v ** pure (raw_data_item_size v <= Ghost.reveal depth)
 returns res: cbor_freeable
 ensures cbor_match_with_depth depth p x v ** cbor_match 1.0R res.cbor v ** Trade.trade (cbor_match 1.0R res.cbor v) (freeable res)
 {
@@ -1161,6 +1669,7 @@ ensures cbor_match_with_depth depth p x v ** cbor_match 1.0R res.cbor v ** Trade
       let plc = !a.cbor_tagged_ptr;
       rewrite (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_tagged_payload_perm) c0 (Tagged?.v v))
         as (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_tagged_payload_perm) plc (Tagged?.v v));
+      size_tagged_child v;
       let cpl' = copy (nat_pred depth) plc;
       rewrite (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_tagged_payload_perm) plc (Tagged?.v v))
         as (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_tagged_payload_perm) c0 (Tagged?.v v));
@@ -1210,6 +1719,14 @@ ensures cbor_match_with_depth depth p x v ** cbor_match 1.0R res.cbor v ** Trade
     norewrite
     CBOR_Case_Map a -> {
       cbor_copy_map_d depth copy x;
+    }
+    norewrite
+    CBOR_Case_Array_Gen a -> {
+      cbor_copy_array_gen_d depth copy x;
+    }
+    norewrite
+    CBOR_Case_Map_Gen a -> {
+      cbor_copy_map_gen_d depth copy x;
     }
     norewrite
     CBOR_Case_Serialized_Array a -> {
@@ -1402,7 +1919,7 @@ ensures cbor_match_with_depth depth p x v ** cbor_match 1.0R res.cbor v ** Trade
 }
 
 fn rec cbor_copy0_with_depth (depth: Ghost.erased nat) (x: cbor_raw) (#p: perm) (#v: Ghost.erased raw_data_item)
-  requires cbor_match_with_depth depth p x v
+  requires cbor_match_with_depth depth p x v ** pure (raw_data_item_size v <= Ghost.reveal depth)
   returns res: cbor_freeable
   ensures cbor_match_with_depth depth p x v ** cbor_match 1.0R res.cbor v ** Trade.trade (cbor_match 1.0R res.cbor v) (freeable res)
   decreases (Ghost.reveal depth)
@@ -1415,8 +1932,8 @@ fn cbor_copy0 (x: cbor_raw) (#p: perm) (#v: Ghost.erased raw_data_item)
   returns res: cbor_freeable
   ensures cbor_match p x v ** cbor_match 1.0R res.cbor v ** Trade.trade (cbor_match 1.0R res.cbor v) (freeable res)
 {
-  cbor_match_match_with_depth p x v;
-  with n. assert (cbor_match_with_depth n p x v);
+  let n = Ghost.hide (raw_data_item_size v);
+  cbor_match_to_depth n p x v;
   let res = cbor_copy0_with_depth n x;
   cbor_match_with_depth_forget n p x v;
   res

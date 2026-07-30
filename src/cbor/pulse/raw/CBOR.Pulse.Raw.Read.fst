@@ -137,6 +137,16 @@ ensures exists* p' y .
       rewrite each (U64.v i) as (SZ.v (SZ.uint64_to_sizet i));
       res
     }
+    norewrite
+    CBOR_Case_Array_Gen c' -> {
+      cbor_match_eq_array_gen pm c' r;
+      Trade.rewrite_with_trade
+        (cbor_match pm c r)
+        (cbor_match_mixed_list_array pm c' r cbor_match);
+      let res = cbor_mixed_array_item c' i;
+      Trade.trans _ _ (cbor_match pm c r);
+      res
+    }
   }
 }
 
@@ -147,6 +157,7 @@ let cbor_array_iterator_match : perm -> cbor_array_iterator -> list raw_data_ite
 = cbor_raw_iterator_match
     cbor_match
     cbor_serialized_array_iterator_match
+    cbor_mixed_array_iterator_match
 
 fn cbor_array_iterator_init
   (c: cbor_raw)
@@ -194,14 +205,36 @@ ensures exists* p .
         (cbor_match_array c' pm r cbor_match);
       cbor_match_array_elim c' pm r;
       Trade.trans _ _ (cbor_match pm c r);
-      let res = cbor_raw_iterator_init_from_slice cbor_match cbor_serialized_array_iterator_match c'.cbor_array_ptr;
+      let res = cbor_raw_iterator_init_from_slice cbor_match cbor_serialized_array_iterator_match cbor_mixed_array_iterator_match c'.cbor_array_ptr;
       with p _post.
-        rewrite trade (cbor_raw_iterator_match cbor_match cbor_serialized_array_iterator_match p res (Array?.v r)) _post
+        rewrite trade (cbor_raw_iterator_match cbor_match cbor_serialized_array_iterator_match cbor_mixed_array_iterator_match p res (Array?.v r)) _post
              as trade (cbor_array_iterator_match p res (Array?.v r)) _post;
       Trade.trans _ _ (cbor_match pm c r);
-      with p . assert (cbor_raw_iterator_match cbor_match cbor_serialized_array_iterator_match p res (Array?.v r));
+      with p . assert (cbor_raw_iterator_match cbor_match cbor_serialized_array_iterator_match cbor_mixed_array_iterator_match p res (Array?.v r));
       fold (cbor_array_iterator_match p res (Array?.v r));
       res
+    }
+    norewrite
+    CBOR_Case_Array_Gen c' -> {
+      cbor_match_eq_array_gen pm c' r;
+      Trade.rewrite_with_trade
+        (cbor_match pm c r)
+        (cbor_match_mixed_list_array pm c' r cbor_match);
+      let i' = cbor_mixed_array_iterator_init c';
+      with p . assert (cbor_mixed_array_iterator_match p i' (Array?.v r));
+      Trade.trans
+        (cbor_mixed_array_iterator_match p i' (Array?.v r))
+        (cbor_match_mixed_list_array pm c' r cbor_match)
+        (cbor_match pm c r);
+      let i : cbor_array_iterator = CBOR_Raw_Iterator_Mixed i';
+      Trade.rewrite_with_trade
+        (cbor_mixed_array_iterator_match p i' (Array?.v r))
+        (cbor_array_iterator_match p i (Array?.v r));
+      Trade.trans
+        (cbor_array_iterator_match p i (Array?.v r))
+        (cbor_mixed_array_iterator_match p i' (Array?.v r))
+        (cbor_match pm c r);
+      i
     }
   }
 }
@@ -221,7 +254,9 @@ ensures
   let res = cbor_raw_iterator_is_empty
     cbor_match
     cbor_serialized_array_iterator_match
+    cbor_mixed_array_iterator_match
     cbor_serialized_array_iterator_is_empty
+    cbor_mixed_array_iterator_is_empty
     c;
   fold (cbor_array_iterator_match pm c r);
   res
@@ -242,7 +277,9 @@ ensures
   let res = cbor_raw_iterator_length
     cbor_match
     cbor_serialized_array_iterator_match
+    cbor_mixed_array_iterator_match
     cbor_serialized_array_iterator_length
+    cbor_mixed_array_iterator_length
     c;
   fold (cbor_array_iterator_match pm c r);
   res
@@ -271,13 +308,16 @@ ensures exists* a p i' q .
   let res = cbor_raw_iterator_next
     cbor_match
     cbor_serialized_array_iterator_match
+    cbor_mixed_array_iterator_match
     (cbor_serialized_array_iterator_next ())
+    (cbor_mixed_array_iterator_next ())
     pi;
   with i'. assert (R.pts_to pi i');
   with l' . rewrite cbor_raw_iterator_match #cbor_raw
       #raw_data_item
       cbor_match
       cbor_serialized_array_iterator_match
+      cbor_mixed_array_iterator_match
       pm
       i'
       l'
@@ -286,6 +326,7 @@ ensures exists* a p i' q .
       #raw_data_item
       cbor_match
       cbor_serialized_array_iterator_match
+      cbor_mixed_array_iterator_match
       pm
       i'
       (List.Tot.Base.tl l)
@@ -320,18 +361,22 @@ ensures
   let res = cbor_raw_iterator_truncate
     cbor_match
     cbor_serialized_array_iterator_match
+    cbor_mixed_array_iterator_match
     cbor_serialized_array_iterator_truncate
+    cbor_mixed_array_iterator_truncate
     c
     len;
   fold (cbor_array_iterator_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)));
   rewrite
     trade (cbor_raw_iterator_match cbor_match
           cbor_serialized_array_iterator_match
+          cbor_mixed_array_iterator_match
           1.0R
           res
           (fst (List.Tot.Base.splitAt (U64.v len) r)))
       (cbor_raw_iterator_match cbor_match
           cbor_serialized_array_iterator_match
+          cbor_mixed_array_iterator_match
           pm
           c
           r)
@@ -359,6 +404,7 @@ ensures
     cbor_match
     Perm.cbor_raw_share
     cbor_serialized_array_iterator_share
+    cbor_mixed_array_iterator_share
     c;
   fold (cbor_array_iterator_match (pm /. 2.0R) c r);
   fold (cbor_array_iterator_match (pm /. 2.0R) c r);
@@ -384,6 +430,7 @@ ensures
     cbor_match
     Perm.cbor_raw_gather
     cbor_serialized_array_iterator_gather
+    cbor_mixed_array_iterator_gather
     c
     #pm1 #r1 #pm2 #r2;
   fold (cbor_array_iterator_match (pm1 +. pm2) c r1);
@@ -428,6 +475,7 @@ let cbor_map_iterator_match : perm -> cbor_map_iterator -> list (raw_data_item &
 = cbor_raw_iterator_match
     cbor_match_map_entry
     cbor_serialized_map_iterator_match
+    cbor_mixed_map_iterator_match
 
 fn cbor_map_iterator_init
   (c: cbor_raw)
@@ -482,13 +530,14 @@ ensures exists* p .
           PM.seq_list_match s (Map?.v r) (cbor_match_map_entry (pm `perm_mul` c'.cbor_map_payload_perm)))
         (cbor_match_map pm c' r)
         (cbor_match pm c r);
-      let res = cbor_raw_iterator_init_from_slice cbor_match_map_entry cbor_serialized_map_iterator_match c'.cbor_map_ptr;
+      let res = cbor_raw_iterator_init_from_slice cbor_match_map_entry cbor_serialized_map_iterator_match cbor_mixed_map_iterator_match c'.cbor_map_ptr;
       Trade.trans _ _ (cbor_match pm c r);
-      with p . assert (cbor_raw_iterator_match cbor_match_map_entry cbor_serialized_map_iterator_match p res (Map?.v r));
+      with p . assert (cbor_raw_iterator_match cbor_match_map_entry cbor_serialized_map_iterator_match cbor_mixed_map_iterator_match p res (Map?.v r));
       fold (cbor_map_iterator_match p res (Map?.v r));
       with _p . rewrite
         trade (cbor_raw_iterator_match cbor_match_map_entry
               cbor_serialized_map_iterator_match
+              cbor_mixed_map_iterator_match
               _p
               res
               (Map?.v r))
@@ -496,6 +545,28 @@ ensures exists* p .
         as trade (cbor_map_iterator_match _p res (Map?.v r)) (cbor_match pm c r)
         ;
       res
+    }
+    norewrite
+    CBOR_Case_Map_Gen c' -> {
+      cbor_match_eq_map_gen pm c' r;
+      Trade.rewrite_with_trade
+        (cbor_match pm c r)
+        (cbor_match_mixed_list_map pm c' r cbor_match);
+      let i' = cbor_mixed_map_iterator_init c';
+      with p . assert (cbor_mixed_map_iterator_match p i' (Map?.v r));
+      Trade.trans
+        (cbor_mixed_map_iterator_match p i' (Map?.v r))
+        (cbor_match_mixed_list_map pm c' r cbor_match)
+        (cbor_match pm c r);
+      let i : cbor_map_iterator = CBOR_Raw_Iterator_Mixed i';
+      Trade.rewrite_with_trade
+        (cbor_mixed_map_iterator_match p i' (Map?.v r))
+        (cbor_map_iterator_match p i (Map?.v r));
+      Trade.trans
+        (cbor_map_iterator_match p i (Map?.v r))
+        (cbor_mixed_map_iterator_match p i' (Map?.v r))
+        (cbor_match pm c r);
+      i
     }
   }
 }
@@ -515,7 +586,9 @@ ensures
   let res = cbor_raw_iterator_is_empty
     cbor_match_map_entry
     cbor_serialized_map_iterator_match
+    cbor_mixed_map_iterator_match
     cbor_serialized_map_iterator_is_empty
+    cbor_mixed_map_iterator_is_empty
     c;
   fold (cbor_map_iterator_match pm c r);
   res
@@ -544,19 +617,23 @@ ensures exists* a p i' q .
   let res = cbor_raw_iterator_next
     cbor_match_map_entry
     cbor_serialized_map_iterator_match
+    cbor_mixed_map_iterator_match
     (cbor_serialized_map_iterator_next ())
+    (cbor_mixed_map_iterator_next ())
     pi;
   with i' . assert (R.pts_to pi i');
   with l' . rewrite cbor_raw_iterator_match #cbor_map_entry
       #(raw_data_item & raw_data_item)
       cbor_match_map_entry
       cbor_serialized_map_iterator_match
+      cbor_mixed_map_iterator_match
       pm
       (reveal u#0 #(cbor_raw_iterator cbor_map_entry) i')
       l' as cbor_raw_iterator_match #cbor_map_entry
       #(raw_data_item & raw_data_item)
       cbor_match_map_entry
       cbor_serialized_map_iterator_match
+      cbor_mixed_map_iterator_match
       pm
       (reveal u#0 #(cbor_raw_iterator cbor_map_entry) i')
       (List.Tot.Base.tl u#0
@@ -572,6 +649,7 @@ ensures exists* a p i' q .
           #(raw_data_item & raw_data_item)
           cbor_match_map_entry
           cbor_serialized_map_iterator_match
+          cbor_mixed_map_iterator_match
           pm
           (reveal u#0 #(cbor_raw_iterator cbor_map_entry) i')
           q)
@@ -579,6 +657,7 @@ ensures exists* a p i' q .
           #(raw_data_item & raw_data_item)
           cbor_match_map_entry
           cbor_serialized_map_iterator_match
+          cbor_mixed_map_iterator_match
           pm
           (reveal u#0 #(cbor_raw_iterator cbor_map_entry) i)
           (reveal u#0 #(list u#0 (raw_data_item & raw_data_item)) l))
@@ -660,6 +739,7 @@ ensures
     cbor_match_map_entry
     cbor_map_entry_share
     cbor_serialized_map_iterator_share
+    cbor_mixed_map_iterator_share
     c;
   fold (cbor_map_iterator_match (pm /. 2.0R) c r);
   fold (cbor_map_iterator_match (pm /. 2.0R) c r);
@@ -685,6 +765,7 @@ ensures
     cbor_match_map_entry
     cbor_map_entry_gather
     cbor_serialized_map_iterator_gather
+    cbor_mixed_map_iterator_gather
     c
     #pm1 #r1 #pm2 #r2;
   fold (cbor_map_iterator_match (pm1 +. pm2) c r1);
@@ -975,6 +1056,7 @@ let cbor_array_iterator_match_with_depth (d: Ghost.erased nat)
 = cbor_raw_iterator_match
     (cbor_match_with_depth d)
     cbor_serialized_array_iterator_match
+    (cbor_mixed_array_iterator_match_with_depth d)
 
 fn cbor_array_iterator_init_with_depth
   (depth: Ghost.erased nat)
@@ -1028,14 +1110,35 @@ ensures exists* p .
         (PM.seq_list_match s (Array?.v r) (cbor_match_with_depth (nat_pred (Ghost.reveal depth)) (pm `perm_mul` c'.cbor_array_payload_perm)))
         (PM.seq_list_match s (Array?.v r) ((depth_cb (Ghost.reveal depth) r) (pm `perm_mul` c'.cbor_array_payload_perm)));
       Trade.trans _ _ (cbor_match_with_depth depth pm c r);
-      let res = cbor_raw_iterator_init_from_slice (cbor_match_with_depth (nat_pred depth)) cbor_serialized_array_iterator_match c'.cbor_array_ptr;
+      let res = cbor_raw_iterator_init_from_slice (cbor_match_with_depth (nat_pred depth)) cbor_serialized_array_iterator_match (cbor_mixed_array_iterator_match_with_depth (nat_pred depth)) c'.cbor_array_ptr;
       with p _post.
-        rewrite trade (cbor_raw_iterator_match (cbor_match_with_depth (nat_pred depth)) cbor_serialized_array_iterator_match p res (Array?.v r)) _post
+        rewrite trade (cbor_raw_iterator_match (cbor_match_with_depth (nat_pred depth)) cbor_serialized_array_iterator_match (cbor_mixed_array_iterator_match_with_depth (nat_pred depth)) p res (Array?.v r)) _post
              as trade (cbor_array_iterator_match_with_depth (nat_pred depth) p res (Array?.v r)) _post;
       Trade.trans _ _ (cbor_match_with_depth depth pm c r);
-      with p . assert (cbor_raw_iterator_match (cbor_match_with_depth (nat_pred depth)) cbor_serialized_array_iterator_match p res (Array?.v r));
+      with p . assert (cbor_raw_iterator_match (cbor_match_with_depth (nat_pred depth)) cbor_serialized_array_iterator_match (cbor_mixed_array_iterator_match_with_depth (nat_pred depth)) p res (Array?.v r));
       fold (cbor_array_iterator_match_with_depth (nat_pred depth) p res (Array?.v r));
       res
+    }
+    norewrite
+    CBOR_Case_Array_Gen c' -> {
+      Trade.rewrite_with_trade
+        (cbor_match_with_depth depth pm c r)
+        (cbor_match_with_depth depth pm (CBOR_Case_Array_Gen c') r);
+      let i' = cbor_mixed_array_iterator_init_with_depth depth c';
+      with p . assert (cbor_mixed_array_iterator_match_with_depth (nat_pred depth) p i' (Array?.v r));
+      Trade.trans
+        (cbor_mixed_array_iterator_match_with_depth (nat_pred depth) p i' (Array?.v r))
+        (cbor_match_with_depth depth pm (CBOR_Case_Array_Gen c') r)
+        (cbor_match_with_depth depth pm c r);
+      let i : cbor_array_iterator = CBOR_Raw_Iterator_Mixed i';
+      Trade.rewrite_with_trade
+        (cbor_mixed_array_iterator_match_with_depth (nat_pred depth) p i' (Array?.v r))
+        (cbor_array_iterator_match_with_depth (nat_pred depth) p i (Array?.v r));
+      Trade.trans
+        (cbor_array_iterator_match_with_depth (nat_pred depth) p i (Array?.v r))
+        (cbor_mixed_array_iterator_match_with_depth (nat_pred depth) p i' (Array?.v r))
+        (cbor_match_with_depth depth pm c r);
+      i
     }
   }
 }
@@ -1056,7 +1159,9 @@ ensures
   let res = cbor_raw_iterator_is_empty
     (cbor_match_with_depth d)
     cbor_serialized_array_iterator_match
+    (cbor_mixed_array_iterator_match_with_depth d)
     cbor_serialized_array_iterator_is_empty
+    (cbor_mixed_array_iterator_is_empty_with_depth d)
     c;
   fold (cbor_array_iterator_match_with_depth d pm c r);
   res
@@ -1086,13 +1191,16 @@ ensures exists* a p i' q .
   let res = cbor_raw_iterator_next
     (cbor_match_with_depth d)
     cbor_serialized_array_iterator_match
+    (cbor_mixed_array_iterator_match_with_depth d)
     (cbor_serialized_array_iterator_next_with_depth d)
+    (cbor_mixed_array_iterator_next_with_depth d)
     pi;
   with i'. assert (R.pts_to pi i');
   with l' . rewrite cbor_raw_iterator_match #cbor_raw
       #raw_data_item
       (cbor_match_with_depth d)
       cbor_serialized_array_iterator_match
+      (cbor_mixed_array_iterator_match_with_depth d)
       pm
       i'
       l'
@@ -1101,6 +1209,7 @@ ensures exists* a p i' q .
       #raw_data_item
       (cbor_match_with_depth d)
       cbor_serialized_array_iterator_match
+      (cbor_mixed_array_iterator_match_with_depth d)
       pm
       i'
       (List.Tot.Base.tl l)
@@ -1125,6 +1234,7 @@ let cbor_map_iterator_match_with_depth (d: Ghost.erased nat)
 = cbor_raw_iterator_match
     (cbor_match_map_entry_with_depth d)
     cbor_serialized_map_iterator_match
+    (cbor_mixed_map_iterator_match_with_depth d)
 
 fn cbor_map_iterator_init_with_depth
   (depth: Ghost.erased nat)
@@ -1178,14 +1288,35 @@ ensures exists* p .
         (PM.seq_list_match s (Map?.v r) (cbor_match_map_entry_with_depth (nat_pred (Ghost.reveal depth)) (pm `perm_mul` c'.cbor_map_payload_perm)))
         (PM.seq_list_match s (Map?.v r) (cbor_match_map_entry0 r ((depth_cb (Ghost.reveal depth) r) (pm `perm_mul` c'.cbor_map_payload_perm))));
       Trade.trans _ _ (cbor_match_with_depth depth pm c r);
-      let res = cbor_raw_iterator_init_from_slice (cbor_match_map_entry_with_depth (nat_pred depth)) cbor_serialized_map_iterator_match c'.cbor_map_ptr;
+      let res = cbor_raw_iterator_init_from_slice (cbor_match_map_entry_with_depth (nat_pred depth)) cbor_serialized_map_iterator_match (cbor_mixed_map_iterator_match_with_depth (nat_pred depth)) c'.cbor_map_ptr;
       with p _post.
-        rewrite trade (cbor_raw_iterator_match (cbor_match_map_entry_with_depth (nat_pred depth)) cbor_serialized_map_iterator_match p res (Map?.v r)) _post
+        rewrite trade (cbor_raw_iterator_match (cbor_match_map_entry_with_depth (nat_pred depth)) cbor_serialized_map_iterator_match (cbor_mixed_map_iterator_match_with_depth (nat_pred depth)) p res (Map?.v r)) _post
              as trade (cbor_map_iterator_match_with_depth (nat_pred depth) p res (Map?.v r)) _post;
       Trade.trans _ _ (cbor_match_with_depth depth pm c r);
-      with p . assert (cbor_raw_iterator_match (cbor_match_map_entry_with_depth (nat_pred depth)) cbor_serialized_map_iterator_match p res (Map?.v r));
+      with p . assert (cbor_raw_iterator_match (cbor_match_map_entry_with_depth (nat_pred depth)) cbor_serialized_map_iterator_match (cbor_mixed_map_iterator_match_with_depth (nat_pred depth)) p res (Map?.v r));
       fold (cbor_map_iterator_match_with_depth (nat_pred depth) p res (Map?.v r));
       res
+    }
+    norewrite
+    CBOR_Case_Map_Gen c' -> {
+      Trade.rewrite_with_trade
+        (cbor_match_with_depth depth pm c r)
+        (cbor_match_with_depth depth pm (CBOR_Case_Map_Gen c') r);
+      let i' = cbor_mixed_map_iterator_init_with_depth depth c';
+      with p . assert (cbor_mixed_map_iterator_match_with_depth (nat_pred depth) p i' (Map?.v r));
+      Trade.trans
+        (cbor_mixed_map_iterator_match_with_depth (nat_pred depth) p i' (Map?.v r))
+        (cbor_match_with_depth depth pm (CBOR_Case_Map_Gen c') r)
+        (cbor_match_with_depth depth pm c r);
+      let i : cbor_map_iterator = CBOR_Raw_Iterator_Mixed i';
+      Trade.rewrite_with_trade
+        (cbor_mixed_map_iterator_match_with_depth (nat_pred depth) p i' (Map?.v r))
+        (cbor_map_iterator_match_with_depth (nat_pred depth) p i (Map?.v r));
+      Trade.trans
+        (cbor_map_iterator_match_with_depth (nat_pred depth) p i (Map?.v r))
+        (cbor_mixed_map_iterator_match_with_depth (nat_pred depth) p i' (Map?.v r))
+        (cbor_match_with_depth depth pm c r);
+      i
     }
   }
 }
@@ -1206,7 +1337,9 @@ ensures
   let res = cbor_raw_iterator_is_empty
     (cbor_match_map_entry_with_depth d)
     cbor_serialized_map_iterator_match
+    (cbor_mixed_map_iterator_match_with_depth d)
     cbor_serialized_map_iterator_is_empty
+    (cbor_mixed_map_iterator_is_empty_with_depth d)
     c;
   fold (cbor_map_iterator_match_with_depth d pm c r);
   res
@@ -1236,13 +1369,16 @@ ensures exists* a p i' q .
   let res = cbor_raw_iterator_next
     (cbor_match_map_entry_with_depth d)
     cbor_serialized_map_iterator_match
+    (cbor_mixed_map_iterator_match_with_depth d)
     (cbor_serialized_map_iterator_next_with_depth d)
+    (cbor_mixed_map_iterator_next_with_depth d)
     pi;
   with i'. assert (R.pts_to pi i');
   with l' . rewrite cbor_raw_iterator_match #cbor_map_entry
       #(raw_data_item & raw_data_item)
       (cbor_match_map_entry_with_depth d)
       cbor_serialized_map_iterator_match
+      (cbor_mixed_map_iterator_match_with_depth d)
       pm
       i'
       l'
@@ -1251,6 +1387,7 @@ ensures exists* a p i' q .
       #(raw_data_item & raw_data_item)
       (cbor_match_map_entry_with_depth d)
       cbor_serialized_map_iterator_match
+      (cbor_mixed_map_iterator_match_with_depth d)
       pm
       i'
       (List.Tot.Base.tl l)

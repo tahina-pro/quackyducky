@@ -103,9 +103,11 @@ let cbor_det_case (x: cbor_det_t) : Tot cbor_det_case_t =
     -> CaseTagged
   | Raw.CBOR_Case_Array _
   | Raw.CBOR_Case_Serialized_Array _
+  | Raw.CBOR_Case_Array_Gen _
     -> CaseArray
   | Raw.CBOR_Case_Map _
   | Raw.CBOR_Case_Serialized_Map _
+  | Raw.CBOR_Case_Map_Gen _
     -> CaseMap
   | Raw.CBOR_Case_Simple _ -> CaseSimpleValue
 

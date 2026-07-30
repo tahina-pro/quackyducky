@@ -74,6 +74,26 @@ and cbor_map = {
   cbor_map_payload_perm: perm;
 }
 
+and cbor_mixed_list_array = {
+  cbor_array_gen_length_size: integer_size;
+  cbor_array_gen_ptr: (ml: CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list cbor_raw {
+    let len = SZ.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length ml) in
+    FStar.UInt.fits len 64 /\
+    raw_uint64_size_prop cbor_array_gen_length_size (U64.uint_to_t len)
+  });
+  cbor_array_gen_perm: perm;
+}
+
+and cbor_mixed_list_map = {
+  cbor_map_gen_length_size: integer_size;
+  cbor_map_gen_ptr: (ml: CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list cbor_map_entry {
+    let len = SZ.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length ml) in
+    FStar.UInt.fits len 64 /\
+    raw_uint64_size_prop cbor_map_gen_length_size (U64.uint_to_t len)
+  });
+  cbor_map_gen_perm: perm;
+}
+
 and cbor_raw =
 | CBOR_Case_Int: v: cbor_int -> cbor_raw
 | CBOR_Case_Simple: v: simple_value -> cbor_raw
@@ -84,8 +104,8 @@ and cbor_raw =
 | CBOR_Case_Serialized_Tagged: v: cbor_serialized -> cbor_raw
 | CBOR_Case_Serialized_Array: v: cbor_serialized -> cbor_raw
 | CBOR_Case_Serialized_Map: v: cbor_serialized -> cbor_raw
-| CBOR_Case_Array_Gen: v: CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list cbor_raw -> cbor_raw
-| CBOR_Case_Map_Gen: v: CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list cbor_map_entry -> cbor_raw
+| CBOR_Case_Array_Gen: v: cbor_mixed_list_array -> cbor_raw
+| CBOR_Case_Map_Gen: v: cbor_mixed_list_map -> cbor_raw
 
 let cbor_array_iterator
 = CBOR.Pulse.Raw.Iterator.cbor_raw_iterator cbor_raw

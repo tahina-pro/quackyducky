@@ -2009,9 +2009,11 @@ let cbor_nondet_case (x: cbor_nondet_t) : Tot cbor_nondet_case_t =
     -> CaseTagged
   | Raw.CBOR_Case_Array _
   | Raw.CBOR_Case_Serialized_Array _
+  | Raw.CBOR_Case_Array_Gen _
     -> CaseArray
   | Raw.CBOR_Case_Map _
   | Raw.CBOR_Case_Serialized_Map _
+  | Raw.CBOR_Case_Map_Gen _
     -> CaseMap
   | Raw.CBOR_Case_Simple _ -> CaseSimpleValue
 

@@ -13,6 +13,7 @@ module Trade = Pulse.Lib.Trade.Util
 module U8 = FStar.UInt8
 module U64 = FStar.UInt64
 module Util = CBOR.Spec.Util
+module ML = CBOR.Pulse.Raw.Format.MixedList
 
 noeq
 type cbor_raw_slice_iterator (elt: Type0) = {
@@ -253,6 +254,7 @@ noeq
 type cbor_raw_iterator (elt: Type0) =
 | CBOR_Raw_Iterator_Slice of cbor_raw_slice_iterator elt
 | CBOR_Raw_Iterator_Serialized of cbor_raw_serialized_iterator
+| CBOR_Raw_Iterator_Mixed of ML.cbor_raw_mixed_iterator elt
 
 let slice_split_right_postcond
   (#t: Type) (p: perm) (v: Ghost.erased (Seq.seq t)) (i: SZ.t) (v': Seq.seq t)
@@ -384,6 +386,7 @@ let cbor_raw_iterator_match
   (#elt_low #elt_high: Type0)
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
   (pm: perm)
   (c: cbor_raw_iterator elt_low)
   (l: list elt_high)
@@ -391,12 +394,14 @@ let cbor_raw_iterator_match
 = match c with
   | CBOR_Raw_Iterator_Slice c' -> cbor_raw_slice_iterator_match elt_match pm c' l
   | CBOR_Raw_Iterator_Serialized c' -> ser_match pm c' l
+  | CBOR_Raw_Iterator_Mixed c' -> mixed_match pm c' l
 
 inline_for_extraction
 fn cbor_raw_iterator_init_from_slice
   (#elt_low #elt_high: Type0)
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
   (a: S.slice elt_low)
   (#pm: perm)
   (#pm': perm)
@@ -408,9 +413,9 @@ requires
   pure (FStar.UInt.fits (SZ.v (S.len a)) U64.n)
 returns res: cbor_raw_iterator elt_low
 ensures exists* p .
-  cbor_raw_iterator_match elt_match ser_match p res l **
+  cbor_raw_iterator_match elt_match ser_match mixed_match p res l **
      trade
-       (cbor_raw_iterator_match elt_match ser_match p res l)
+       (cbor_raw_iterator_match elt_match ser_match mixed_match p res l)
        (pts_to a #pm sq **
          PM.seq_list_match sq l (elt_match pm')
        )
@@ -420,8 +425,8 @@ ensures exists* p .
   let res : cbor_raw_iterator elt_low = CBOR_Raw_Iterator_Slice i;
   Trade.rewrite_with_trade
     (cbor_raw_slice_iterator_match elt_match p i l)
-    (cbor_raw_iterator_match elt_match ser_match p res l);
-  Trade.trans (cbor_raw_iterator_match elt_match ser_match p res l) _ _;
+    (cbor_raw_iterator_match elt_match ser_match mixed_match p res l);
+  Trade.trans (cbor_raw_iterator_match elt_match ser_match mixed_match p res l) _ _;
   res
 }
 
@@ -440,38 +445,63 @@ let cbor_raw_serialized_iterator_is_empty_t
     )
 
 inline_for_extraction
+let cbor_raw_mixed_iterator_is_empty_t
+  (#elt_low #elt_high: Type0)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
+=
+  (c: ML.cbor_raw_mixed_iterator elt_low) ->
+  (#pm: perm) ->
+  (#r: Ghost.erased (list elt_high)) ->
+  stt bool
+    (mixed_match pm c r)
+    (fun res -> mixed_match pm c r **
+      pure (res == Nil? r)
+    )
+
+inline_for_extraction
 fn cbor_raw_iterator_is_empty
   (#elt_low #elt_high: Type0)
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
   (phi: cbor_raw_serialized_iterator_is_empty_t ser_match)
+  (phi_mixed: cbor_raw_mixed_iterator_is_empty_t mixed_match)
   (c: cbor_raw_iterator elt_low)
   (#pm: perm)
   (#r: Ghost.erased (list elt_high))
 requires
-    cbor_raw_iterator_match elt_match ser_match pm c r
+    cbor_raw_iterator_match elt_match ser_match mixed_match pm c r
 returns res: bool
 ensures
-    cbor_raw_iterator_match elt_match ser_match pm c r **
+    cbor_raw_iterator_match elt_match ser_match mixed_match pm c r **
     pure (res == Nil? r)
 {
   match c {
     norewrite
     CBOR_Raw_Iterator_Slice c' -> {
-      rewrite (cbor_raw_iterator_match elt_match ser_match pm c r)
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
         as (cbor_raw_slice_iterator_match elt_match pm c' r);
       let res = cbor_raw_slice_iterator_is_empty elt_match c';
       rewrite (cbor_raw_slice_iterator_match elt_match pm c' r)
-        as (cbor_raw_iterator_match elt_match ser_match pm c r);
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
       res
     }
     norewrite
     CBOR_Raw_Iterator_Serialized c' -> {
-      rewrite (cbor_raw_iterator_match elt_match ser_match pm c r)
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
         as (ser_match pm c' r);
       let res = phi c';
       rewrite (ser_match pm c' r)
-        as (cbor_raw_iterator_match elt_match ser_match pm c r);
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
+      res
+    }
+    norewrite
+    CBOR_Raw_Iterator_Mixed c' -> {
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
+        as (mixed_match pm c' r);
+      let res = phi_mixed c';
+      rewrite (mixed_match pm c' r)
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
       res
     }
   }
@@ -492,38 +522,63 @@ let cbor_raw_serialized_iterator_length_t
     )
 
 inline_for_extraction
+let cbor_raw_mixed_iterator_length_t
+  (#elt_low #elt_high: Type0)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
+=
+  (c: ML.cbor_raw_mixed_iterator elt_low) ->
+  (#pm: perm) ->
+  (#r: Ghost.erased (list elt_high)) ->
+  stt U64.t
+    (mixed_match pm c r)
+    (fun res -> mixed_match pm c r **
+      pure ((U64.v res <: nat) == List.Tot.length r)
+    )
+
+inline_for_extraction
 fn cbor_raw_iterator_length
   (#elt_low #elt_high: Type0)
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
   (phi: cbor_raw_serialized_iterator_length_t ser_match)
+  (phi_mixed: cbor_raw_mixed_iterator_length_t mixed_match)
   (c: cbor_raw_iterator elt_low)
   (#pm: perm)
   (#r: Ghost.erased (list elt_high))
 requires
-    cbor_raw_iterator_match elt_match ser_match pm c r
+    cbor_raw_iterator_match elt_match ser_match mixed_match pm c r
 returns res: U64.t
 ensures
-    cbor_raw_iterator_match elt_match ser_match pm c r **
+    cbor_raw_iterator_match elt_match ser_match mixed_match pm c r **
     pure ((U64.v res <: nat) == List.Tot.length r)
 {
   match c {
     norewrite
     CBOR_Raw_Iterator_Slice c' -> {
-      rewrite (cbor_raw_iterator_match elt_match ser_match pm c r)
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
         as (cbor_raw_slice_iterator_match elt_match pm c' r);
       let res = cbor_raw_slice_iterator_length elt_match c';
       rewrite (cbor_raw_slice_iterator_match elt_match pm c' r)
-        as (cbor_raw_iterator_match elt_match ser_match pm c r);
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
       res
     }
     norewrite
     CBOR_Raw_Iterator_Serialized c' -> {
-      rewrite (cbor_raw_iterator_match elt_match ser_match pm c r)
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
         as (ser_match pm c' r);
       let res = phi c';
       rewrite (ser_match pm c' r)
-        as (cbor_raw_iterator_match elt_match ser_match pm c r);
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
+      res
+    }
+    norewrite
+    CBOR_Raw_Iterator_Mixed c' -> {
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
+        as (mixed_match pm c' r);
+      let res = phi_mixed c';
+      rewrite (mixed_match pm c' r)
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
       res
     }
   }
@@ -555,6 +610,32 @@ let cbor_raw_serialized_iterator_next_t
     pure (Ghost.reveal l == a :: q)
   )
 
+inline_for_extraction
+let cbor_raw_mixed_iterator_next_t
+  (#elt_low #elt_high: Type0)
+  (elt_match: perm -> elt_low -> elt_high -> slprop)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
+=
+  (pi: R.ref (cbor_raw_iterator elt_low)) ->
+  (#pm: perm) ->
+  (i: ML.cbor_raw_mixed_iterator elt_low) ->
+  (#l: Ghost.erased (list elt_high)) ->
+  stt elt_low
+  (exists* i0 .
+    R.pts_to pi i0 **
+    mixed_match pm i l **
+    pure (Cons? l)
+  )
+  (fun res -> exists* a p i' q .
+    elt_match p res a **
+    R.pts_to pi (CBOR_Raw_Iterator_Mixed i') **
+    mixed_match pm i' q **
+    trade
+      (elt_match p res a ** mixed_match pm i' q)
+      (mixed_match pm i l) **
+    pure (Ghost.reveal l == a :: q)
+  )
+
 ghost
 fn trade_partial_trans_3
   (a b c d: slprop)
@@ -572,65 +653,87 @@ fn cbor_raw_iterator_next
   (#elt_low #elt_high: Type0)
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
   (phi: cbor_raw_serialized_iterator_next_t elt_match ser_match)
+  (phi_mixed: cbor_raw_mixed_iterator_next_t elt_match mixed_match)
   (pi: R.ref (cbor_raw_iterator elt_low))
   (#pm: perm)
   (#i0: Ghost.erased (cbor_raw_iterator elt_low))
   (#l: Ghost.erased (list elt_high))
 requires
     R.pts_to pi i0 **
-    cbor_raw_iterator_match elt_match ser_match pm i0 l **
+    cbor_raw_iterator_match elt_match ser_match mixed_match pm i0 l **
     pure (Cons? l)
 returns res: elt_low
 ensures
   exists* a p i' q .
     elt_match p res a **
     R.pts_to pi i' **
-    cbor_raw_iterator_match elt_match ser_match pm i' q **
+    cbor_raw_iterator_match elt_match ser_match mixed_match pm i' q **
     trade
-      (elt_match p res a ** cbor_raw_iterator_match elt_match ser_match pm i' q)
-      (cbor_raw_iterator_match elt_match ser_match pm i0 l) **
+      (elt_match p res a ** cbor_raw_iterator_match elt_match ser_match mixed_match pm i' q)
+      (cbor_raw_iterator_match elt_match ser_match mixed_match pm i0 l) **
     pure (Ghost.reveal l == a :: q)
 {
   let i0 = !pi;
   match i0 {
     CBOR_Raw_Iterator_Slice i -> {
       Trade.rewrite_with_trade // FIXME: PLEASE automate this step away!
-        (cbor_raw_iterator_match elt_match ser_match pm i0 l)
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm i0 l)
         (cbor_raw_slice_iterator_match elt_match pm i l);
       let res = cbor_raw_slice_iterator_next elt_match pi i;
       // BEGIN FIXME: PLEASE PLEASE PLEASE automate the following steps away!
-      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match pm i0 l);
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm i0 l);
       with p a . assert (elt_match p res a);
       with i' q . assert (cbor_raw_slice_iterator_match elt_match pm i' q);
       Trade.rewrite_with_trade
         (cbor_raw_slice_iterator_match elt_match pm i' q)
-        (cbor_raw_iterator_match elt_match ser_match pm (CBOR_Raw_Iterator_Slice i') q);
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm (CBOR_Raw_Iterator_Slice i') q);
       trade_partial_trans_3
         (elt_match p res a)
         (cbor_raw_slice_iterator_match elt_match pm i' q)
-        (cbor_raw_iterator_match elt_match ser_match pm i0 l)
-        (cbor_raw_iterator_match elt_match ser_match pm (CBOR_Raw_Iterator_Slice i') q);
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm i0 l)
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm (CBOR_Raw_Iterator_Slice i') q);
       // END FIXME
       res
     }
     CBOR_Raw_Iterator_Serialized i -> {
       Trade.rewrite_with_trade // FIXME: PLEASE automate this step away!
-        (cbor_raw_iterator_match elt_match ser_match pm i0 l)
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm i0 l)
         (ser_match pm i l);
       let res = phi pi i;
       // BEGIN FIXME: PLEASE PLEASE PLEASE automate the following steps away!
-      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match pm i0 l);
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm i0 l);
       with p a . assert (elt_match p res a);
       with i' q . assert (ser_match pm i' q);
       Trade.rewrite_with_trade
         (ser_match pm i' q)
-        (cbor_raw_iterator_match elt_match ser_match pm (CBOR_Raw_Iterator_Serialized i') q);
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm (CBOR_Raw_Iterator_Serialized i') q);
       trade_partial_trans_3
         (elt_match p res a)
         (ser_match pm i' q)
-        (cbor_raw_iterator_match elt_match ser_match pm i0 l)
-        (cbor_raw_iterator_match elt_match ser_match pm (CBOR_Raw_Iterator_Serialized i') q);
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm i0 l)
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm (CBOR_Raw_Iterator_Serialized i') q);
+      // END FIXME
+      res
+    }
+    CBOR_Raw_Iterator_Mixed i -> {
+      Trade.rewrite_with_trade // FIXME: PLEASE automate this step away!
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm i0 l)
+        (mixed_match pm i l);
+      let res = phi_mixed pi i;
+      // BEGIN FIXME: PLEASE PLEASE PLEASE automate the following steps away!
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm i0 l);
+      with p a . assert (elt_match p res a);
+      with i' q . assert (mixed_match pm i' q);
+      Trade.rewrite_with_trade
+        (mixed_match pm i' q)
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm (CBOR_Raw_Iterator_Mixed i') q);
+      trade_partial_trans_3
+        (elt_match p res a)
+        (mixed_match pm i' q)
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm i0 l)
+        (cbor_raw_iterator_match elt_match ser_match mixed_match pm (CBOR_Raw_Iterator_Mixed i') q);
       // END FIXME
       res
     }
@@ -657,6 +760,26 @@ let cbor_raw_serialized_iterator_truncate_t
         (ser_match pm c r)
     )
 
+inline_for_extraction
+let cbor_raw_mixed_iterator_truncate_t
+  (#elt_low #elt_high: Type0)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
+=
+  (c: ML.cbor_raw_mixed_iterator elt_low) ->
+  (len: U64.t) ->
+  (#pm: perm) ->
+  (#r: Ghost.erased (list elt_high)) ->
+  stt (ML.cbor_raw_mixed_iterator elt_low)
+    (mixed_match pm c r **
+      pure (U64.v len <= List.Tot.length r)
+    )
+    (fun res ->
+      mixed_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)) **
+      Trade.trade
+        (mixed_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)))
+        (mixed_match pm c r)
+    )
+
 ghost
 fn trade_trans_hyp_r_nounify
   (p q1 q2 q2' r: slprop)
@@ -676,28 +799,30 @@ fn cbor_raw_iterator_truncate
   (#elt_low #elt_high: Type0)
   (elt_match: perm -> elt_low -> elt_high -> slprop)
   (ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
   (phi: cbor_raw_serialized_iterator_truncate_t ser_match)
+  (phi_mixed: cbor_raw_mixed_iterator_truncate_t mixed_match)
   (c: cbor_raw_iterator elt_low)
   (len: U64.t)
   (#pm: perm)
   (#r: Ghost.erased (list elt_high))
 requires
-    cbor_raw_iterator_match elt_match ser_match pm c r **
+    cbor_raw_iterator_match elt_match ser_match mixed_match pm c r **
     pure (U64.v len <= List.Tot.length r)
 returns res: cbor_raw_iterator elt_low
 ensures
-    cbor_raw_iterator_match elt_match ser_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)) **
+    cbor_raw_iterator_match elt_match ser_match mixed_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)) **
     Trade.trade
-      (cbor_raw_iterator_match elt_match ser_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)))
-      (cbor_raw_iterator_match elt_match ser_match pm c r)
+      (cbor_raw_iterator_match elt_match ser_match mixed_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)))
+      (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
 {
   match c {
     norewrite
     CBOR_Raw_Iterator_Slice c' -> {
-      Trade.rewrite_with_trade (cbor_raw_iterator_match elt_match ser_match pm c r)
+      Trade.rewrite_with_trade (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
         (cbor_raw_slice_iterator_match elt_match pm c' r);
       cbor_raw_slice_iterator_match_unfold elt_match pm c' r;
-      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match pm c r);
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
       with s l . assert (pts_to c'.s #(pm `perm_mul` c'.slice_perm) s ** PM.seq_list_match s l (elt_match (pm `perm_mul` c'.payload_perm)));
       S.pts_to_len c'.s;
       PM.seq_list_match_length (elt_match (pm `perm_mul` c'.payload_perm)) s l;
@@ -711,11 +836,11 @@ ensures
       rewrite each s as (s1 `Seq.append` s2);
       PM.seq_list_match_append_elim_trade (elt_match (pm `perm_mul` c'.payload_perm)) s1 l1 s2 l2;
       Trade.elim_hyp_r _ _ (PM.seq_list_match (s1 `Seq.append` s2) _ (elt_match (pm `perm_mul` c'.payload_perm)));
-      trade_trans_hyp_r_nounify _ _ _ _ (cbor_raw_iterator_match elt_match ser_match pm c r);
+      trade_trans_hyp_r_nounify _ _ _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
       let sl1, sl2 = S.split_trade c'.s (SZ.uint64_to_sizet len);
       S.pts_to_len sl1;
       Trade.elim_hyp_r _ _ (pts_to c'.s #(pm `perm_mul` c'.slice_perm) _);
-      Trade.trans_hyp_l _ _ _ (cbor_raw_iterator_match elt_match ser_match pm c r);
+      Trade.trans_hyp_l _ _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
       let c1 = {
         s = sl1;
         sq = ();
@@ -729,26 +854,39 @@ ensures
       rewrite each (Seq.Base.slice (Seq.Base.append s1 s2) 0 (SZ.v (SZ.uint64_to_sizet len)))
         as s1;
       cbor_raw_slice_iterator_match_fold elt_match 1.0R c1 c' _ _;
-      trade_trans_nounify _ _ _ (cbor_raw_iterator_match elt_match ser_match pm c r);
+      trade_trans_nounify _ _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
       let res = CBOR_Raw_Iterator_Slice c';
       Trade.rewrite_with_trade
         (cbor_raw_slice_iterator_match elt_match 1.0R c' l1)
-        (cbor_raw_iterator_match elt_match ser_match 1.0R res l1);
-      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match pm c r);
+        (cbor_raw_iterator_match elt_match ser_match mixed_match 1.0R res l1);
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
       rewrite each l1 as (fst (List.Tot.Base.splitAt (U64.v len) r));
       res
     }
     norewrite
     CBOR_Raw_Iterator_Serialized c' -> {
-      Trade.rewrite_with_trade (cbor_raw_iterator_match elt_match ser_match pm c r)
+      Trade.rewrite_with_trade (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
         (ser_match pm c' r);
       let sres = phi c' len;
-      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match pm c r);
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
       let res : cbor_raw_iterator elt_low = CBOR_Raw_Iterator_Serialized sres;
       Trade.rewrite_with_trade
         (ser_match 1.0R sres (fst (List.Tot.splitAt (U64.v len) r)))
-        (cbor_raw_iterator_match elt_match ser_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)));
-      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match pm c r);
+        (cbor_raw_iterator_match elt_match ser_match mixed_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)));
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
+      res
+    }
+    norewrite
+    CBOR_Raw_Iterator_Mixed c' -> {
+      Trade.rewrite_with_trade (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
+        (mixed_match pm c' r);
+      let sres = phi_mixed c' len;
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
+      let res : cbor_raw_iterator elt_low = CBOR_Raw_Iterator_Mixed sres;
+      Trade.rewrite_with_trade
+        (mixed_match 1.0R sres (fst (List.Tot.splitAt (U64.v len) r)))
+        (cbor_raw_iterator_match elt_match ser_match mixed_match 1.0R res (fst (List.Tot.splitAt (U64.v len) r)));
+      Trade.trans _ _ (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r);
       res
     }
   }
@@ -816,6 +954,20 @@ let cbor_raw_serialized_iterator_share_t
       ser_match (pm /. 2.0R) c r
     )
 
+let cbor_raw_mixed_iterator_share_t
+  (#elt_low #elt_high: Type0)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
+=
+  (c: ML.cbor_raw_mixed_iterator elt_low) ->
+  (#pm: perm) ->
+  (#r: (list elt_high)) ->
+  stt_ghost unit emp_inames
+    (mixed_match pm c r)
+    (fun _ ->
+      mixed_match (pm /. 2.0R) c r **
+      mixed_match (pm /. 2.0R) c r
+    )
+
 ghost
 fn cbor_raw_iterator_share
   (#elt_low #elt_high: Type0)
@@ -831,20 +983,22 @@ fn cbor_raw_iterator_share
       )
   ))
   (#ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (#mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
   (phi: cbor_raw_serialized_iterator_share_t ser_match)
+  (phi_mixed: cbor_raw_mixed_iterator_share_t mixed_match)
   (c: cbor_raw_iterator elt_low)
   (#pm: perm)
   (#r: (list elt_high))
 requires
-    cbor_raw_iterator_match elt_match ser_match pm c r
+    cbor_raw_iterator_match elt_match ser_match mixed_match pm c r
 ensures
-    cbor_raw_iterator_match elt_match ser_match (pm /. 2.0R) c r **
-    cbor_raw_iterator_match elt_match ser_match (pm /. 2.0R) c r
+    cbor_raw_iterator_match elt_match ser_match mixed_match (pm /. 2.0R) c r **
+    cbor_raw_iterator_match elt_match ser_match mixed_match (pm /. 2.0R) c r
 {
   match c {
     norewrite
     CBOR_Raw_Iterator_Slice c' -> {
-      rewrite (cbor_raw_iterator_match elt_match ser_match pm c r)
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
         as (cbor_raw_slice_iterator_match elt_match pm c' r);
       unfold (cbor_raw_slice_iterator_match elt_match pm c' r);
       with cs . assert (pts_to c'.s #(pm *. c'.slice_perm) cs);
@@ -854,20 +1008,30 @@ ensures
       half_mul_l pm c'.payload_perm;
       fold (cbor_raw_slice_iterator_match elt_match (pm /. 2.0R) c' r);
       rewrite (cbor_raw_slice_iterator_match elt_match (pm /. 2.0R) c' r)
-        as (cbor_raw_iterator_match elt_match ser_match (pm /. 2.0R) c r);
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match (pm /. 2.0R) c r);
       fold (cbor_raw_slice_iterator_match elt_match (pm /. 2.0R) c' r);
       rewrite (cbor_raw_slice_iterator_match elt_match (pm /. 2.0R) c' r)
-        as (cbor_raw_iterator_match elt_match ser_match (pm /. 2.0R) c r);
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match (pm /. 2.0R) c r);
     }
     norewrite
     CBOR_Raw_Iterator_Serialized c' -> {
-      rewrite (cbor_raw_iterator_match elt_match ser_match pm c r)
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
         as (ser_match pm c' r);
       phi c';
       rewrite (ser_match (pm /. 2.0R) c' r)
-        as (cbor_raw_iterator_match elt_match ser_match (pm /. 2.0R) c r);
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match (pm /. 2.0R) c r);
       rewrite (ser_match (pm /. 2.0R) c' r)
-        as (cbor_raw_iterator_match elt_match ser_match (pm /. 2.0R) c r);
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match (pm /. 2.0R) c r);
+    }
+    norewrite
+    CBOR_Raw_Iterator_Mixed c' -> {
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match pm c r)
+        as (mixed_match pm c' r);
+      phi_mixed c';
+      rewrite (mixed_match (pm /. 2.0R) c' r)
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match (pm /. 2.0R) c r);
+      rewrite (mixed_match (pm /. 2.0R) c' r)
+        as (cbor_raw_iterator_match elt_match ser_match mixed_match (pm /. 2.0R) c r);
     }
   }
 }
@@ -1014,6 +1178,23 @@ let cbor_raw_serialized_iterator_gather_t
       pure (r1 == r2)
     )
 
+inline_for_extraction
+let cbor_raw_mixed_iterator_gather_t
+  (#elt_low #elt_high: Type0)
+  (mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
+=
+  (c: ML.cbor_raw_mixed_iterator elt_low) ->
+  (#pm1: perm) ->
+  (#r1: (list elt_high)) ->
+  (#pm2: perm) ->
+  (#r2: (list elt_high)) ->
+  stt_ghost unit emp_inames
+    (mixed_match pm1 c r1 ** mixed_match pm2 c r2)
+    (fun _ ->
+      mixed_match (pm1 +. pm2) c r1 **
+      pure (r1 == r2)
+    )
+
 ghost
 fn cbor_raw_iterator_gather
   (#elt_low #elt_high: Type0)
@@ -1031,21 +1212,23 @@ fn cbor_raw_iterator_gather
       )
   ))
   (#ser_match: perm -> cbor_raw_serialized_iterator -> list elt_high -> slprop)
+  (#mixed_match: perm -> ML.cbor_raw_mixed_iterator elt_low -> list elt_high -> slprop)
   (phi: cbor_raw_serialized_iterator_gather_t ser_match)
+  (phi_mixed: cbor_raw_mixed_iterator_gather_t mixed_match)
   (c: cbor_raw_iterator elt_low)
   (#pm1: perm)
   (#r1: (list elt_high))
   (#pm2: perm)
   (#r2: (list elt_high))
 requires
-    cbor_raw_iterator_match elt_match ser_match pm1 c r1 **
-    cbor_raw_iterator_match elt_match ser_match pm2 c r2
+    cbor_raw_iterator_match elt_match ser_match mixed_match pm1 c r1 **
+    cbor_raw_iterator_match elt_match ser_match mixed_match pm2 c r2
 ensures
-    cbor_raw_iterator_match elt_match ser_match (pm1 +. pm2) c r1 **
+    cbor_raw_iterator_match elt_match ser_match mixed_match (pm1 +. pm2) c r1 **
     pure (r1 == r2)
 {
-  unfold (cbor_raw_iterator_match elt_match ser_match pm1 c r1);
-  unfold (cbor_raw_iterator_match elt_match ser_match pm2 c r2);
+  unfold (cbor_raw_iterator_match elt_match ser_match mixed_match pm1 c r1);
+  unfold (cbor_raw_iterator_match elt_match ser_match mixed_match pm2 c r2);
   match c {
     CBOR_Raw_Iterator_Slice c' -> {
       unfold cbor_raw_slice_iterator_match elt_match pm1 c' r1;
@@ -1061,14 +1244,20 @@ ensures
         elt_match (pm1 *. c'.payload_perm) _ r1 (pm2 `perm_mul` c'.payload_perm) _ r2 elt_gather ();
       perm_mul_add_l pm1 pm2 c'.payload_perm;
       fold (cbor_raw_slice_iterator_match elt_match (pm1 +. pm2) c' r1);
-      fold (cbor_raw_iterator_match elt_match ser_match (pm1 +. pm2) (CBOR_Raw_Iterator_Slice c') r1);
-      rewrite (cbor_raw_iterator_match elt_match ser_match (pm1 +. pm2) (CBOR_Raw_Iterator_Slice c') r1) as cbor_raw_iterator_match elt_match ser_match (pm1 +. pm2) c r1;
+      fold (cbor_raw_iterator_match elt_match ser_match mixed_match (pm1 +. pm2) (CBOR_Raw_Iterator_Slice c') r1);
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match (pm1 +. pm2) (CBOR_Raw_Iterator_Slice c') r1) as cbor_raw_iterator_match elt_match ser_match mixed_match (pm1 +. pm2) c r1;
       ()
     }
     CBOR_Raw_Iterator_Serialized c' -> {
       phi c' #pm1 #r1 #pm2 #r2;
-      fold (cbor_raw_iterator_match elt_match ser_match (pm1 +. pm2) (CBOR_Raw_Iterator_Serialized c') r1);
-      rewrite (cbor_raw_iterator_match elt_match ser_match (pm1 +. pm2) (CBOR_Raw_Iterator_Serialized c') r1) as cbor_raw_iterator_match elt_match ser_match (pm1 +. pm2) c r1;
+      fold (cbor_raw_iterator_match elt_match ser_match mixed_match (pm1 +. pm2) (CBOR_Raw_Iterator_Serialized c') r1);
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match (pm1 +. pm2) (CBOR_Raw_Iterator_Serialized c') r1) as cbor_raw_iterator_match elt_match ser_match mixed_match (pm1 +. pm2) c r1;
+      ()
+    }
+    CBOR_Raw_Iterator_Mixed c' -> {
+      phi_mixed c' #pm1 #r1 #pm2 #r2;
+      fold (cbor_raw_iterator_match elt_match ser_match mixed_match (pm1 +. pm2) (CBOR_Raw_Iterator_Mixed c') r1);
+      rewrite (cbor_raw_iterator_match elt_match ser_match mixed_match (pm1 +. pm2) (CBOR_Raw_Iterator_Mixed c') r1) as cbor_raw_iterator_match elt_match ser_match mixed_match (pm1 +. pm2) c r1;
       ()
     }
   }
