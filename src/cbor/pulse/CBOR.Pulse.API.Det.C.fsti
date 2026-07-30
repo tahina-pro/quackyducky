@@ -154,17 +154,34 @@ let cbor_det_mk_array_from_array' = mk_array_from_array' (cbor_det_mk_array_from
    No heap allocation: the application provides the (fixed number of) scratch
    references the operations need. *)
 
-val cbor_det_array_owned (x: cbor_det_t) (l: list Spec.cbor) : slprop
+val cbor_det_array_t : Type0
+
+val cbor_det_array_owned (x: cbor_det_array_t) (l: list Spec.cbor) : slprop
+
+val cbor_det_array_init
+  (x: cbor_det_t)
+  (#p: perm)
+  (#l: Ghost.erased Spec.cbor)
+: stt cbor_det_array_t
+    (cbor_det_match p x l ** pure (Spec.CArray? (Spec.unpack l)))
+    (fun y ->
+      exists* (l' : list Spec.cbor) .
+        cbor_det_array_owned y l' **
+        Trade.trade
+          (cbor_det_array_owned y l')
+          (cbor_det_match p x l) **
+        pure (Spec.CArray? (Spec.unpack l) /\ l' == Spec.CArray?.v (Spec.unpack l))
+    )
 
 val cbor_det_array_empty (_: unit)
-: stt cbor_det_t
+: stt cbor_det_array_t
     emp
     (fun res -> cbor_det_array_owned res [])
 
 val cbor_det_array_singleton
   (x: cbor_det_t) (ry: R.ref cbor_det_t)
   (#pm: perm) (#v: Ghost.erased Spec.cbor) (#w0: Ghost.erased cbor_det_t)
-: stt cbor_det_t
+: stt cbor_det_array_t
     (cbor_det_match pm x v ** R.pts_to ry w0)
     (fun res ->
       cbor_det_array_owned res [Ghost.reveal v] **
@@ -173,11 +190,11 @@ val cbor_det_array_singleton
         (cbor_det_match pm x v ** (exists* w. R.pts_to ry w)))
 
 val cbor_det_array_append
-  (x1 x2: cbor_det_t)
+  (x1 x2: cbor_det_array_t)
   (r_before r_after: R.ref cbor_det_array_append_cell_t)
   (#l1 #l2: Ghost.erased (list Spec.cbor))
   (#vb0 #va0: Ghost.erased cbor_det_array_append_cell_t)
-: stt (option cbor_det_t)
+: stt (option cbor_det_array_t)
     (cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
      R.pts_to r_before vb0 ** R.pts_to r_after va0)
     (fun res ->
@@ -194,22 +211,22 @@ val cbor_det_array_append
            (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
 
 val cbor_det_array_finalize
-  (x: cbor_det_t)
+  (x: cbor_det_array_t)
   (#l: Ghost.erased (list Spec.cbor))
-: stt unit
+: stt cbor_det_t
     (cbor_det_array_owned x l)
-    (fun _ ->
+    (fun y ->
       exists* (l': (l'': list Spec.cbor { FStar.UInt.fits (L.length l'') U64.n })).
-        cbor_det_match 1.0R x (Spec.pack (Spec.CArray l')) **
+        cbor_det_match 1.0R y (Spec.pack (Spec.CArray l')) **
         Trade.trade
-          (cbor_det_match 1.0R x (Spec.pack (Spec.CArray l')))
+          (cbor_det_match 1.0R y (Spec.pack (Spec.CArray l')))
           (cbor_det_array_owned x l) **
         pure ((l' <: list Spec.cbor) == Ghost.reveal l))
 
 (* The length of an owned array fits in a u64; lets callers discharge the
    refinement of [cbor_det_array_finalize] after a chain of [cbor_det_array_append]s. *)
 val cbor_det_array_owned_length_fits
-  (x: cbor_det_t) (#l: Ghost.erased (list Spec.cbor))
+  (x: cbor_det_array_t) (#l: Ghost.erased (list Spec.cbor))
 : stt_ghost unit emp_inames
     (cbor_det_array_owned x l)
     (fun _ -> cbor_det_array_owned x l **

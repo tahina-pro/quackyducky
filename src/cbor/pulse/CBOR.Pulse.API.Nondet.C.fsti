@@ -97,17 +97,34 @@ val cbor_nondet_get_array_item (_: unit) : get_array_item_safe_t #_ cbor_nondet_
    No heap allocation: the application provides the (fixed number of) scratch
    references the operations need. *)
 
-val cbor_nondet_array_owned (x: cbor_nondet_t) (l: list Spec.cbor) : slprop
+val cbor_nondet_array_t : Type0
+
+val cbor_nondet_array_owned (x: cbor_nondet_array_t) (l: list Spec.cbor) : slprop
+
+val cbor_nondet_array_init
+  (x: cbor_nondet_t)
+  (#p: perm)
+  (#l: Ghost.erased Spec.cbor)
+: stt cbor_nondet_array_t
+    (cbor_nondet_match p x l ** pure (Spec.CArray? (Spec.unpack l)))
+    (fun y ->
+      exists* (l' : list Spec.cbor) .
+        cbor_nondet_array_owned y l' **
+        Trade.trade
+          (cbor_nondet_array_owned y l')
+          (cbor_nondet_match p x l) **
+        pure (Spec.CArray? (Spec.unpack l) /\ l' == Spec.CArray?.v (Spec.unpack l))
+    )
 
 val cbor_nondet_array_empty (_: unit)
-: stt cbor_nondet_t
+: stt cbor_nondet_array_t
     emp
     (fun res -> cbor_nondet_array_owned res [])
 
 val cbor_nondet_array_singleton
   (x: cbor_nondet_t) (ry: R.ref cbor_nondet_t)
   (#pm: perm) (#v: Ghost.erased Spec.cbor) (#w0: Ghost.erased cbor_nondet_t)
-: stt cbor_nondet_t
+: stt cbor_nondet_array_t
     (cbor_nondet_match pm x v ** R.pts_to ry w0)
     (fun res ->
       cbor_nondet_array_owned res [Ghost.reveal v] **
@@ -116,11 +133,11 @@ val cbor_nondet_array_singleton
         (cbor_nondet_match pm x v ** (exists* w. R.pts_to ry w)))
 
 val cbor_nondet_array_append
-  (x1 x2: cbor_nondet_t)
+  (x1 x2: cbor_nondet_array_t)
   (r_before r_after: R.ref cbor_nondet_array_append_cell_t)
   (#l1 #l2: Ghost.erased (list Spec.cbor))
   (#vb0 #va0: Ghost.erased cbor_nondet_array_append_cell_t)
-: stt (option cbor_nondet_t)
+: stt (option cbor_nondet_array_t)
     (cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
      R.pts_to r_before vb0 ** R.pts_to r_after va0)
     (fun res ->
@@ -137,22 +154,22 @@ val cbor_nondet_array_append
            (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
 
 val cbor_nondet_array_finalize
-  (x: cbor_nondet_t)
+  (x: cbor_nondet_array_t)
   (#l: Ghost.erased (list Spec.cbor))
-: stt unit
+: stt cbor_nondet_t
     (cbor_nondet_array_owned x l)
-    (fun _ ->
+    (fun y ->
       exists* (l': (l'': list Spec.cbor { FStar.UInt.fits (L.length l'') U64.n })).
-        cbor_nondet_match 1.0R x (Spec.pack (Spec.CArray l')) **
+        cbor_nondet_match 1.0R y (Spec.pack (Spec.CArray l')) **
         Trade.trade
-          (cbor_nondet_match 1.0R x (Spec.pack (Spec.CArray l')))
+          (cbor_nondet_match 1.0R y (Spec.pack (Spec.CArray l')))
           (cbor_nondet_array_owned x l) **
         pure ((l' <: list Spec.cbor) == Ghost.reveal l))
 
 (* The length of an owned array fits in a u64; lets callers discharge the
    refinement of [cbor_nondet_array_finalize] after a chain of [cbor_nondet_array_append]s. *)
 val cbor_nondet_array_owned_length_fits
-  (x: cbor_nondet_t) (#l: Ghost.erased (list Spec.cbor))
+  (x: cbor_nondet_array_t) (#l: Ghost.erased (list Spec.cbor))
 : stt_ghost unit emp_inames
     (cbor_nondet_array_owned x l)
     (fun _ -> cbor_nondet_array_owned x l **
