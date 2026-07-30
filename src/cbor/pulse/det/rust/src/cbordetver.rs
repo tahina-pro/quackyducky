@@ -380,6 +380,17 @@ pub fn cbor_det_get_array_length(x: crate::cbordetveraux::cbor_raw) -> u64
               { size: c·.cbor_array_length_size, value: (c·.cbor_array_ptr).len() as u64 },
             crate::cbordetveraux::cbor_raw::CBOR_Case_Serialized_Array { v: c· } =>
               c·.cbor_serialized_header,
+            crate::cbordetveraux::cbor_raw::CBOR_Case_Array_Gen { v: c· } =>
+              crate::cbordetveraux::raw_uint64
+              {
+                  size: c·.cbor_array_gen_length_size,
+                  value:
+                  crate::cbordetveraux::cbor_raw_mixed_list_length__CBOR_Pulse_Raw_Type_cbor_raw(
+                      c·.cbor_array_gen_ptr
+                  )
+                  as
+                  u64
+              },
             _ => panic!("Incomplete pattern matching")
         };
     res.value
@@ -444,6 +455,17 @@ pub fn cbor_det_map_length(x: crate::cbordetveraux::cbor_raw) -> u64
               { size: c·.cbor_map_length_size, value: (c·.cbor_map_ptr).len() as u64 },
             crate::cbordetveraux::cbor_raw::CBOR_Case_Serialized_Map { v: c· } =>
               c·.cbor_serialized_header,
+            crate::cbordetveraux::cbor_raw::CBOR_Case_Map_Gen { v: c· } =>
+              crate::cbordetveraux::raw_uint64
+              {
+                  size: c·.cbor_map_gen_length_size,
+                  value:
+                  crate::cbordetveraux::cbor_raw_mixed_list_length__CBOR_Pulse_Raw_Type_cbor_map_entry(
+                      c·.cbor_map_gen_ptr
+                  )
+                  as
+                  u64
+              },
             _ => panic!("Incomplete pattern matching")
         };
     res.value
