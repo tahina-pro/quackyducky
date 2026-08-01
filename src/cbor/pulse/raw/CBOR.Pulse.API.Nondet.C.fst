@@ -5,6 +5,28 @@ module Rust = CBOR.Pulse.Raw.Nondet
 [@@pulse_unfold]
 let cbor_nondet_match = Rust.cbor_nondet_match
 
+(* raw/-visible interfaces of the everparse/ structural-builder adapters
+   (relocated .fsti in raw/, .fst in everparse/, mirroring the proven
+   CBOR.Pulse.Raw.Format.Match split). *)
+module ANondet = CBOR.Pulse.Raw.EverParse.Nondet.ArrayBuilder
+module NMIS = CBOR.Pulse.Raw.EverParse.Nondet.MapInsertSpec
+module ML = CBOR.Pulse.Raw.Format.MixedList
+module RawT = CBOR.Pulse.Raw.Type
+
+(* Needed to realize the dummy scratch-cell / entry placeholder values at the
+   end of this module (mirrors CBOR.Pulse.API.Det.Dummy): it exposes
+     cbor_nondet_map_entry_insert_cell_t == ML.cbor_raw_mixed_list cbor_map_entry
+     cbor_nondet_map_entry_t            == cbor_map_entry. *)
+friend CBOR.Pulse.API.Nondet.Type
+
+(* PLATFORM AXIOM: [FStar.SizeT.fits_u64].  Per the FStar.SizeT docs it can only
+   be introduced via a stateful primitive (Steel.ST.HigherArray.intro_fits_u64,
+   extracted to a C static_assert), which is ABSENT from this Pulse-only F*
+   install.  We materialize the same axiom here; it is the ONLY assume in this
+   module, used solely to discharge the [SZ.fits_u64] preconditions of the
+   structural array-append / array-init / map-entry-insert adapters. *)
+let fits_u64_axiom () : squash SZ.fits_u64 = assume (SZ.fits_u64)
+
 let cbor_nondet_reset_perm () = Rust.cbor_nondet_reset_perm ()
 
 let cbor_nondet_share = Rust.cbor_nondet_share
@@ -60,6 +82,77 @@ let cbor_nondet_array_iterator_share () = Rust.cbor_nondet_array_iterator_share 
 let cbor_nondet_array_iterator_gather () = Rust.cbor_nondet_array_iterator_gather ()
 
 let cbor_nondet_get_array_item () = get_array_item_safe (cbor_nondet_major_type ()) (Rust.cbor_nondet_get_array_length ()) (Rust.cbor_nondet_get_array_item ())
+
+(* ================================================================ *)
+(* STEP 2: structural array builder (nondeterministic).              *)
+(* Realized on top of the raw/ adapter interface                     *)
+(*   ANondet = CBOR.Pulse.Raw.EverParse.Nondet.ArrayBuilder          *)
+(* (implementation in everparse/).  [cbor_nondet_array_t] is realized *)
+(* as [cbor_mixed_list_array]; after that the adapter's ops match the *)
+(* public ones.  Placed here (interface order 100-178) so            *)
+(* [cbor_nondet_array_t] precedes [cbor_nondet_get_map_length].       *)
+(* ================================================================ *)
+
+let cbor_nondet_array_t = CBOR.Pulse.Raw.Type.cbor_mixed_list_array
+
+[@@pulse_unfold]
+let cbor_nondet_array_owned = ANondet.cbor_nondet_array_owned
+
+(* [init] needs [SZ.fits_u64] (platform); the public interface does not expose
+   it, so this thin wrapper materializes it before delegating to the adapter. *)
+fn cbor_nondet_array_init
+  (x: cbor_nondet_t)
+  (r1 r2: R.ref cbor_nondet_array_append_cell_t)
+  (#p: perm)
+  (#l: Ghost.erased Spec.cbor)
+  (#w1 #w2: Ghost.erased cbor_nondet_array_append_cell_t)
+requires
+  (cbor_nondet_match p x l ** R.pts_to r1 w1 ** R.pts_to r2 w2 ** pure (Spec.CArray? (Spec.unpack l)))
+returns y: cbor_nondet_array_t
+ensures
+  (exists* (l' : list Spec.cbor) .
+    cbor_nondet_array_owned y l' **
+    Trade.trade
+      (cbor_nondet_array_owned y l')
+      (cbor_nondet_match p x l ** (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2)) **
+    pure (Spec.CArray? (Spec.unpack l) /\ l' == Spec.CArray?.v (Spec.unpack l)))
+{
+  let f64 = fits_u64_axiom ();
+  ANondet.cbor_nondet_array_init x r1 r2
+}
+
+let cbor_nondet_array_empty = ANondet.cbor_nondet_array_empty
+let cbor_nondet_array_singleton = ANondet.cbor_nondet_array_singleton
+
+(* [append] needs [SZ.fits_u64] (platform); same treatment as [init]. *)
+fn cbor_nondet_array_append
+  (x1 x2: cbor_nondet_array_t)
+  (r_before r_after: R.ref cbor_nondet_array_append_cell_t)
+  (#l1 #l2: Ghost.erased (list Spec.cbor))
+  (#vb0 #va0: Ghost.erased cbor_nondet_array_append_cell_t)
+requires
+  (cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
+   R.pts_to r_before vb0 ** R.pts_to r_after va0)
+returns res: option cbor_nondet_array_t
+ensures
+  (match res with
+   | None ->
+     cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
+     (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va) **
+     pure (~ (FStar.UInt.fits (L.length (Ghost.reveal l1) + L.length (Ghost.reveal l2)) U64.n))
+   | Some r ->
+     cbor_nondet_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)) **
+     Trade.trade
+       (cbor_nondet_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
+       (cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
+        (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
+{
+  let f64 = fits_u64_axiom ();
+  ANondet.cbor_nondet_array_append x1 x2 r_before r_after
+}
+
+let cbor_nondet_array_finalize = ANondet.cbor_nondet_array_finalize
+let cbor_nondet_array_owned_length_fits = ANondet.cbor_nondet_array_owned_length_fits
 
 let cbor_nondet_get_map_length () = get_map_length_safe (cbor_nondet_major_type ()) (Rust.cbor_nondet_get_map_length ())
 
@@ -367,3 +460,87 @@ ensures
 module S = Pulse.Lib.Slice.Util
 
 let cbor_nondet_map_get_multiple () = cbor_map_get_multiple_as_arrayptr cbor_nondet_map_get_multiple_entry_t (cbor_nondet_major_type ()) (Rust.cbor_nondet_map_get_multiple ())
+
+(* ================================================================ *)
+(* STEP 2: dummy placeholders + structural map-entry insertion.      *)
+(* (interface order 273-284, after cbor_nondet_map_get_multiple).     *)
+(* ================================================================ *)
+
+(* Dummy scratch-cell / entry placeholders (mirrors CBOR.Pulse.API.Det.Dummy).
+   Realized via [friend CBOR.Pulse.API.Nondet.Type] (declared at the top). *)
+let dummy_cbor_nondet_map_entry_insert_cell _ =
+  ML.cbor_raw_mixed_list_dummy #RawT.cbor_map_entry ()
+
+let dummy_cbor_nondet_map_entry _ = {
+  RawT.cbor_map_entry_key = RawT.CBOR_Case_Simple 0uy;
+  RawT.cbor_map_entry_value = RawT.CBOR_Case_Simple 0uy;
+}
+
+(* Bridge: the major type of [y] decides whether [unpack y] is a [CMap]. *)
+let cmap_of_major_type_nondet (y: Spec.cbor)
+: Lemma
+    (requires (cbor_major_type y == cbor_major_type_map))
+    (ensures (Spec.CMap? (Spec.unpack y)))
+= ()
+
+let not_cmap_of_major_type_nondet (y: Spec.cbor)
+: Lemma
+    (requires (~ (cbor_major_type y == cbor_major_type_map)))
+    (ensures (~ (Spec.CMap? (Spec.unpack y))))
+= ()
+
+fn cbor_nondet_map_entry_insert
+  (x key value: cbor_nondet_t)
+  (r1 r2: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (ry: R.ref cbor_nondet_map_entry_t)
+  (#p: perm) (#y: Ghost.erased Spec.cbor)
+  (#pkv: perm) (#vk #vv: Ghost.erased Spec.cbor)
+requires
+    (cbor_nondet_match p x y **
+     cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+     cbor_nondet_map_entry_insert_refs r1 r2 ry)
+returns res: option cbor_nondet_t
+ensures (match res with
+  | None ->
+    cbor_nondet_match p x y **
+    cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+    cbor_nondet_map_entry_insert_refs r1 r2 ry **
+    pure (
+      ~ (Spec.CMap? (Spec.unpack y)) \/
+      (Spec.CMap? (Spec.unpack y) /\
+        (Spec.cbor_map_defined vk (Spec.CMap?.c (Spec.unpack y)) \/
+         ~ (FStar.UInt.fits (Spec.cbor_map_length (Spec.CMap?.c (Spec.unpack y)) + 1) U64.n))))
+  | Some m ->
+    exists* (p_res: perm) (vres: Spec.cbor).
+      cbor_nondet_match p_res m vres **
+      Trade.trade
+        (cbor_nondet_match p_res m vres)
+        (cbor_nondet_match p x y **
+         cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+         cbor_nondet_map_entry_insert_refs r1 r2 ry) **
+      pure (
+        Spec.CMap? (Spec.unpack y) /\
+        Spec.CMap? (Spec.unpack vres) /\
+        (Spec.CMap?.c (Spec.unpack vres) <: Spec.cbor_map) ==
+          Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv)))
+{
+  let mt = cbor_nondet_major_type () x;
+  if (mt = cbor_major_type_map) {
+    cmap_of_major_type_nondet y;
+    let f64 = fits_u64_axiom ();
+    unfold (cbor_nondet_map_entry_insert_refs r1 r2 ry);
+    let res = NMIS.cbor_nondet_map_entry_insert_spec f64 x key value r1 r2 ry;
+    match res {
+      None -> {
+        fold (cbor_nondet_map_entry_insert_refs r1 r2 ry);
+        None #cbor_nondet_t
+      }
+      Some m -> {
+        Some m
+      }
+    }
+  } else {
+    not_cmap_of_major_type_nondet y;
+    None #cbor_nondet_t
+  }
+}

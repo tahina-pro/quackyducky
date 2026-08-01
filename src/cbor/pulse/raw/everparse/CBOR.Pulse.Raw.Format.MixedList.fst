@@ -18,3 +18,5 @@ type mixed_iterator ([@@@strictly_positive] t: Type0) = {
 }
 
 let cbor_raw_mixed_iterator t = mixed_iterator t
+
+let cbor_raw_mixed_list_dummy #t () = LowParse.PulseParse.Iterator.Type.Base LowParse.PulseParse.Iterator.Type.Empty

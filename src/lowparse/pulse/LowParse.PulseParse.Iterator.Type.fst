@@ -33,6 +33,7 @@ type mixed_list ([@@@strictly_positive] t: Type) =
   (oa: SZ.t) ->
   (ap: perm) ->
   (after: ref (mixed_list t)) ->
+  (sc: perm) ->
   mixed_list t
 
 noeq
@@ -56,7 +57,7 @@ let mixed_list_length
 : Tot SZ.t
 = match i with
   | Base bi -> base_mixed_list_length bi
-  | Append _ cb ca _ _ _ _ _ _ -> SZ.add cb ca
+  | Append _ cb ca _ _ _ _ _ _ _ -> SZ.add cb ca
 
 // Option H: base_iterator is a type alias for base_mixed_list. The associated
 // _start/_next/_next_eos Pulse functions walk base_mixed_list directly,

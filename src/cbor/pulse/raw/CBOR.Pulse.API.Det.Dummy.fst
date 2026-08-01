@@ -12,5 +12,15 @@ friend CBOR.Pulse.API.Det.Type
 
 module Raw = CBOR.Pulse.Raw.Type
 module T = CBOR.Pulse.API.Det.Type
+module ML = CBOR.Pulse.Raw.Format.MixedList
 
 let dummy_cbor_det_t _ = Raw.CBOR_Case_Simple 0uy
+
+let dummy_cbor_det_array_append_cell _ = ML.cbor_raw_mixed_list_dummy #Raw.cbor_raw ()
+
+let dummy_cbor_det_map_entry_insert_cell _ = ML.cbor_raw_mixed_list_dummy #Raw.cbor_map_entry ()
+
+let dummy_cbor_det_map_entry _ = {
+  Raw.cbor_map_entry_key = dummy_cbor_det_t ();
+  Raw.cbor_map_entry_value = dummy_cbor_det_t ();
+}

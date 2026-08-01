@@ -114,10 +114,11 @@ let mixed_list_insert_sorted_post
   (ml: mixed_list t) (l: Ghost.erased (list u))
   (y_elem: t) (y: Ghost.erased u)
   (r1 r2 r3 r4: R.ref (mixed_list t)) (ry: R.ref t)
-  (res: bool)
+  (res: option (mixed_list t))
 : Tot slprop
-= if res then
-    exists* (ml_result: mixed_list t) (pm_result: perm) (l_result: list u).
+= match res with
+  | Some ml_result ->
+    exists* (pm_result: perm) (l_result: list u).
       mixed_list_match vmatch p pm_result ml_result l_result **
       trade (mixed_list_match vmatch p pm_result ml_result l_result)
             (mixed_list_match vmatch p pm ml (Ghost.reveal l) **
@@ -130,7 +131,7 @@ let mixed_list_insert_sorted_post
           l_result == List.Tot.append (list_narrow (Ghost.reveal l) 0 k_pos) (Ghost.reveal y :: list_narrow (Ghost.reveal l) k_pos (List.Tot.length (Ghost.reveal l) - k_pos))) /\
         List.Tot.Properties.sorted lt_spec l_result == true
       )
-  else
+  | None ->
     mixed_list_match vmatch p pm ml (Ghost.reveal l) **
     vmatch pm_y y_elem (Ghost.reveal y) **
     (exists* v1 v2 v3 v4 vy.
@@ -347,14 +348,14 @@ ghost fn mixed_list_insert_sorted_trade_body
   (sq_len: squash (SZ.v total_sz == List.Tot.length (Ghost.reveal l)))
 requires
   mixed_list_match vmatch p (pm /. 4.0R)
-    (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2)
+    (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2 1.0R)
     (Ghost.reveal l_result) **
   trade (mixed_list_match vmatch p ((pm /. 2.0R) /. 2.0R) ml_before (list_narrow (Ghost.reveal l) (0 - 0) (SZ.v k_val)))
         (mixed_list_match_n vmatch p 0 (SZ.v total_sz) (pm /. 2.0R) ml (Ghost.reveal l)) **
   trade (mixed_list_match vmatch p ((pm /. 2.0R) /. 2.0R) ml_after (list_narrow (Ghost.reveal l) (SZ.v k_val - 0) (SZ.v rest_sz)))
         (mixed_list_match_n vmatch p 0 (SZ.v total_sz) (pm /. 2.0R) ml (Ghost.reveal l)) **
   R.pts_to r1 #(1.0R /. 2.0R) ml_before **
-  R.pts_to r2 #(1.0R /. 2.0R) (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4) **
+  R.pts_to r2 #(1.0R /. 2.0R) (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4 1.0R) **
   R.pts_to r3 #(1.0R /. 2.0R) (Base #t (Singleton (Ghost.reveal sp_val) (Ghost.reveal sv_val) ry)) **
   R.pts_to r4 #(1.0R /. 2.0R) ml_after **
   R.pts_to ry #(1.0R /. 2.0R) y_elem **
@@ -369,8 +370,8 @@ requires
     Ghost.reveal l_after == list_narrow (Ghost.reveal l) (SZ.v k_val) (SZ.v rest_sz) /\
     List.Tot.length (Ghost.reveal l_before) == SZ.v k_val /\
     List.Tot.length (Ghost.reveal l_after) == SZ.v rest_sz /\
-    SZ.v (mixed_list_length (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2)) == SZ.v k_val + SZ.v (SZ.add 1sz rest_sz) /\
-    SZ.v (mixed_list_length (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4)) == 1 + SZ.v rest_sz /\
+    SZ.v (mixed_list_length (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2 1.0R)) == SZ.v k_val + SZ.v (SZ.add 1sz rest_sz) /\
+    SZ.v (mixed_list_length (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4 1.0R)) == 1 + SZ.v rest_sz /\
     SZ.v (mixed_list_length (Ghost.reveal ml_before)) == SZ.v k_val /\
     SZ.v (mixed_list_length (Ghost.reveal ml_after)) == SZ.v rest_sz /\
     SZ.v (mixed_list_length ml) == SZ.v total_sz
@@ -381,14 +382,14 @@ ensures
   (exists* v1 v2 v3 v4 vy.
     R.pts_to r1 v1 ** R.pts_to r2 v2 ** R.pts_to r3 v3 ** R.pts_to r4 v4 ** R.pts_to ry vy)
 {
-  let result_ml : mixed_list t = Append (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2;
-  let inner_ml : mixed_list t = Append (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4;
+  let result_ml : mixed_list t = Append (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2 1.0R;
+  let inner_ml : mixed_list t = Append (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4 1.0R;
   let singleton_ml : mixed_list t = Base (Singleton (Ghost.reveal sp_val) (Ghost.reveal sv_val) ry);
   rewrite (mixed_list_match vmatch p (pm /. 4.0R)
-    (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2)
+    (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2 1.0R)
     (Ghost.reveal l_result))
     as (mixed_list_match vmatch p (pm /. 4.0R) result_ml (Ghost.reveal l_result));
-  rewrite (R.pts_to r2 #(1.0R /. 2.0R) (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4))
+  rewrite (R.pts_to r2 #(1.0R /. 2.0R) (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4 1.0R))
     as (R.pts_to r2 #(1.0R /. 2.0R) inner_ml);
   rewrite (R.pts_to r3 #(1.0R /. 2.0R) (Base #t (Singleton (Ghost.reveal sp_val) (Ghost.reveal sv_val) ry)))
     as (R.pts_to r3 #(1.0R /. 2.0R) singleton_ml);
@@ -396,8 +397,8 @@ ensures
   // Step 1: Unfold outer Append
   unfold (mixed_list_match vmatch p (pm /. 4.0R) result_ml (Ghost.reveal l_result));
   rewrite (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length result_ml)) (pm /. 4.0R) result_ml (Ghost.reveal l_result))
-    as (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length result_ml)) (pm /. 4.0R) (Append (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2) (Ghost.reveal l_result));
-  unfold (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length result_ml)) (pm /. 4.0R) (Append (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2) (Ghost.reveal l_result));
+    as (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length result_ml)) (pm /. 4.0R) (Append (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2 1.0R) (Ghost.reveal l_result));
+  unfold (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length result_ml)) (pm /. 4.0R) (Append (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2 1.0R) (Ghost.reveal l_result));
   with ib_u ia_u l1_u l2_u . assert (
     pts_to r1 #((pm /. 4.0R) *. Ghost.reveal bp_val) ib_u **
     mixed_list_match_n vmatch p (append_off_before 0 0 (SZ.v k_val)) (append_n_before 0 (SZ.v (mixed_list_length result_ml)) (SZ.v k_val)) (pm /. 4.0R) ib_u l1_u **
@@ -441,8 +442,8 @@ ensures
       ());
   // Step 6: Unfold inner Append
   rewrite (mixed_list_match_n vmatch p 0 (SZ.v (SZ.add 1sz rest_sz)) (pm /. 4.0R) inner_ml (Ghost.reveal y :: Ghost.reveal l_after))
-    as (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length inner_ml)) (pm /. 4.0R) (Append (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4) (Ghost.reveal y :: Ghost.reveal l_after));
-  unfold (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length inner_ml)) (pm /. 4.0R) (Append (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4) (Ghost.reveal y :: Ghost.reveal l_after));
+    as (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length inner_ml)) (pm /. 4.0R) (Append (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4 1.0R) (Ghost.reveal y :: Ghost.reveal l_after));
+  unfold (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length inner_ml)) (pm /. 4.0R) (Append (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4 1.0R) (Ghost.reveal y :: Ghost.reveal l_after));
   with sing_u rest_u ls_u lr_u . assert (
     pts_to r3 #((pm /. 4.0R) *. Ghost.reveal bp_val) sing_u **
     mixed_list_match_n vmatch p (append_off_before 0 0 (SZ.v 1sz)) (append_n_before 0 (SZ.v (mixed_list_length inner_ml)) (SZ.v 1sz)) (pm /. 4.0R) sing_u ls_u **
@@ -563,7 +564,7 @@ requires
     (forall (a b c: u). Ghost.reveal lt_spec a b == true /\ Ghost.reveal lt_spec b c == true ==> Ghost.reveal lt_spec a c == true) /\
     (forall (a: u). Ghost.reveal lt_spec a a == false)
   )
-returns res: bool
+returns res: option (mixed_list t)
 ensures
   mixed_list_insert_sorted_post vmatch p (Ghost.reveal lt_spec) pm pm_y ml l y_elem y r1 r2 r3 r4 ry res
 {
@@ -603,8 +604,8 @@ ensures
       (exists* v1 v2 v3 v4 vy.
         R.pts_to r1 v1 ** R.pts_to r2 v2 ** R.pts_to r3 v3 ** R.pts_to r4 v4 ** R.pts_to ry vy) **
       pure (List.Tot.memP (Ghost.reveal y) (Ghost.reveal l)))
-    as (mixed_list_insert_sorted_post vmatch p (Ghost.reveal lt_spec) pm pm_y ml l y_elem y r1 r2 r3 r4 ry false);
-    false
+    as (mixed_list_insert_sorted_post vmatch p (Ghost.reveal lt_spec) pm pm_y ml l y_elem y r1 r2 r3 r4 ry None);
+    None #(mixed_list t)
   } else {
     // Success: build result
     // Narrow copy1 to [0, k): before part
@@ -634,7 +635,7 @@ ensures
     // Build inner Append
     let bp_val : Ghost.erased perm = 0.5R /. (pm /. 4.0R);
     let inner_depth : Ghost.erased nat = mixed_list_depth ml_after + 1;
-    let inner_ml : mixed_list t = Append (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4;
+    let inner_ml : mixed_list t = Append (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4 1.0R;
     // Write outer append refs and share
     R.write r1 ml_before;
     R.share r1;
@@ -642,7 +643,7 @@ ensures
     R.share r2;
     // Build outer Append
     let outer_depth : Ghost.erased nat = (if mixed_list_depth ml_before > Ghost.reveal inner_depth then mixed_list_depth ml_before else Ghost.reveal inner_depth) + 1;
-    let result_ml : mixed_list t = Append (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2;
+    let result_ml : mixed_list t = Append (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2 1.0R;
     // The result matches l[0..k) @ [y] @ l[k..total)
     let l_before : Ghost.erased (list u) = list_narrow (Ghost.reveal l) 0 (SZ.v k_val);
     let l_after : Ghost.erased (list u) = list_narrow (Ghost.reveal l) (SZ.v k_val) (SZ.v rest_sz);
@@ -688,8 +689,8 @@ ensures
       mixed_list_depth singleton_ml < Ghost.reveal inner_depth /\
       mixed_list_depth ml_after < Ghost.reveal inner_depth
     ) ();
-    fold (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length inner_ml)) (pm /. 4.0R) (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4) (Ghost.reveal y :: Ghost.reveal l_after));
-    rewrite (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length inner_ml)) (pm /. 4.0R) (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4) (Ghost.reveal y :: Ghost.reveal l_after))
+    fold (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length inner_ml)) (pm /. 4.0R) (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4 1.0R) (Ghost.reveal y :: Ghost.reveal l_after));
+    rewrite (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length inner_ml)) (pm /. 4.0R) (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4 1.0R) (Ghost.reveal y :: Ghost.reveal l_after))
       as (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length inner_ml)) (pm /. 4.0R) inner_ml (Ghost.reveal y :: Ghost.reveal l_after));
     fold (mixed_list_match vmatch p (pm /. 4.0R) inner_ml (Ghost.reveal y :: Ghost.reveal l_after));
     // Fold outer Append match
@@ -712,8 +713,8 @@ ensures
       mixed_list_depth ml_before < Ghost.reveal outer_depth /\
       mixed_list_depth inner_ml < Ghost.reveal outer_depth
     ) ();
-    fold (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length result_ml)) (pm /. 4.0R) (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2) (Ghost.reveal l_result));
-    rewrite (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length result_ml)) (pm /. 4.0R) (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2) (Ghost.reveal l_result))
+    fold (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length result_ml)) (pm /. 4.0R) (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2 1.0R) (Ghost.reveal l_result));
+    rewrite (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length result_ml)) (pm /. 4.0R) (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2 1.0R) (Ghost.reveal l_result))
       as (mixed_list_match_n vmatch p 0 (SZ.v (mixed_list_length result_ml)) (pm /. 4.0R) result_ml (Ghost.reveal l_result));
     fold (mixed_list_match vmatch p (pm /. 4.0R) result_ml (Ghost.reveal l_result));
     // Establish pure facts for trade frame (must be before trade intro)
@@ -774,10 +775,10 @@ ensures
         // Trade body extracted to mixed_list_insert_sorted_trade_body
         rewrite (mixed_list_match vmatch p (pm /. 4.0R) result_ml (Ghost.reveal l_result))
           as (mixed_list_match vmatch p (pm /. 4.0R)
-                (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2)
+                (Append #t (Ghost.reveal outer_depth) k_val (SZ.add 1sz rest_sz) 0sz (Ghost.reveal bp_val) r1 0sz (Ghost.reveal bp_val) r2 1.0R)
                 (Ghost.reveal l_result));
         rewrite (R.pts_to r2 #(1.0R /. 2.0R) inner_ml)
-          as (R.pts_to r2 #(1.0R /. 2.0R) (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4));
+          as (R.pts_to r2 #(1.0R /. 2.0R) (Append #t (Ghost.reveal inner_depth) 1sz rest_sz 0sz (Ghost.reveal bp_val) r3 0sz (Ghost.reveal bp_val) r4 1.0R));
         rewrite (R.pts_to r3 #(1.0R /. 2.0R) singleton_ml)
           as (R.pts_to r3 #(1.0R /. 2.0R) (Base #t (Singleton (Ghost.reveal sp_val) (Ghost.reveal sv_val) ry)));
         mixed_list_insert_sorted_trade_body vmatch p pm pm_y ml l y_elem y r1 r2 r3 r4 ry vmatch_gather
@@ -791,8 +792,8 @@ ensures
       List.Tot.Properties.sorted (Ghost.reveal lt_spec) (Ghost.reveal l_result) == true
     ) ();
     // Fold postcondition explicitly (Pulse can't auto-unfold the let definition)
-    fold (mixed_list_insert_sorted_post vmatch p (Ghost.reveal lt_spec) pm pm_y ml l y_elem y r1 r2 r3 r4 ry true);
-    true
+    fold (mixed_list_insert_sorted_post vmatch p (Ghost.reveal lt_spec) pm pm_y ml l y_elem y r1 r2 r3 r4 ry (Some result_ml));
+    Some result_ml
   }
 }
 ```

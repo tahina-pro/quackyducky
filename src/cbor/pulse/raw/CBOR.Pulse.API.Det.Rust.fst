@@ -6,6 +6,26 @@ but it has been moved here to be hidden from verified clients. *)
 
 module Det = CBOR.Pulse.API.Det.Common
 
+(* raw/-visible interfaces of the everparse/ structural-builder adapters (same
+   as used by CBOR.Pulse.API.Det.C):
+   - [ADet] : structural array builder (operates on [cbor_mixed_list_array]);
+   - [DMIS] : structural map-entry insertion (operates on [cbor_det_t]);
+   - [Inj]  : record<->cbor injection helpers exposing the [CaseArray] fact for
+     [CBOR_Case_Array_Gen _] nodes.  Because the Rust array type is a record
+     wrapper [{ array: cbordet { CaseArray? (cbor_det_case array) } }] (rather
+     than the raw [cbor_mixed_list_array] record, as in the C API), building a
+     wrapper from a builder record needs [CaseArray? (cbor_det_case
+     (CBOR_Case_Array_Gen arec))].  That fact requires unfolding [cbor_det_case]
+     (in [Det.Common]), which [friend]s an everparse-only module and so can only
+     be [friend]ed from the everparse/ build; hence [Inj] provides it (its .fst
+     lives in everparse/).  No [friend] is needed here: [cbordet ==
+     Det.cbor_det_t] definitionally, so wrapper fields, [Inj.array_gen] results
+     and [DMIS] results all share the abstract [cbor_det_t]. *)
+module ADet = CBOR.Pulse.Raw.EverParse.Det.ArrayBuilder
+module DMIS = CBOR.Pulse.Raw.EverParse.Det.MapInsertSpec
+module Inj = CBOR.Pulse.Raw.EverParse.Det.Inject
+module RawType = CBOR.Pulse.Raw.Type
+
 module C = C // necessary to pull C.krml into extraction, otherwise Karamel fails with "`C._zero_for_deref`: impossible", believing that it is a non-function external symbol, which Karamel extraction to Rust does not support
 
 (* Validation, parsing and serialization *)
@@ -473,6 +493,221 @@ ensures
   }
 }
 
+(* ================================================================ *)
+(* Structural array builder.                                         *)
+(*                                                                   *)
+(* Wraps the everparse/ adapter                                      *)
+(*   ADet = CBOR.Pulse.Raw.EverParse.Det.ArrayBuilder                *)
+(* (which operates on [cbor_mixed_list_array] records) inside the    *)
+(* Rust [cbor_det_array] record wrapper [{ array }].  For a builder  *)
+(* array [a], [a.array == Inj.array_gen arec] for the adapter's      *)
+(* record [arec] (a [CBOR_Case_Array_Gen arec] node whose            *)
+(* [cbor_det_case] is [CaseArray], as [Inj.array_gen] certifies).    *)
+(*                                                                   *)
+(* Interface order: after [cbor_det_get_array_item], before          *)
+(* [cbor_det_map_length].                                            *)
+(* ================================================================ *)
+
+(* PLATFORM AXIOM: [FStar.SizeT.fits_u64] -- the platform size_t is at least
+   64-bit.  Used identically in CBOR.Pulse.API.Det.C (matches PR #291).  The
+   ONLY [assume] in this module; discharges the [SZ.fits_u64] precondition of
+   the structural array-append adapter [ADet.cbor_det_array_append]. *)
+let fits_u64_axiom () : squash SZ.fits_u64 = assume (SZ.fits_u64)
+
+let cbor_det_array_append_cell_t = Det.cbor_det_array_append_cell_t
+
+let cbor_det_array_owned (a: cbor_det_array) (l: list Spec.cbor) : Tot slprop =
+  exists* (arec: RawType.cbor_mixed_list_array).
+    ADet.cbor_det_array_owned arec l **
+    pure (a.array == Inj.array_gen arec)
+
+(* fold: wrap an adapter-owned record into the wrapper ownership. *)
+ghost
+fn intro_owned
+  (a: cbor_det_array) (arec: RawType.cbor_mixed_list_array)
+  (_sq: squash (a.array == Inj.array_gen arec))
+  (#l: list Spec.cbor)
+requires ADet.cbor_det_array_owned arec l
+ensures cbor_det_array_owned a l
+{
+  fold (cbor_det_array_owned a l);
+}
+
+(* trade: [ADet.cbor_det_array_owned arec l] can be re-wrapped into the wrapper
+   ownership [cbor_det_array_owned a l]. *)
+ghost
+fn adet_to_owned
+  (a: cbor_det_array) (arec: RawType.cbor_mixed_list_array)
+  (_sq: squash (a.array == Inj.array_gen arec))
+  (#l: list Spec.cbor)
+requires emp
+ensures Trade.trade (ADet.cbor_det_array_owned arec l) (cbor_det_array_owned a l)
+{
+  intro
+    (Trade.trade (ADet.cbor_det_array_owned arec l) (cbor_det_array_owned a l))
+    #emp
+    fn _
+  {
+    intro_owned a arec ();
+  };
+}
+
+(* trade: the wrapper ownership [cbor_det_array_owned a l] can be unwrapped to
+   the adapter ownership [ADet.cbor_det_array_owned arec l] of the pinned
+   record (using injectivity of [Inj.array_gen]). *)
+ghost
+fn owned_to_adet
+  (a: cbor_det_array) (arec: RawType.cbor_mixed_list_array)
+  (_sq: squash (a.array == Inj.array_gen arec))
+  (#l: list Spec.cbor)
+requires emp
+ensures Trade.trade (cbor_det_array_owned a l) (ADet.cbor_det_array_owned arec l)
+{
+  intro
+    (Trade.trade (cbor_det_array_owned a l) (ADet.cbor_det_array_owned arec l))
+    #emp
+    fn _
+  {
+    unfold (cbor_det_array_owned a l);
+    with arec'. assert (ADet.cbor_det_array_owned arec' l);
+    Inj.array_gen_inj arec arec';
+    rewrite (ADet.cbor_det_array_owned arec' l) as (ADet.cbor_det_array_owned arec l);
+  };
+}
+
+fn cbor_det_array_empty (_: unit)
+requires emp
+returns res: cbor_det_array
+ensures cbor_det_array_owned res []
+{
+  let arec = ADet.cbor_det_array_empty ();
+  let res : cbor_det_array = { array = Inj.array_gen arec };
+  intro_owned res arec ();
+  res
+}
+
+fn cbor_det_array_singleton
+  (x: cbordet) (ry: R.ref cbordet)
+  (#pm: perm) (#v: Ghost.erased Spec.cbor) (#w0: Ghost.erased cbordet)
+requires cbor_det_match pm x v ** R.pts_to ry w0
+returns res: cbor_det_array
+ensures
+  cbor_det_array_owned res [Ghost.reveal v] **
+  Trade.trade
+    (cbor_det_array_owned res [Ghost.reveal v])
+    (cbor_det_match pm x v ** (exists* w. R.pts_to ry w))
+{
+  let arec = ADet.cbor_det_array_singleton x ry;
+  let res : cbor_det_array = { array = Inj.array_gen arec };
+  intro_owned res arec ();
+  owned_to_adet res arec () #[Ghost.reveal v];
+  Trade.trans _ _ (cbor_det_match pm x v ** (exists* w. R.pts_to ry w));
+  res
+}
+
+fn cbor_det_array_append
+  (x1 x2: cbor_det_array)
+  (r_before r_after: R.ref cbor_det_array_append_cell_t)
+  (#l1 #l2: Ghost.erased (list Spec.cbor))
+  (#vb0 #va0: Ghost.erased cbor_det_array_append_cell_t)
+requires
+  cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
+  R.pts_to r_before vb0 ** R.pts_to r_after va0
+returns res: option cbor_det_array
+ensures
+  (match res with
+   | None ->
+     cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
+     (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va) **
+     pure (~ (FStar.UInt.fits (L.length (Ghost.reveal l1) + L.length (Ghost.reveal l2)) U64.n))
+   | Some r ->
+     cbor_det_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)) **
+     Trade.trade
+       (cbor_det_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
+       (cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
+        (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
+{
+  unfold (cbor_det_array_owned x1 l1);
+  with garec1. assert (ADet.cbor_det_array_owned garec1 l1);
+  let arec1 = Inj.array_gen_recover x1.array garec1;
+  rewrite (ADet.cbor_det_array_owned garec1 l1) as (ADet.cbor_det_array_owned arec1 l1);
+  unfold (cbor_det_array_owned x2 l2);
+  with garec2. assert (ADet.cbor_det_array_owned garec2 l2);
+  let arec2 = Inj.array_gen_recover x2.array garec2;
+  rewrite (ADet.cbor_det_array_owned garec2 l2) as (ADet.cbor_det_array_owned arec2 l2);
+  fits_u64_axiom ();
+  let o = ADet.cbor_det_array_append arec1 arec2 r_before r_after;
+  match o {
+    None -> {
+      intro_owned x1 arec1 ();
+      intro_owned x2 arec2 ();
+      None #cbor_det_array
+    }
+    Some arec' -> {
+      let res : cbor_det_array = { array = Inj.array_gen arec' };
+      intro_owned res arec' ();
+      intro
+        (Trade.trade
+          (cbor_det_array_owned res (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
+          (cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
+           (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
+        #(Trade.trade
+            (ADet.cbor_det_array_owned arec' (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
+            (ADet.cbor_det_array_owned arec1 l1 ** ADet.cbor_det_array_owned arec2 l2 **
+             (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
+        fn _
+      {
+        unfold (cbor_det_array_owned res (L.append (Ghost.reveal l1) (Ghost.reveal l2)));
+        with arecX. assert (ADet.cbor_det_array_owned arecX (L.append (Ghost.reveal l1) (Ghost.reveal l2)));
+        Inj.array_gen_inj arec' arecX;
+        rewrite (ADet.cbor_det_array_owned arecX (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
+             as (ADet.cbor_det_array_owned arec' (L.append (Ghost.reveal l1) (Ghost.reveal l2)));
+        Trade.elim _ _;
+        intro_owned x1 arec1 ();
+        intro_owned x2 arec2 ();
+      };
+      Some res
+    }
+  }
+}
+
+ghost
+fn cbor_det_array_owned_length_fits
+  (a: cbor_det_array) (#l: Ghost.erased (list Spec.cbor))
+requires cbor_det_array_owned a l
+ensures cbor_det_array_owned a l ** pure (FStar.UInt.fits (L.length (Ghost.reveal l)) U64.n)
+{
+  unfold (cbor_det_array_owned a l);
+  with garec. assert (ADet.cbor_det_array_owned garec l);
+  let arec = Inj.array_gen_recover a.array garec;
+  rewrite (ADet.cbor_det_array_owned garec l) as (ADet.cbor_det_array_owned arec l);
+  ADet.cbor_det_array_owned_length_fits arec;
+  intro_owned a arec ();
+}
+
+fn cbor_det_array_to_cbor
+  (a: cbor_det_array)
+  (#l: Ghost.erased (list Spec.cbor))
+requires cbor_det_array_owned a l
+returns res: cbordet
+ensures
+  exists* (l': (l'': list Spec.cbor { FStar.UInt.fits (L.length l'') U64.n })).
+    cbor_det_match 1.0R res (Spec.pack (Spec.CArray l')) **
+    Trade.trade
+      (cbor_det_match 1.0R res (Spec.pack (Spec.CArray l')))
+      (cbor_det_array_owned a l) **
+    pure ((l' <: list Spec.cbor) == Ghost.reveal l)
+{
+  unfold (cbor_det_array_owned a l);
+  with garec. assert (ADet.cbor_det_array_owned garec l);
+  let arec = Inj.array_gen_recover a.array garec;
+  rewrite (ADet.cbor_det_array_owned garec l) as (ADet.cbor_det_array_owned arec l);
+  let y = ADet.cbor_det_array_finalize arec;
+  adet_to_owned a arec () #(Ghost.reveal l);
+  Trade.trans _ _ (cbor_det_array_owned a l);
+  y
+}
+
 fn cbor_det_map_length
   (x: cbor_det_map)
   (#p: perm)
@@ -613,6 +848,97 @@ ensures
   res
 }
 
+(* ================================================================ *)
+(* Structural map-entry insertion.                                   *)
+(*                                                                   *)
+(* Wraps the everparse/ adapter                                      *)
+(*   DMIS = CBOR.Pulse.Raw.EverParse.Det.MapInsertSpec               *)
+(* (which operates on [cbor_det_t]) for the Rust [cbor_det_map]      *)
+(* record wrapper [{ map }].  Unlike C, NO major-type check is       *)
+(* needed: [x : cbor_det_map] already guarantees [CMap? (unpack y)]  *)
+(* (via [cbor_det_map_match] and the [y] refinement).  We only       *)
+(* bridge the wrapper<->cbor_det_t views: the input via              *)
+(* [cbor_det_map_match_elim] ([x.map] + a trade back), and the       *)
+(* [Some m] output by re-wrapping [m] into [{ map = m }] (its        *)
+(* [CaseMap] case follows from [cbor_det_case_correct]).             *)
+(* ================================================================ *)
+
+let cbor_det_map_entry_insert_cell_t = Det.cbor_det_map_entry_insert_cell_t
+
+fn cbor_det_map_entry_insert
+  (x: cbor_det_map) (key value: cbordet)
+  (r1 r2 r3 r4: R.ref cbor_det_map_entry_insert_cell_t)
+  (ry: R.ref cbor_det_map_entry)
+  (#p: perm) (#y: Ghost.erased (v: Spec.cbor { Spec.CMap? (Spec.unpack v) }))
+  (#pkv: perm) (#vk #vv: Ghost.erased Spec.cbor)
+requires
+  cbor_det_map_match p x y **
+  cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+  cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry
+returns res: option cbor_det_map
+ensures
+  (match res with
+   | None ->
+     cbor_det_map_match p x y **
+     cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+     cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry **
+     pure (Spec.cbor_map_defined vk (Spec.CMap?.c (Spec.unpack y)) \/
+           ~ (FStar.UInt.fits (Spec.cbor_map_length (Spec.CMap?.c (Spec.unpack y)) + 1) U64.n))
+   | Some m ->
+     exists* (p_res: perm) (vres: Spec.cbor).
+       cbor_det_map_match p_res m vres **
+       Trade.trade
+         (cbor_det_map_match p_res m vres)
+         (cbor_det_map_match p x y **
+          cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+          cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry) **
+       pure (Spec.CMap? (Spec.unpack vres) /\
+             (Spec.CMap?.c (Spec.unpack vres) <: Spec.cbor_map) ==
+               Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv)))
+{
+  cbor_det_map_match_elim x;
+  let f64 = fits_u64_axiom ();
+  unfold (cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry);
+  let res = DMIS.cbor_det_map_entry_insert_spec f64 x.map key value r1 r2 r3 r4 ry;
+  match res {
+    None -> {
+      fold (cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry);
+      Trade.elim _ _;
+      None #cbor_det_map
+    }
+    Some m -> {
+      with p_res vres. assert (cbor_det_match p_res m vres);
+      cbor_det_case_correct m;
+      let res_map : cbor_det_map = { map = m };
+      rewrite (cbor_det_match p_res m vres) as (cbor_det_match p_res res_map.map vres);
+      fold (cbor_det_map_match p_res res_map vres);
+      intro
+        (Trade.trade
+          (cbor_det_map_match p_res res_map vres)
+          (cbor_det_map_match p x y **
+           cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+           cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry))
+        #(Trade.trade
+            (cbor_det_match p_res m vres)
+            (cbor_det_match p x.map y **
+             cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+             (exists* w1 w2 w3 w4 wy. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 ** R.pts_to ry wy)) **
+          Trade.trade
+            (cbor_det_match p x.map y)
+            (cbor_det_map_match p x y))
+        fn _
+      {
+        unfold (cbor_det_map_match p_res res_map vres);
+        rewrite (cbor_det_match p_res res_map.map vres) as (cbor_det_match p_res m vres);
+        Trade.elim (cbor_det_match p_res m vres) _;
+        Trade.elim (cbor_det_match p x.map y) _;
+        fold (cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry);
+      };
+      Some res_map
+    }
+  }
+}
+
 let cbor_det_serialize_string = Det.cbor_det_serialize_string ()
 let cbor_det_serialize_tag = Det.cbor_det_serialize_tag ()
 let cbor_det_serialize_array = Det.cbor_det_serialize_array ()
@@ -620,3 +946,9 @@ let cbor_det_serialize_map_insert = Det.cbor_det_serialize_map_insert ()
 let cbor_det_serialize_map = Det.cbor_det_serialize_map ()
 
 let dummy_cbor_det_t () = Det.dummy_cbor_det_t ()
+
+let dummy_cbor_det_array_append_cell () = Det.dummy_cbor_det_array_append_cell ()
+
+let dummy_cbor_det_map_entry_insert_cell () = Det.dummy_cbor_det_map_entry_insert_cell ()
+
+let dummy_cbor_det_map_entry () = Det.dummy_cbor_det_map_entry ()

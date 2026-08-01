@@ -1392,22 +1392,22 @@ decreases (Iter.mixed_list_depth i)
         };
       rewrite each (IT.Base #t bi) as i;
     }
-    IT.Append depth cb ca ob bp before oa ap after -> {
-      unfold (Iter.mixed_list_match_n vmatch1 p off n pm (IT.Append #t depth cb ca ob bp before oa ap after) l);
+    IT.Append depth cb ca ob bp before oa ap after sc -> {
+      unfold (Iter.mixed_list_match_n vmatch1 p off n pm (IT.Append #t depth cb ca ob bp before oa ap after sc) l);
       with i_before i_after l1 l2 . assert (
         R.pts_to before #(pm *. bp) i_before **
-        Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) pm i_before l1 **
+        Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1 **
         R.pts_to after #(pm *. ap) i_after **
-        Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) pm i_after l2
+        Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2
       );
       let off_b = Iter.append_off_before off (SZ.v ob) (SZ.v cb);
       let n1 = Iter.append_n_before off n (SZ.v cb);
       let off_a = Iter.append_off_after off (SZ.v oa) (SZ.v cb);
       let na = Iter.append_n_after off n (SZ.v cb);
-      rewrite (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) pm i_before l1)
-        as (Iter.mixed_list_match_n vmatch1 p off_b n1 pm i_before l1);
-      rewrite (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) pm i_after l2)
-        as (Iter.mixed_list_match_n vmatch1 p off_a na pm i_after l2);
+      rewrite (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1)
+        as (Iter.mixed_list_match_n vmatch1 p off_b n1 (pm *. sc) i_before l1);
+      rewrite (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2)
+        as (Iter.mixed_list_match_n vmatch1 p off_a na (pm *. sc) i_after l2);
       List.Tot.Properties.append_memP_forall l1 l2;
       ghost fn prf1
         (x: t) (pm0: perm) (y: u { List.Tot.memP y l1 })
@@ -1423,36 +1423,37 @@ decreases (Iter.mixed_list_depth i)
       {
         prf x pm0 y
       };
-      mixed_list_detonating_iso_n vmatch1 vmatch2 p off_b n1 pm i_before l1 prf1;
+      mixed_list_detonating_iso_n vmatch1 vmatch2 p off_b n1 (pm *. sc) i_before l1 prf1;
       R.share before;
       perm_mul_half pm bp;
       rewrite (R.pts_to before #((pm *. bp) /. 2.0R) i_before) as (R.pts_to before #((pm /. 2.0R) *. bp) i_before);
       rewrite (R.pts_to before #((pm *. bp) /. 2.0R) i_before) as (R.pts_to before #((pm /. 2.0R) *. bp) i_before);
-      mixed_list_detonating_iso_n vmatch1 vmatch2 p off_a na pm i_after l2 prf2;
+      mixed_list_detonating_iso_n vmatch1 vmatch2 p off_a na (pm *. sc) i_after l2 prf2;
       R.share after;
       perm_mul_half pm ap;
       rewrite (R.pts_to after #((pm *. ap) /. 2.0R) i_after) as (R.pts_to after #((pm /. 2.0R) *. ap) i_after);
       rewrite (R.pts_to after #((pm *. ap) /. 2.0R) i_after) as (R.pts_to after #((pm /. 2.0R) *. ap) i_after);
-      rewrite (Iter.mixed_list_match_n vmatch2 p off_b n1 (pm /. 2.0R) i_before l1)
-        as (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm /. 2.0R) i_before l1);
-      rewrite (Iter.mixed_list_match_n vmatch2 p off_a na (pm /. 2.0R) i_after l2)
-        as (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm /. 2.0R) i_after l2);
-      rewrite (Trade.trade (Iter.mixed_list_match_n vmatch2 p off_b n1 (pm /. 2.0R) i_before l1)
-                           (Iter.mixed_list_match_n vmatch1 p off_b n1 pm i_before l1))
-        as (Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm /. 2.0R) i_before l1)
-                        (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) pm i_before l1));
-      rewrite (Trade.trade (Iter.mixed_list_match_n vmatch2 p off_a na (pm /. 2.0R) i_after l2)
-                           (Iter.mixed_list_match_n vmatch1 p off_a na pm i_after l2))
-        as (Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm /. 2.0R) i_after l2)
-                        (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) pm i_after l2));
-      fold (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Append #t depth cb ca ob bp before oa ap after) l);
-      intro (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Append #t depth cb ca ob bp before oa ap after) l @==>
-             Iter.mixed_list_match_n vmatch1 p off n pm (IT.Append #t depth cb ca ob bp before oa ap after) l)
-        #(Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm /. 2.0R) i_before l1)
-                      (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) pm i_before l1) **
+      perm_mul_half pm sc;
+      rewrite (Iter.mixed_list_match_n vmatch2 p off_b n1 ((pm *. sc) /. 2.0R) i_before l1)
+        as (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1);
+      rewrite (Iter.mixed_list_match_n vmatch2 p off_a na ((pm *. sc) /. 2.0R) i_after l2)
+        as (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2);
+      rewrite (Trade.trade (Iter.mixed_list_match_n vmatch2 p off_b n1 ((pm *. sc) /. 2.0R) i_before l1)
+                           (Iter.mixed_list_match_n vmatch1 p off_b n1 (pm *. sc) i_before l1))
+        as (Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
+                        (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1));
+      rewrite (Trade.trade (Iter.mixed_list_match_n vmatch2 p off_a na ((pm *. sc) /. 2.0R) i_after l2)
+                           (Iter.mixed_list_match_n vmatch1 p off_a na (pm *. sc) i_after l2))
+        as (Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
+                        (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2));
+      fold (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Append #t depth cb ca ob bp before oa ap after sc) l);
+      intro (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Append #t depth cb ca ob bp before oa ap after sc) l @==>
+             Iter.mixed_list_match_n vmatch1 p off n pm (IT.Append #t depth cb ca ob bp before oa ap after sc) l)
+        #(Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
+                      (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1) **
           R.pts_to before #((pm /. 2.0R) *. bp) i_before **
-          Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm /. 2.0R) i_after l2)
-                      (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) pm i_after l2) **
+          Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
+                      (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2) **
           R.pts_to after #((pm /. 2.0R) *. ap) i_after **
           pure (
             off + n <= SZ.v cb + SZ.v ca /\
@@ -1465,12 +1466,12 @@ decreases (Iter.mixed_list_depth i)
             Iter.mixed_list_depth i_after < Ghost.reveal depth
           ))
         fn _ {
-          unfold (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Append #t depth cb ca ob bp before oa ap after) l);
+          unfold (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Append #t depth cb ca ob bp before oa ap after sc) l);
           with ib_u ia_u l1_u l2_u . assert (
             R.pts_to before #((pm /. 2.0R) *. bp) ib_u **
-            Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm /. 2.0R) ib_u l1_u **
+            Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_u l1_u **
             R.pts_to after #((pm /. 2.0R) *. ap) ia_u **
-            Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm /. 2.0R) ia_u l2_u
+            Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_u l2_u
           );
           R.gather before;
           perm_mul_half2 pm bp;
@@ -1482,34 +1483,34 @@ decreases (Iter.mixed_list_depth i)
           drop_ (pure (reveal i_after == reveal ia_u));
           rewrite (R.pts_to after #((pm /. 2.0R) *. ap +. (pm /. 2.0R) *. ap) i_after)
             as (R.pts_to after #(pm *. ap) i_after);
-          Iter.mixed_list_match_n_length vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm /. 2.0R) ib_u l1_u;
-          Iter.mixed_list_match_n_length vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm /. 2.0R) ia_u l2_u;
+          Iter.mixed_list_match_n_length vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_u l1_u;
+          Iter.mixed_list_match_n_length vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_u l2_u;
           List.Tot.Properties.append_injective l1_u l1 l2_u l2;
-          with ib_x . assert (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm /. 2.0R) ib_x l1_u);
+          with ib_x . assert (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u);
           slprop_rw
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm /. 2.0R) ib_x l1_u)
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm /. 2.0R) i_before l1)
+            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u)
+            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
             (Pulse.Lib.Core.slprop_equiv_ext'
-              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm /. 2.0R) ib_x l1_u)
-              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm /. 2.0R) i_before l1)
+              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u)
+              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
               ());
           Trade.elim_trade
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm /. 2.0R) i_before l1)
-            (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) pm i_before l1);
-          with ia_x . assert (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm /. 2.0R) ia_x l2_u);
+            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
+            (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1);
+          with ia_x . assert (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u);
           slprop_rw
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm /. 2.0R) ia_x l2_u)
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm /. 2.0R) i_after l2)
+            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u)
+            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
             (Pulse.Lib.Core.slprop_equiv_ext'
-              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm /. 2.0R) ia_x l2_u)
-              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm /. 2.0R) i_after l2)
+              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u)
+              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
               ());
           Trade.elim_trade
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm /. 2.0R) i_after l2)
-            (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) pm i_after l2);
-          fold (Iter.mixed_list_match_n vmatch1 p off n pm (IT.Append #t depth cb ca ob bp before oa ap after) l);
+            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
+            (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2);
+          fold (Iter.mixed_list_match_n vmatch1 p off n pm (IT.Append #t depth cb ca ob bp before oa ap after sc) l);
         };
-      rewrite each (IT.Append #t depth cb ca ob bp before oa ap after) as i;
+      rewrite each (IT.Append #t depth cb ca ob bp before oa ap after sc) as i;
     }
   }
 }

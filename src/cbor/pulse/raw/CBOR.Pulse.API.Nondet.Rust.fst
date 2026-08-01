@@ -5,6 +5,11 @@ module CBOR.Pulse.API.Nondet.Rust
 but it has been moved here to be hidden from verified clients. *)
 
 module Nondet = CBOR.Pulse.Raw.Nondet
+module ANondet = CBOR.Pulse.Raw.EverParse.Nondet.ArrayBuilder
+module NMIS = CBOR.Pulse.Raw.EverParse.Nondet.MapInsertSpec
+module Inj = CBOR.Pulse.Raw.EverParse.Nondet.Inject
+module RawType = CBOR.Pulse.Raw.Type
+module NDummy = CBOR.Pulse.API.Nondet.Dummy
 
 module C = C // necessary to pull C.krml into extraction, otherwise Karamel fails with "`C._zero_for_deref`: impossible", believing that it is a non-function external symbol, which Karamel extraction to Rust does not support
 
@@ -440,6 +445,209 @@ ensures
   }
 }
 
+(* ================================================================ *)
+(* Structural array builder (raw/): wraps the ADet-style adapter    *)
+(* [ANondet] inside the Rust [{ array }] record.  [cbor_nondet_array *)
+(* _owned a l] pins [a.array] to the injection [Inj.array_gen arec]  *)
+(* of the adapter record [arec], and threads [ANondet.._owned].      *)
+(* ================================================================ *)
+let fits_u64_axiom () : squash SZ.fits_u64 = assume (SZ.fits_u64)
+
+let cbor_nondet_array_append_cell_t = Nondet.cbor_nondet_array_append_cell_t
+
+let cbor_nondet_array_owned (a: cbor_nondet_array) (l: list Spec.cbor) : Tot slprop =
+  exists* (arec: RawType.cbor_mixed_list_array).
+    ANondet.cbor_nondet_array_owned arec l **
+    pure (a.array == Inj.array_gen arec)
+
+(* fold: wrap an adapter-owned record into the wrapper ownership. *)
+ghost
+fn intro_owned
+  (a: cbor_nondet_array) (arec: RawType.cbor_mixed_list_array)
+  (_sq: squash (a.array == Inj.array_gen arec))
+  (#l: list Spec.cbor)
+requires ANondet.cbor_nondet_array_owned arec l
+ensures cbor_nondet_array_owned a l
+{
+  fold (cbor_nondet_array_owned a l);
+}
+
+(* trade: [ANondet.cbor_nondet_array_owned arec l] can be re-wrapped into the wrapper
+   ownership [cbor_nondet_array_owned a l]. *)
+ghost
+fn adet_to_owned
+  (a: cbor_nondet_array) (arec: RawType.cbor_mixed_list_array)
+  (_sq: squash (a.array == Inj.array_gen arec))
+  (#l: list Spec.cbor)
+requires emp
+ensures Trade.trade (ANondet.cbor_nondet_array_owned arec l) (cbor_nondet_array_owned a l)
+{
+  intro
+    (Trade.trade (ANondet.cbor_nondet_array_owned arec l) (cbor_nondet_array_owned a l))
+    #emp
+    fn _
+  {
+    intro_owned a arec ();
+  };
+}
+
+(* trade: the wrapper ownership [cbor_nondet_array_owned a l] can be unwrapped to
+   the adapter ownership [ANondet.cbor_nondet_array_owned arec l] of the pinned
+   record (using injectivity of [Inj.array_gen]). *)
+ghost
+fn owned_to_adet
+  (a: cbor_nondet_array) (arec: RawType.cbor_mixed_list_array)
+  (_sq: squash (a.array == Inj.array_gen arec))
+  (#l: list Spec.cbor)
+requires emp
+ensures Trade.trade (cbor_nondet_array_owned a l) (ANondet.cbor_nondet_array_owned arec l)
+{
+  intro
+    (Trade.trade (cbor_nondet_array_owned a l) (ANondet.cbor_nondet_array_owned arec l))
+    #emp
+    fn _
+  {
+    unfold (cbor_nondet_array_owned a l);
+    with arec'. assert (ANondet.cbor_nondet_array_owned arec' l);
+    Inj.array_gen_inj arec arec';
+    rewrite (ANondet.cbor_nondet_array_owned arec' l) as (ANondet.cbor_nondet_array_owned arec l);
+  };
+}
+
+fn cbor_nondet_array_empty (_: unit)
+requires emp
+returns res: cbor_nondet_array
+ensures cbor_nondet_array_owned res []
+{
+  let arec = ANondet.cbor_nondet_array_empty ();
+  let res : cbor_nondet_array = { array = Inj.array_gen arec };
+  intro_owned res arec ();
+  res
+}
+
+fn cbor_nondet_array_singleton
+  (x: cbornondet) (ry: R.ref cbornondet)
+  (#pm: perm) (#v: Ghost.erased Spec.cbor) (#w0: Ghost.erased cbornondet)
+requires cbor_nondet_match pm x v ** R.pts_to ry w0
+returns res: cbor_nondet_array
+ensures
+  cbor_nondet_array_owned res [Ghost.reveal v] **
+  Trade.trade
+    (cbor_nondet_array_owned res [Ghost.reveal v])
+    (cbor_nondet_match pm x v ** (exists* w. R.pts_to ry w))
+{
+  let arec = ANondet.cbor_nondet_array_singleton x ry;
+  let res : cbor_nondet_array = { array = Inj.array_gen arec };
+  intro_owned res arec ();
+  owned_to_adet res arec () #[Ghost.reveal v];
+  Trade.trans _ _ (cbor_nondet_match pm x v ** (exists* w. R.pts_to ry w));
+  res
+}
+
+fn cbor_nondet_array_append
+  (x1 x2: cbor_nondet_array)
+  (r_before r_after: R.ref cbor_nondet_array_append_cell_t)
+  (#l1 #l2: Ghost.erased (list Spec.cbor))
+  (#vb0 #va0: Ghost.erased cbor_nondet_array_append_cell_t)
+requires
+  cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
+  R.pts_to r_before vb0 ** R.pts_to r_after va0
+returns res: option cbor_nondet_array
+ensures
+  (match res with
+   | None ->
+     cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
+     (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va) **
+     pure (~ (FStar.UInt.fits (L.length (Ghost.reveal l1) + L.length (Ghost.reveal l2)) U64.n))
+   | Some r ->
+     cbor_nondet_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)) **
+     Trade.trade
+       (cbor_nondet_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
+       (cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
+        (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
+{
+  unfold (cbor_nondet_array_owned x1 l1);
+  with garec1. assert (ANondet.cbor_nondet_array_owned garec1 l1);
+  let arec1 = Inj.array_gen_recover x1.array garec1;
+  rewrite (ANondet.cbor_nondet_array_owned garec1 l1) as (ANondet.cbor_nondet_array_owned arec1 l1);
+  unfold (cbor_nondet_array_owned x2 l2);
+  with garec2. assert (ANondet.cbor_nondet_array_owned garec2 l2);
+  let arec2 = Inj.array_gen_recover x2.array garec2;
+  rewrite (ANondet.cbor_nondet_array_owned garec2 l2) as (ANondet.cbor_nondet_array_owned arec2 l2);
+  fits_u64_axiom ();
+  let o = ANondet.cbor_nondet_array_append arec1 arec2 r_before r_after;
+  match o {
+    None -> {
+      intro_owned x1 arec1 ();
+      intro_owned x2 arec2 ();
+      None #cbor_nondet_array
+    }
+    Some arec' -> {
+      let res : cbor_nondet_array = { array = Inj.array_gen arec' };
+      intro_owned res arec' ();
+      intro
+        (Trade.trade
+          (cbor_nondet_array_owned res (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
+          (cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
+           (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
+        #(Trade.trade
+            (ANondet.cbor_nondet_array_owned arec' (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
+            (ANondet.cbor_nondet_array_owned arec1 l1 ** ANondet.cbor_nondet_array_owned arec2 l2 **
+             (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
+        fn _
+      {
+        unfold (cbor_nondet_array_owned res (L.append (Ghost.reveal l1) (Ghost.reveal l2)));
+        with arecX. assert (ANondet.cbor_nondet_array_owned arecX (L.append (Ghost.reveal l1) (Ghost.reveal l2)));
+        Inj.array_gen_inj arec' arecX;
+        rewrite (ANondet.cbor_nondet_array_owned arecX (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
+             as (ANondet.cbor_nondet_array_owned arec' (L.append (Ghost.reveal l1) (Ghost.reveal l2)));
+        Trade.elim _ _;
+        intro_owned x1 arec1 ();
+        intro_owned x2 arec2 ();
+      };
+      Some res
+    }
+  }
+}
+
+ghost
+fn cbor_nondet_array_owned_length_fits
+  (a: cbor_nondet_array) (#l: Ghost.erased (list Spec.cbor))
+requires cbor_nondet_array_owned a l
+ensures cbor_nondet_array_owned a l ** pure (FStar.UInt.fits (L.length (Ghost.reveal l)) U64.n)
+{
+  unfold (cbor_nondet_array_owned a l);
+  with garec. assert (ANondet.cbor_nondet_array_owned garec l);
+  let arec = Inj.array_gen_recover a.array garec;
+  rewrite (ANondet.cbor_nondet_array_owned garec l) as (ANondet.cbor_nondet_array_owned arec l);
+  ANondet.cbor_nondet_array_owned_length_fits arec;
+  intro_owned a arec ();
+}
+
+fn cbor_nondet_array_to_cbor
+  (a: cbor_nondet_array)
+  (#l: Ghost.erased (list Spec.cbor))
+requires cbor_nondet_array_owned a l
+returns res: cbornondet
+ensures
+  exists* (l': (l'': list Spec.cbor { FStar.UInt.fits (L.length l'') U64.n })).
+    cbor_nondet_match 1.0R res (Spec.pack (Spec.CArray l')) **
+    Trade.trade
+      (cbor_nondet_match 1.0R res (Spec.pack (Spec.CArray l')))
+      (cbor_nondet_array_owned a l) **
+    pure ((l' <: list Spec.cbor) == Ghost.reveal l)
+{
+  unfold (cbor_nondet_array_owned a l);
+  with garec. assert (ANondet.cbor_nondet_array_owned garec l);
+  let arec = Inj.array_gen_recover a.array garec;
+  rewrite (ANondet.cbor_nondet_array_owned garec l) as (ANondet.cbor_nondet_array_owned arec l);
+  let y = ANondet.cbor_nondet_array_finalize arec;
+  adet_to_owned a arec () #(Ghost.reveal l);
+  Trade.trans _ _ (cbor_nondet_array_owned a l);
+  y
+}
+
+
 fn cbor_nondet_map_length
   (x: cbor_nondet_map)
   (#p: perm)
@@ -580,4 +788,95 @@ ensures
   res
 }
 
+
+(* ================================================================ *)
+(* Map-entry insert (raw/): the [x: cbor_nondet_map] wrapper is      *)
+(* already known to be a CMap; bridge to [x.map] via                *)
+(* [cbor_nondet_map_match_elim] (+ trade back) and re-wrap the       *)
+(* [Some m] output into [{ map = m }] (its [CaseMap] case follows    *)
+(* from [cbor_nondet_case_correct]).                                 *)
+(* ================================================================ *)
+let cbor_nondet_map_entry_insert_cell_t = Nondet.cbor_nondet_map_entry_insert_cell_t
+
+fn cbor_nondet_map_entry_insert
+  (x: cbor_nondet_map) (key value: cbornondet)
+  (r1 r2: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (ry: R.ref cbor_nondet_map_entry)
+  (#p: perm) (#y: Ghost.erased (v: Spec.cbor { Spec.CMap? (Spec.unpack v) }))
+  (#pkv: perm) (#vk #vv: Ghost.erased Spec.cbor)
+requires
+  cbor_nondet_map_match p x y **
+  cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+  cbor_nondet_map_entry_insert_refs r1 r2 ry
+returns res: option cbor_nondet_map
+ensures
+  (match res with
+   | None ->
+     cbor_nondet_map_match p x y **
+     cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+     cbor_nondet_map_entry_insert_refs r1 r2 ry **
+     pure (Spec.cbor_map_defined vk (Spec.CMap?.c (Spec.unpack y)) \/
+           ~ (FStar.UInt.fits (Spec.cbor_map_length (Spec.CMap?.c (Spec.unpack y)) + 1) U64.n))
+   | Some m ->
+     exists* (p_res: perm) (vres: Spec.cbor).
+       cbor_nondet_map_match p_res m vres **
+       Trade.trade
+         (cbor_nondet_map_match p_res m vres)
+         (cbor_nondet_map_match p x y **
+          cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+          cbor_nondet_map_entry_insert_refs r1 r2 ry) **
+       pure (Spec.CMap? (Spec.unpack vres) /\
+             (Spec.CMap?.c (Spec.unpack vres) <: Spec.cbor_map) ==
+               Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv)))
+{
+  cbor_nondet_map_match_elim x;
+  let f64 = fits_u64_axiom ();
+  unfold (cbor_nondet_map_entry_insert_refs r1 r2 ry);
+  let res = NMIS.cbor_nondet_map_entry_insert_spec f64 x.map key value r1 r2 ry;
+  match res {
+    None -> {
+      fold (cbor_nondet_map_entry_insert_refs r1 r2 ry);
+      Trade.elim _ _;
+      None #cbor_nondet_map
+    }
+    Some m -> {
+      with p_res vres. assert (cbor_nondet_match p_res m vres);
+      cbor_nondet_case_correct m;
+      let res_map : cbor_nondet_map = { map = m };
+      rewrite (cbor_nondet_match p_res m vres) as (cbor_nondet_match p_res res_map.map vres);
+      fold (cbor_nondet_map_match p_res res_map vres);
+      intro
+        (Trade.trade
+          (cbor_nondet_map_match p_res res_map vres)
+          (cbor_nondet_map_match p x y **
+           cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+           cbor_nondet_map_entry_insert_refs r1 r2 ry))
+        #(Trade.trade
+            (cbor_nondet_match p_res m vres)
+            (cbor_nondet_match p x.map y **
+             cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+             (exists* w1 w2 wy. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to ry wy)) **
+          Trade.trade
+            (cbor_nondet_match p x.map y)
+            (cbor_nondet_map_match p x y))
+        fn _
+      {
+        unfold (cbor_nondet_map_match p_res res_map vres);
+        rewrite (cbor_nondet_match p_res res_map.map vres) as (cbor_nondet_match p_res m vres);
+        Trade.elim (cbor_nondet_match p_res m vres) _;
+        Trade.elim (cbor_nondet_match p x.map y) _;
+        fold (cbor_nondet_map_entry_insert_refs r1 r2 ry);
+      };
+      Some res_map
+    }
+  }
+}
+
+
 let dummy_cbor_nondet_t () = Nondet.dummy_cbor_nondet
+
+let dummy_cbor_nondet_array_append_cell () = NDummy.dummy_cbor_nondet_array_append_cell ()
+
+let dummy_cbor_nondet_map_entry_insert_cell () = NDummy.dummy_cbor_nondet_map_entry_insert_cell ()
+
+let dummy_cbor_nondet_map_entry () = NDummy.dummy_cbor_nondet_map_entry ()

@@ -21,7 +21,7 @@ let gather_t = LowParse.PulseParse.Base.gather_t
 let mixed_list_depth (#t: Type) (i: mixed_list t) : GTot nat =
   match i with
   | Base _ -> 0
-  | Append depth _ _ _ _ _ _ _ _ -> Ghost.reveal depth
+  | Append depth _ _ _ _ _ _ _ _ _ -> Ghost.reveal depth
 
 module SM = Pulse.Lib.SeqMatch
 
@@ -94,16 +94,16 @@ let rec mixed_list_match_n
   (decreases (mixed_list_depth i))
 = match i with
   | Base i -> base_mixed_list_match_n vmatch p off n pm i l
-  | Append depth cb ca ob bp before oa ap after ->
+  | Append depth cb ca ob bp before oa ap after sc ->
     let n1 = append_n_before off n (SZ.v cb) in
     let n' = append_n_after off n (SZ.v cb) in
     let off_b = append_off_before off (SZ.v ob) (SZ.v cb) in
     let off_a = append_off_after off (SZ.v oa) (SZ.v cb) in
     exists* i_before i_after l1 l2 .
       pts_to before #(pm *. bp) i_before **
-      mixed_list_match_n vmatch p off_b n1 pm i_before l1 **
+      mixed_list_match_n vmatch p off_b n1 (pm *. sc) i_before l1 **
       pts_to after #(pm *. ap) i_after **
-      mixed_list_match_n vmatch p off_a n' pm i_after l2 **
+      mixed_list_match_n vmatch p off_a n' (pm *. sc) i_after l2 **
       pure (
         off + n <= SZ.v cb + SZ.v ca /\
         SZ.v ob + SZ.v cb <= SZ.v (mixed_list_length i_before) /\
@@ -813,13 +813,13 @@ decreases (mixed_list_depth i)
       fold (mixed_list_match_n vmatch p off n (pm /. 2.0R) (Base bi) l);
       rewrite each (Base bi) as i;
     }
-    Append depth cb ca ob bp before oa ap after -> {
-      unfold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after) l);
+    Append depth cb ca ob bp before oa ap after sc -> {
+      unfold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l);
       with i_before i_after l1 l2 . assert (
         pts_to before #(pm *. bp) i_before **
-        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1 **
+        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1 **
         pts_to after #(pm *. ap) i_after **
-        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2 **
+        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2 **
         pure (
           off + n <= SZ.v cb + SZ.v ca /\
           SZ.v ob + SZ.v cb <= SZ.v (mixed_list_length i_before) /\
@@ -834,11 +834,15 @@ decreases (mixed_list_depth i)
       R.share before;
       rewrite (R.pts_to before #((pm *. bp) /. 2.0R) i_before) as (R.pts_to before #((pm /. 2.0R) *. bp) i_before);
       rewrite (R.pts_to before #((pm *. bp) /. 2.0R) i_before) as (R.pts_to before #((pm /. 2.0R) *. bp) i_before);
-      mixed_list_match_n_share vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1 vmatch_share;
+      mixed_list_match_n_share vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1 vmatch_share;
+      rewrite (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) ((pm *. sc) /. 2.0R) i_before l1) as (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1);
+      rewrite (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) ((pm *. sc) /. 2.0R) i_before l1) as (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1);
       R.share after;
       rewrite (R.pts_to after #((pm *. ap) /. 2.0R) i_after) as (R.pts_to after #((pm /. 2.0R) *. ap) i_after);
       rewrite (R.pts_to after #((pm *. ap) /. 2.0R) i_after) as (R.pts_to after #((pm /. 2.0R) *. ap) i_after);
-      mixed_list_match_n_share vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2 vmatch_share;
+      mixed_list_match_n_share vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2 vmatch_share;
+      rewrite (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) ((pm *. sc) /. 2.0R) i_after l2) as (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2);
+      rewrite (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) ((pm *. sc) /. 2.0R) i_after l2) as (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2);
       dup_pure (
         off + n <= SZ.v cb + SZ.v ca /\
         SZ.v ob + SZ.v cb <= SZ.v (mixed_list_length i_before) /\
@@ -849,9 +853,9 @@ decreases (mixed_list_depth i)
         mixed_list_depth i_before < Ghost.reveal depth /\
         mixed_list_depth i_after < Ghost.reveal depth
       );
-      fold (mixed_list_match_n vmatch p off n (pm /. 2.0R) (Append #t depth cb ca ob bp before oa ap after) l);
-      fold (mixed_list_match_n vmatch p off n (pm /. 2.0R) (Append #t depth cb ca ob bp before oa ap after) l);
-      rewrite each (Append #t depth cb ca ob bp before oa ap after) as i;
+      fold (mixed_list_match_n vmatch p off n (pm /. 2.0R) (Append #t depth cb ca ob bp before oa ap after sc) l);
+      fold (mixed_list_match_n vmatch p off n (pm /. 2.0R) (Append #t depth cb ca ob bp before oa ap after sc) l);
+      rewrite each (Append #t depth cb ca ob bp before oa ap after sc) as i;
     }
   }
 }
@@ -892,14 +896,14 @@ decreases (mixed_list_depth i)
       fold (mixed_list_match_n vmatch p off n (pm +. pm') (Base bi) l);
       rewrite each (Base bi) as i;
     }
-    Append depth cb ca ob bp before oa ap after -> {
-      unfold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after) l);
-      unfold (mixed_list_match_n vmatch p off n pm' (Append #t depth cb ca ob bp before oa ap after) l');
+    Append depth cb ca ob bp before oa ap after sc -> {
+      unfold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l);
+      unfold (mixed_list_match_n vmatch p off n pm' (Append #t depth cb ca ob bp before oa ap after sc) l');
       with i_before1 i_after1 l1 l2 . assert (
         pts_to before #(pm *. bp) i_before1 **
-        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before1 l1 **
+        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before1 l1 **
         pts_to after #(pm *. ap) i_after1 **
-        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after1 l2 **
+        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after1 l2 **
         pure (
           off + n <= SZ.v cb + SZ.v ca /\
           SZ.v ob + SZ.v cb <= SZ.v (mixed_list_length i_before1) /\
@@ -913,9 +917,9 @@ decreases (mixed_list_depth i)
       );
       with i_before2 i_after2 l1' l2' . assert (
         pts_to before #(pm' *. bp) i_before2 **
-        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm' i_before2 l1' **
+        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm' *. sc) i_before2 l1' **
         pts_to after #(pm' *. ap) i_after2 **
-        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm' i_after2 l2' **
+        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm' *. sc) i_after2 l2' **
         pure (
           off + n <= SZ.v cb + SZ.v ca /\
           SZ.v ob + SZ.v cb <= SZ.v (mixed_list_length i_before2) /\
@@ -932,13 +936,13 @@ decreases (mixed_list_depth i)
       rewrite (R.pts_to before #(pm *. bp +. pm' *. bp) i_before1) as (R.pts_to before #((pm +. pm') *. bp) i_before1);
       rewrite each i_before2 as i_before1;
       // Align the pm' mixed_list_match_n for before
-      with ib_x l1x . assert (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm' ib_x l1x);
+      with ib_x l1x . assert (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm' *. sc) ib_x l1x);
       slprop_rw
-        (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before1 l1)
-        (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm ib_x l1)
+        (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before1 l1)
+        (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) ib_x l1)
         (Pulse.Lib.Core.slprop_equiv_ext'
-          (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before1 l1)
-          (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm ib_x l1)
+          (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before1 l1)
+          (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) ib_x l1)
           ());
       // Gather the recursive mixed_list_match_n for i_before
       ghost fn before_gather_fn
@@ -949,19 +953,19 @@ decreases (mixed_list_depth i)
         FStar.List.Tot.Properties.append_memP l1x l2' x2';
         vmatch_gather x1 #pm0 #x2 #pm0' x2'
       };
-      mixed_list_match_n_gather_bound vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm pm' ib_x l1 l1x before_gather_fn;
+      mixed_list_match_n_gather_bound vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) (pm' *. sc) ib_x l1 l1x before_gather_fn;
       // Gather the ref 'after'
       R.gather after;
       rewrite (R.pts_to after #(pm *. ap +. pm' *. ap) i_after1) as (R.pts_to after #((pm +. pm') *. ap) i_after1);
       rewrite each i_after2 as i_after1;
       // Align the pm' mixed_list_match_n for after
-      with ia_x l2x . assert (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm' ia_x l2x);
+      with ia_x l2x . assert (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm' *. sc) ia_x l2x);
       slprop_rw
-        (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after1 l2)
-        (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm ia_x l2)
+        (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after1 l2)
+        (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) ia_x l2)
         (Pulse.Lib.Core.slprop_equiv_ext'
-          (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after1 l2)
-          (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm ia_x l2)
+          (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after1 l2)
+          (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) ia_x l2)
           ());
       // Gather the recursive mixed_list_match_n for i_after
       ghost fn after_gather_fn
@@ -972,25 +976,25 @@ decreases (mixed_list_depth i)
         FStar.List.Tot.Properties.append_memP l1 l2x x2';
         vmatch_gather x1 #pm0 #x2 #pm0' x2'
       };
-      mixed_list_match_n_gather_bound vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm pm' ia_x l2 l2x after_gather_fn;
+      mixed_list_match_n_gather_bound vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) (pm' *. sc) ia_x l2 l2x after_gather_fn;
       // Now we have mixed_list_match_n ... (pm +. pm') ib_x l1 and ... (pm +. pm') ia_x l2
       // Rewrite back for fold
       slprop_rw
-        (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm +. pm') ib_x l1)
-        (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm +. pm') i_before1 l1)
+        (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) ((pm *. sc) +. (pm' *. sc)) ib_x l1)
+        (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) ((pm +. pm') *. sc) i_before1 l1)
         (Pulse.Lib.Core.slprop_equiv_ext'
-          (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm +. pm') ib_x l1)
-          (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm +. pm') i_before1 l1)
+          (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) ((pm *. sc) +. (pm' *. sc)) ib_x l1)
+          (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) ((pm +. pm') *. sc) i_before1 l1)
           ());
       slprop_rw
-        (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm +. pm') ia_x l2)
-        (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm +. pm') i_after1 l2)
+        (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) ((pm *. sc) +. (pm' *. sc)) ia_x l2)
+        (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) ((pm +. pm') *. sc) i_after1 l2)
         (Pulse.Lib.Core.slprop_equiv_ext'
-          (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm +. pm') ia_x l2)
-          (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm +. pm') i_after1 l2)
+          (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) ((pm *. sc) +. (pm' *. sc)) ia_x l2)
+          (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) ((pm +. pm') *. sc) i_after1 l2)
           ());
-      fold (mixed_list_match_n vmatch p off n (pm +. pm') (Append #t depth cb ca ob bp before oa ap after) l);
-      rewrite each (Append #t depth cb ca ob bp before oa ap after) as i;
+      fold (mixed_list_match_n vmatch p off n (pm +. pm') (Append #t depth cb ca ob bp before oa ap after sc) l);
+      rewrite each (Append #t depth cb ca ob bp before oa ap after sc) as i;
     }
   }
 }
@@ -1329,13 +1333,13 @@ decreases (mixed_list_depth i)
       fold (mixed_list_match_n vmatch2 p off n pm (Base #t bi) l);
       rewrite each (Base #t bi) as i;
     }
-    Append depth cb ca ob bp before oa ap after -> {
-      unfold (mixed_list_match_n vmatch1 p off n pm (Append #t depth cb ca ob bp before oa ap after) l);
+    Append depth cb ca ob bp before oa ap after sc -> {
+      unfold (mixed_list_match_n vmatch1 p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l);
       with i_before i_after l1 l2 . assert (
         pts_to before #(pm *. bp) i_before **
-        mixed_list_match_n vmatch1 p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1 **
+        mixed_list_match_n vmatch1 p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1 **
         pts_to after #(pm *. ap) i_after **
-        mixed_list_match_n vmatch1 p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2
+        mixed_list_match_n vmatch1 p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2
       );
       List.Tot.Properties.append_memP_forall l1 l2;
       ghost fn prf1
@@ -1352,10 +1356,10 @@ decreases (mixed_list_depth i)
       {
         prf x pm0 y
       };
-      mixed_list_match_n_weaken vmatch1 vmatch2 p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1 prf1;
-      mixed_list_match_n_weaken vmatch1 vmatch2 p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2 prf2;
-      fold (mixed_list_match_n vmatch2 p off n pm (Append #t depth cb ca ob bp before oa ap after) l);
-      rewrite each (Append #t depth cb ca ob bp before oa ap after) as i;
+      mixed_list_match_n_weaken vmatch1 vmatch2 p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1 prf1;
+      mixed_list_match_n_weaken vmatch1 vmatch2 p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2 prf2;
+      fold (mixed_list_match_n vmatch2 p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l);
+      rewrite each (Append #t depth cb ca ob bp before oa ap after sc) as i;
     }
   }
 }
@@ -1468,13 +1472,13 @@ decreases (mixed_list_depth i)
       fold (mixed_list_match_n vmatch p off n pm (Base bi) l);
       rewrite each (Base bi) as i;
     }
-    Append depth cb ca ob bp before oa ap after -> {
-      unfold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after) l);
+    Append depth cb ca ob bp before oa ap after sc -> {
+      unfold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l);
       with i_before i_after l1 l2 . assert (
         pts_to before #(pm *. bp) i_before **
-        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1 **
+        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1 **
         pts_to after #(pm *. ap) i_after **
-        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2 **
+        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2 **
         pure (
           off + n <= SZ.v cb + SZ.v ca /\
           SZ.v ob + SZ.v cb <= SZ.v (mixed_list_length i_before) /\
@@ -1487,8 +1491,8 @@ decreases (mixed_list_depth i)
         )
       );
       List.Tot.Properties.append_length l1 l2;
-      fold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after) l);
-      rewrite each (Append #t depth cb ca ob bp before oa ap after) as i;
+      fold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l);
+      rewrite each (Append #t depth cb ca ob bp before oa ap after sc) as i;
     }
   }
 }
@@ -2112,13 +2116,13 @@ decreases (mixed_list_depth i)
         };
       rewrite each (Base bi) as i;
     }
-    Append depth cb ca ob bp before oa ap after -> {
-      unfold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after) l);
+    Append depth cb ca ob bp before oa ap after sc -> {
+      unfold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l);
       with i_before i_after l1 l2 . assert (
         pts_to before #(pm *. bp) i_before **
-        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1 **
+        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1 **
         pts_to after #(pm *. ap) i_after **
-        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2
+        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2
       );
       // Compute child narrow parameters
       let off_b = append_off_before off (SZ.v ob) (SZ.v cb);
@@ -2130,53 +2134,53 @@ decreases (mixed_list_depth i)
       let off_a' = append_off_after off' (SZ.v oa) (SZ.v cb);
       let na' = append_n_after off' n' (SZ.v cb);
       // Rewrite context to use let-bound names
-      rewrite (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1)
-        as (mixed_list_match_n vmatch p off_b n1 pm i_before l1);
-      rewrite (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2)
-        as (mixed_list_match_n vmatch p off_a na pm i_after l2);
+      rewrite (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1)
+        as (mixed_list_match_n vmatch p off_b n1 (pm *. sc) i_before l1);
+      rewrite (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2)
+        as (mixed_list_match_n vmatch p off_a na (pm *. sc) i_after l2);
       // Prove narrow preconditions for children
       append_narrow_before_ineq off n off' n' (SZ.v cb);
       append_narrow_after_ineq off n off' n' (SZ.v cb);
       // Recursively narrow before child
-      mixed_list_match_n_narrow vmatch p off_b n1 off_b' n1' pm i_before l1 vmatch_share vmatch_gather;
+      mixed_list_match_n_narrow vmatch p off_b n1 off_b' n1' (pm *. sc) i_before l1 vmatch_share vmatch_gather;
       // Share R.pts_to before
       R.share before;
       rewrite (R.pts_to before #((pm *. bp) /. 2.0R) i_before) as (R.pts_to before #((pm /. 2.0R) *. bp) i_before);
       rewrite (R.pts_to before #((pm *. bp) /. 2.0R) i_before) as (R.pts_to before #((pm /. 2.0R) *. bp) i_before);
       // Recursively narrow after child
-      mixed_list_match_n_narrow vmatch p off_a na off_a' na' pm i_after l2 vmatch_share vmatch_gather;
+      mixed_list_match_n_narrow vmatch p off_a na off_a' na' (pm *. sc) i_after l2 vmatch_share vmatch_gather;
       // Share R.pts_to after
       R.share after;
       rewrite (R.pts_to after #((pm *. ap) /. 2.0R) i_after) as (R.pts_to after #((pm /. 2.0R) *. ap) i_after);
       rewrite (R.pts_to after #((pm *. ap) /. 2.0R) i_after) as (R.pts_to after #((pm /. 2.0R) *. ap) i_after);
       // Rewrite narrow results from let-bound names back to append_* forms for fold
-      rewrite (mixed_list_match_n vmatch p off_b' n1' (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
-        as (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'));
-      rewrite (mixed_list_match_n vmatch p off_a' na' (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
-        as (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'));
+      rewrite (mixed_list_match_n vmatch p off_b' n1' ((pm *. sc) /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
+        as (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'));
+      rewrite (mixed_list_match_n vmatch p off_a' na' ((pm *. sc) /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
+        as (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'));
       // Also rewrite the trades
-      rewrite (trade (mixed_list_match_n vmatch p off_b' n1' (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
-                     (mixed_list_match_n vmatch p off_b n1 pm i_before l1))
-        as (trade (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
-                  (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1));
-      rewrite (trade (mixed_list_match_n vmatch p off_a' na' (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
-                     (mixed_list_match_n vmatch p off_a na pm i_after l2))
-        as (trade (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
-                  (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2));
+      rewrite (trade (mixed_list_match_n vmatch p off_b' n1' ((pm *. sc) /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
+                     (mixed_list_match_n vmatch p off_b n1 (pm *. sc) i_before l1))
+        as (trade (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'))
+                  (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1));
+      rewrite (trade (mixed_list_match_n vmatch p off_a' na' ((pm *. sc) /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
+                     (mixed_list_match_n vmatch p off_a na (pm *. sc) i_after l2))
+        as (trade (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'))
+                  (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2));
       // Establish list narrow relationship (pure facts from unfold are in SMT context)
       list_narrow_append_connect off n off' n' (SZ.v cb) (SZ.v ob) (SZ.v oa) l1 l2;
       list_narrow_length l1 (off_b' - off_b) n1';
       list_narrow_length l2 (off_a' - off_a) na';
       // Fold narrow view
-      fold (mixed_list_match_n vmatch p off' n' (pm /. 2.0R) (Append #t depth cb ca ob bp before oa ap after) (list_narrow l (off' - off) n'));
+      fold (mixed_list_match_n vmatch p off' n' (pm /. 2.0R) (Append #t depth cb ca ob bp before oa ap after sc) (list_narrow l (off' - off) n'));
       // Build trade
-      intro (mixed_list_match_n vmatch p off' n' (pm /. 2.0R) (Append #t depth cb ca ob bp before oa ap after) (list_narrow l (off' - off) n') @==>
-             mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after) l)
-        #(trade (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
-                (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1) **
+      intro (mixed_list_match_n vmatch p off' n' (pm /. 2.0R) (Append #t depth cb ca ob bp before oa ap after sc) (list_narrow l (off' - off) n') @==>
+             mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l)
+        #(trade (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'))
+                (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1) **
           R.pts_to before #((pm /. 2.0R) *. bp) i_before **
-          trade (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
-                (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2) **
+          trade (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'))
+                (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2) **
           R.pts_to after #((pm /. 2.0R) *. ap) i_after **
           pure (
             off + n <= SZ.v cb + SZ.v ca /\
@@ -2189,12 +2193,12 @@ decreases (mixed_list_depth i)
             mixed_list_depth i_after < Ghost.reveal depth
           ))
         fn _ {
-          unfold (mixed_list_match_n vmatch p off' n' (pm /. 2.0R) (Append #t depth cb ca ob bp before oa ap after) (list_narrow l (off' - off) n'));
+          unfold (mixed_list_match_n vmatch p off' n' (pm /. 2.0R) (Append #t depth cb ca ob bp before oa ap after sc) (list_narrow l (off' - off) n'));
           with ib_u ia_u l1_u l2_u . assert (
             pts_to before #((pm /. 2.0R) *. bp) ib_u **
-            mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) (pm /. 2.0R) ib_u l1_u **
+            mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_u l1_u **
             pts_to after #((pm /. 2.0R) *. ap) ia_u **
-            mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) (pm /. 2.0R) ia_u l2_u
+            mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_u l2_u
           );
           // Gather R.pts_to before
           R.gather before;
@@ -2207,41 +2211,41 @@ decreases (mixed_list_depth i)
           rewrite (R.pts_to after #((pm /. 2.0R) *. ap +. (pm /. 2.0R) *. ap) i_after)
             as (R.pts_to after #(pm *. ap) i_after);
           // Rewrite before child lists/mixed_lists to match trades
-          mixed_list_match_n_length vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) (pm /. 2.0R) ib_u l1_u;
+          mixed_list_match_n_length vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_u l1_u;
           list_narrow_length l1 (off_b' - off_b) n1';
-          mixed_list_match_n_length vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) (pm /. 2.0R) ia_u l2_u;
+          mixed_list_match_n_length vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_u l2_u;
           list_narrow_length l2 (off_a' - off_a) na';
           List.Tot.Properties.append_injective l1_u (list_narrow l1 (off_b' - off_b) n1')
             l2_u (list_narrow l2 (off_a' - off_a) na');
-          with ib_x . assert (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) (pm /. 2.0R) ib_x l1_u);
+          with ib_x . assert (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u);
           slprop_rw
-            (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) (pm /. 2.0R) ib_x l1_u)
-            (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
+            (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u)
+            (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'))
             (Pulse.Lib.Core.slprop_equiv_ext'
-              (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) (pm /. 2.0R) ib_x l1_u)
-              (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
+              (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u)
+              (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'))
               ());
           // Elim before trade
           elim_trade
-            (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
-            (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1);
+            (mixed_list_match_n vmatch p (append_off_before off' (SZ.v ob) (SZ.v cb)) (append_n_before off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'))
+            (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1);
           // Rewrite after child
-          with ia_x . assert (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) (pm /. 2.0R) ia_x l2_u);
+          with ia_x . assert (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u);
           slprop_rw
-            (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) (pm /. 2.0R) ia_x l2_u)
-            (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
+            (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u)
+            (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'))
             (Pulse.Lib.Core.slprop_equiv_ext'
-              (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) (pm /. 2.0R) ia_x l2_u)
-              (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
+              (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u)
+              (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'))
               ());
           // Elim after trade
           elim_trade
-            (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
-            (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2);
+            (mixed_list_match_n vmatch p (append_off_after off' (SZ.v oa) (SZ.v cb)) (append_n_after off' n' (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'))
+            (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2);
           // Fold original
-          fold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after) l);
+          fold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l);
         };
-      rewrite each (Append #t depth cb ca ob bp before oa ap after) as i;
+      rewrite each (Append #t depth cb ca ob bp before oa ap after sc) as i;
     }
   }
 }
@@ -3083,14 +3087,14 @@ ensures
       rewrite each (reveal l_narrow) as (list_narrow l (SZ.v off' - Ghost.reveal off) (SZ.v n'));
       i'
     }
-    Append depth cb ca ob bp before oa ap after -> {
+    Append depth cb ca ob bp before oa ap after sc -> {
       // Unfold mixed_list_match_n
-      unfold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after) l);
+      unfold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l);
       with i_before i_after l1 l2 . assert (
         pts_to before #(pm *. bp) i_before **
-        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1 **
+        mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1 **
         pts_to after #(pm *. ap) i_after **
-        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2
+        mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2
       );
       // Bind child narrow parameters (ghost since off/n are ghost)
       let off_b : Ghost.erased nat = append_off_before (Ghost.reveal off) (SZ.v ob) (SZ.v cb);
@@ -3102,21 +3106,21 @@ ensures
       let off_a' : Ghost.erased nat = append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb);
       let na' : Ghost.erased nat = append_n_after (SZ.v off') (SZ.v n') (SZ.v cb);
       // Rewrite to let-bound names
-      rewrite (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) pm i_before l1)
-        as (mixed_list_match_n vmatch p off_b n1 pm i_before l1);
-      rewrite (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) pm i_after l2)
-        as (mixed_list_match_n vmatch p off_a na pm i_after l2);
+      rewrite (mixed_list_match_n vmatch p (append_off_before off (SZ.v ob) (SZ.v cb)) (append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1)
+        as (mixed_list_match_n vmatch p off_b n1 (pm *. sc) i_before l1);
+      rewrite (mixed_list_match_n vmatch p (append_off_after off (SZ.v oa) (SZ.v cb)) (append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2)
+        as (mixed_list_match_n vmatch p off_a na (pm *. sc) i_after l2);
       // Prove narrow preconditions
       append_narrow_before_ineq (Ghost.reveal off) (Ghost.reveal n) (SZ.v off') (SZ.v n') (SZ.v cb);
       append_narrow_after_ineq (Ghost.reveal off) (Ghost.reveal n) (SZ.v off') (SZ.v n') (SZ.v cb);
       // Narrow before child (halves pm)
-      mixed_list_match_n_narrow vmatch p off_b n1 off_b' n1' pm i_before l1 vmatch_share vmatch_gather;
+      mixed_list_match_n_narrow vmatch p off_b n1 off_b' n1' (pm *. sc) i_before l1 vmatch_share vmatch_gather;
       // Share R.pts_to before
       R.share before;
       rewrite (R.pts_to before #((pm *. bp) /. 2.0R) i_before) as (R.pts_to before #((pm /. 2.0R) *. bp) i_before);
       rewrite (R.pts_to before #((pm *. bp) /. 2.0R) i_before) as (R.pts_to before #((pm /. 2.0R) *. bp) i_before);
       // Narrow after child (halves pm)
-      mixed_list_match_n_narrow vmatch p off_a na off_a' na' pm i_after l2 vmatch_share vmatch_gather;
+      mixed_list_match_n_narrow vmatch p off_a na off_a' na' (pm *. sc) i_after l2 vmatch_share vmatch_gather;
       // Share R.pts_to after
       R.share after;
       rewrite (R.pts_to after #((pm *. ap) /. 2.0R) i_after) as (R.pts_to after #((pm /. 2.0R) *. ap) i_after);
@@ -3128,42 +3132,42 @@ ensures
       let ob'_sz : SZ.t = append_off_before_sz off' ob cb;
       let oa'_sz : SZ.t = append_off_after_sz off' oa ca cb;
       // Rewrite narrow results to use new offsets/counts
-      rewrite (mixed_list_match_n vmatch p off_b' n1' (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
-        as (mixed_list_match_n vmatch p (append_off_before 0 (SZ.v ob'_sz) (SZ.v cb'_sz)) (append_n_before 0 (SZ.v n') (SZ.v cb'_sz)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'));
-      rewrite (mixed_list_match_n vmatch p off_a' na' (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
-        as (mixed_list_match_n vmatch p (append_off_after 0 (SZ.v oa'_sz) (SZ.v cb'_sz)) (append_n_after 0 (SZ.v n') (SZ.v cb'_sz)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'));
+      rewrite (mixed_list_match_n vmatch p off_b' n1' ((pm *. sc) /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
+        as (mixed_list_match_n vmatch p (append_off_before 0 (SZ.v ob'_sz) (SZ.v cb'_sz)) (append_n_before 0 (SZ.v n') (SZ.v cb'_sz)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'));
+      rewrite (mixed_list_match_n vmatch p off_a' na' ((pm *. sc) /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
+        as (mixed_list_match_n vmatch p (append_off_after 0 (SZ.v oa'_sz) (SZ.v cb'_sz)) (append_n_after 0 (SZ.v n') (SZ.v cb'_sz)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'));
       // Establish list relationship
       list_narrow_append_connect (Ghost.reveal off) (Ghost.reveal n) (SZ.v off') (SZ.v n') (SZ.v cb) (SZ.v ob) (SZ.v oa) l1 l2;
       list_narrow_length l1 (off_b' - off_b) n1';
       list_narrow_length l2 (off_a' - off_a) na';
       // Fold mixed_list_match_n for the new Append at pm/2
       fold (mixed_list_match_n vmatch p 0 (SZ.v n') (pm /. 2.0R)
-        (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after)
+        (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after sc)
         (list_narrow l1 (off_b' - off_b) n1' @ list_narrow l2 (off_a' - off_a) na'));
       // Rewrite list_narrow of append to match l_narrow
       rewrite (mixed_list_match_n vmatch p 0 (SZ.v n') (pm /. 2.0R)
-        (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after)
+        (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after sc)
         (list_narrow l1 (off_b' - off_b) n1' @ list_narrow l2 (off_a' - off_a) na'))
         as (mixed_list_match vmatch p (pm /. 2.0R)
-          (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after)
+          (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after sc)
           (reveal l_narrow));
       // Also rewrite trades back to append_* forms
-      rewrite (trade (mixed_list_match_n vmatch p off_b' n1' (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
-                     (mixed_list_match_n vmatch p off_b n1 pm i_before l1))
-        as (trade (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
-                  (mixed_list_match_n vmatch p (append_off_before (Ghost.reveal off) (SZ.v ob) (SZ.v cb)) (append_n_before (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) pm i_before l1));
-      rewrite (trade (mixed_list_match_n vmatch p off_a' na' (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
-                     (mixed_list_match_n vmatch p off_a na pm i_after l2))
-        as (trade (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
-                  (mixed_list_match_n vmatch p (append_off_after (Ghost.reveal off) (SZ.v oa) (SZ.v cb)) (append_n_after (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) pm i_after l2));
+      rewrite (trade (mixed_list_match_n vmatch p off_b' n1' ((pm *. sc) /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
+                     (mixed_list_match_n vmatch p off_b n1 (pm *. sc) i_before l1))
+        as (trade (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'))
+                  (mixed_list_match_n vmatch p (append_off_before (Ghost.reveal off) (SZ.v ob) (SZ.v cb)) (append_n_before (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) (pm *. sc) i_before l1));
+      rewrite (trade (mixed_list_match_n vmatch p off_a' na' ((pm *. sc) /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
+                     (mixed_list_match_n vmatch p off_a na (pm *. sc) i_after l2))
+        as (trade (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'))
+                  (mixed_list_match_n vmatch p (append_off_after (Ghost.reveal off) (SZ.v oa) (SZ.v cb)) (append_n_after (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) (pm *. sc) i_after l2));
       // Build trade
-      intro (mixed_list_match vmatch p (pm /. 2.0R) (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after) (reveal l_narrow) @==>
-             mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after) l)
-        #(trade (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
-                (mixed_list_match_n vmatch p (append_off_before (Ghost.reveal off) (SZ.v ob) (SZ.v cb)) (append_n_before (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) pm i_before l1) **
+      intro (mixed_list_match vmatch p (pm /. 2.0R) (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after sc) (reveal l_narrow) @==>
+             mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l)
+        #(trade (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'))
+                (mixed_list_match_n vmatch p (append_off_before (Ghost.reveal off) (SZ.v ob) (SZ.v cb)) (append_n_before (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) (pm *. sc) i_before l1) **
           R.pts_to before #((pm /. 2.0R) *. bp) i_before **
-          trade (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
-                (mixed_list_match_n vmatch p (append_off_after (Ghost.reveal off) (SZ.v oa) (SZ.v cb)) (append_n_after (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) pm i_after l2) **
+          trade (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'))
+                (mixed_list_match_n vmatch p (append_off_after (Ghost.reveal off) (SZ.v oa) (SZ.v cb)) (append_n_after (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) (pm *. sc) i_after l2) **
           R.pts_to after #((pm /. 2.0R) *. ap) i_after **
           pure (
             Ghost.reveal off + Ghost.reveal n <= SZ.v cb + SZ.v ca /\
@@ -3177,14 +3181,14 @@ ensures
           ))
         fn _ {
           // Unfold mixed_list_match for the new Append
-          rewrite (mixed_list_match vmatch p (pm /. 2.0R) (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after) (reveal l_narrow))
-            as (mixed_list_match_n vmatch p 0 (SZ.v n') (pm /. 2.0R) (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after) (reveal l_narrow));
-          unfold (mixed_list_match_n vmatch p 0 (SZ.v n') (pm /. 2.0R) (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after) (reveal l_narrow));
+          rewrite (mixed_list_match vmatch p (pm /. 2.0R) (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after sc) (reveal l_narrow))
+            as (mixed_list_match_n vmatch p 0 (SZ.v n') (pm /. 2.0R) (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after sc) (reveal l_narrow));
+          unfold (mixed_list_match_n vmatch p 0 (SZ.v n') (pm /. 2.0R) (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after sc) (reveal l_narrow));
           with ib_u ia_u l1_u l2_u . assert (
             pts_to before #((pm /. 2.0R) *. bp) ib_u **
-            mixed_list_match_n vmatch p (append_off_before 0 (SZ.v ob'_sz) (SZ.v cb'_sz)) (append_n_before 0 (SZ.v n') (SZ.v cb'_sz)) (pm /. 2.0R) ib_u l1_u **
+            mixed_list_match_n vmatch p (append_off_before 0 (SZ.v ob'_sz) (SZ.v cb'_sz)) (append_n_before 0 (SZ.v n') (SZ.v cb'_sz)) ((pm /. 2.0R) *. sc) ib_u l1_u **
             pts_to after #((pm /. 2.0R) *. ap) ia_u **
-            mixed_list_match_n vmatch p (append_off_after 0 (SZ.v oa'_sz) (SZ.v cb'_sz)) (append_n_after 0 (SZ.v n') (SZ.v cb'_sz)) (pm /. 2.0R) ia_u l2_u
+            mixed_list_match_n vmatch p (append_off_after 0 (SZ.v oa'_sz) (SZ.v cb'_sz)) (append_n_after 0 (SZ.v n') (SZ.v cb'_sz)) ((pm /. 2.0R) *. sc) ia_u l2_u
           );
           // Gather R.pts_to before
           R.gather before;
@@ -3197,49 +3201,49 @@ ensures
           rewrite (R.pts_to after #((pm /. 2.0R) *. ap +. (pm /. 2.0R) *. ap) i_after)
             as (R.pts_to after #(pm *. ap) i_after);
           // Rewrite child mixed_list_match_n to use original offset names
-          rewrite (mixed_list_match_n vmatch p (append_off_before 0 (SZ.v ob'_sz) (SZ.v cb'_sz)) (append_n_before 0 (SZ.v n') (SZ.v cb'_sz)) (pm /. 2.0R) ib_u l1_u)
-            as (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) ib_u l1_u);
+          rewrite (mixed_list_match_n vmatch p (append_off_before 0 (SZ.v ob'_sz) (SZ.v cb'_sz)) (append_n_before 0 (SZ.v n') (SZ.v cb'_sz)) ((pm /. 2.0R) *. sc) ib_u l1_u)
+            as (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_u l1_u);
           // Use length + append_injective to identify ib_u = i_before, l1_u = list_narrow l1 ...
-          mixed_list_match_n_length vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) ib_u l1_u;
-          rewrite (mixed_list_match_n vmatch p (append_off_after 0 (SZ.v oa'_sz) (SZ.v cb'_sz)) (append_n_after 0 (SZ.v n') (SZ.v cb'_sz)) (pm /. 2.0R) ia_u l2_u)
-            as (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) ia_u l2_u);
-          mixed_list_match_n_length vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) ia_u l2_u;
+          mixed_list_match_n_length vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_u l1_u;
+          rewrite (mixed_list_match_n vmatch p (append_off_after 0 (SZ.v oa'_sz) (SZ.v cb'_sz)) (append_n_after 0 (SZ.v n') (SZ.v cb'_sz)) ((pm /. 2.0R) *. sc) ia_u l2_u)
+            as (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_u l2_u);
+          mixed_list_match_n_length vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_u l2_u;
           list_narrow_length l1 (off_b' - off_b) n1';
           list_narrow_length l2 (off_a' - off_a) na';
           List.Tot.Properties.append_injective l1_u (list_narrow l1 (off_b' - off_b) n1')
             l2_u (list_narrow l2 (off_a' - off_a) na');
           // Rewrite to match trade domains
-          with ib_x . assert (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) ib_x l1_u);
+          with ib_x . assert (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u);
           slprop_rw
-            (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) ib_x l1_u)
-            (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
+            (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u)
+            (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'))
             (Pulse.Lib.Core.slprop_equiv_ext'
-              (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) ib_x l1_u)
-              (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
+              (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u)
+              (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'))
               ());
           // Elim before trade
           elim_trade
-            (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) i_before (list_narrow l1 (off_b' - off_b) n1'))
-            (mixed_list_match_n vmatch p (append_off_before (Ghost.reveal off) (SZ.v ob) (SZ.v cb)) (append_n_before (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) pm i_before l1);
+            (mixed_list_match_n vmatch p (append_off_before (SZ.v off') (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before (list_narrow l1 (off_b' - off_b) n1'))
+            (mixed_list_match_n vmatch p (append_off_before (Ghost.reveal off) (SZ.v ob) (SZ.v cb)) (append_n_before (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) (pm *. sc) i_before l1);
           // Rewrite after child
-          with ia_x . assert (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) ia_x l2_u);
+          with ia_x . assert (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u);
           slprop_rw
-            (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) ia_x l2_u)
-            (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
+            (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u)
+            (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'))
             (Pulse.Lib.Core.slprop_equiv_ext'
-              (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) ia_x l2_u)
-              (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
+              (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u)
+              (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'))
               ());
           // Elim after trade
           elim_trade
-            (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) (pm /. 2.0R) i_after (list_narrow l2 (off_a' - off_a) na'))
-            (mixed_list_match_n vmatch p (append_off_after (Ghost.reveal off) (SZ.v oa) (SZ.v cb)) (append_n_after (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) pm i_after l2);
+            (mixed_list_match_n vmatch p (append_off_after (SZ.v off') (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v off') (SZ.v n') (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after (list_narrow l2 (off_a' - off_a) na'))
+            (mixed_list_match_n vmatch p (append_off_after (Ghost.reveal off) (SZ.v oa) (SZ.v cb)) (append_n_after (Ghost.reveal off) (Ghost.reveal n) (SZ.v cb)) (pm *. sc) i_after l2);
           // Fold original
-          fold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after) l);
+          fold (mixed_list_match_n vmatch p off n pm (Append #t depth cb ca ob bp before oa ap after sc) l);
         };
-      let i' = Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after;
-      rewrite each (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after) as i';
-      rewrite each (Append #t depth cb ca ob bp before oa ap after) as i;
+      let i' = Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after sc;
+      rewrite each (Append #t depth cb'_sz ca'_sz ob'_sz bp before oa'_sz ap after sc) as i';
+      rewrite each (Append #t depth cb ca ob bp before oa ap after sc) as i;
       rewrite each (reveal l_narrow) as (list_narrow l (SZ.v off' - Ghost.reveal off) (SZ.v n'));
       i'
     }
@@ -3471,6 +3475,121 @@ let list_narrow_split (#a: Type) (l: list a) (n: nat)
 // Extract the first non-empty base_mixed_list from an mixed_list,
 // returning it with base_mixed_list_match and a trade back.
 // Descends the Append tree following a single path until a Base node is found.
+// Real-arithmetic cancellation used by the base rescale below:
+// scaling a leaf permission [a] by the factor [cur /. tgt] and then by the
+// target ambient [tgt] recovers the original ambient-scaled permission [cur *. a].
+let perm_rescale_cancel (cur tgt a: perm) : Lemma (tgt *. ((cur /. tgt) *. a) == cur *. a)
+= let open FStar.Real in
+  assert (tgt *. ((cur /. tgt) *. a) == cur *. a)
+
+// Rescale a base_mixed_list match from ambient permission [cur] to ambient
+// permission [tgt], absorbing the factor [cur /. tgt] into the leaf permissions
+// of a freshly reconstructed base node [i']. This is needed because
+// mixed_list_extract_first_base_loop now returns the first base at a symbolic
+// ambient (the product of the child-ambient-scaling [sc] fields along the
+// descended path); rescaling brings it back to the clean ambient expected by
+// iterator_start. The precondition [n > 0] rules out the Empty case.
+// Not [ghost]: it returns an informative [base_mixed_list t] node (its perm
+// leaf fields are rescaled; those fields are erased at extraction, so the
+// returned node coincides with the input node at runtime).
+#push-options "--z3rlimit 20"
+inline_for_extraction
+```pulse
+fn base_mixed_list_match_n_rescale
+  (#t: Type0) (#u: Type0) (vmatch: perm -> t -> u -> slprop)
+  (#k: parser_kind) (p: parser k u)
+  (off: Ghost.erased nat) (n: Ghost.erased nat { Ghost.reveal n > 0 })
+  (cur: perm) (tgt: perm)
+  (i: base_mixed_list t) (l: Ghost.erased (list u))
+requires
+  base_mixed_list_match_n vmatch p off n cur i l
+returns i': base_mixed_list t
+ensures
+  base_mixed_list_match_n vmatch p off n tgt i' l **
+  trade (base_mixed_list_match_n vmatch p off n tgt i' l)
+        (base_mixed_list_match_n vmatch p off n cur i l) **
+  pure (base_mixed_list_length i' == base_mixed_list_length i)
+{
+  let f : perm = cur /. tgt;
+  match i {
+    Empty -> {
+      unfold (base_mixed_list_match_n vmatch p off n cur (Empty #t) l);
+      unreachable ()
+    }
+    Singleton sp sv s -> {
+      base_mixed_list_match_n_singleton_unfold_pos vmatch p off n cur sp sv s l ();
+      with x y. assert (pts_to s #(cur *. sp) x ** vmatch (cur *. sv) x y);
+      perm_rescale_cancel cur tgt sp;
+      perm_rescale_cancel cur tgt sv;
+      rewrite (pts_to s #(cur *. sp) x) as (pts_to s #(tgt *. (f *. sp)) x);
+      rewrite (vmatch (cur *. sv) x y) as (vmatch (tgt *. (f *. sv)) x y);
+      base_mixed_list_match_n_singleton_fold_pos vmatch p off n tgt (f *. sp) (f *. sv) s l ();
+      intro (base_mixed_list_match_n vmatch p off n tgt (Singleton #t (f *. sp) (f *. sv) s) l @==>
+             base_mixed_list_match_n vmatch p off n cur (Singleton #t sp sv s) l)
+        #emp
+        fn _ {
+          base_mixed_list_match_n_singleton_unfold_pos vmatch p off n tgt (f *. sp) (f *. sv) s l ();
+          with x2 y2. assert (pts_to s #(tgt *. (f *. sp)) x2 ** vmatch (tgt *. (f *. sv)) x2 y2);
+          perm_rescale_cancel cur tgt sp;
+          perm_rescale_cancel cur tgt sv;
+          rewrite (pts_to s #(tgt *. (f *. sp)) x2) as (pts_to s #(cur *. sp) x2);
+          rewrite (vmatch (tgt *. (f *. sv)) x2 y2) as (vmatch (cur *. sv) x2 y2);
+          base_mixed_list_match_n_singleton_fold_pos vmatch p off n cur sp sv s l ();
+        };
+      rewrite each (Singleton #t sp sv s) as i;
+      Singleton (f *. sp) (f *. sv) s
+    }
+    Slice sp sv s -> {
+      unfold (base_mixed_list_match_n vmatch p off n cur (Slice #t sp sv s) l);
+      with sl sl1. assert (pts_to s #(cur *. sp) sl ** SM.seq_list_match sl1 l (vmatch (cur *. sv)));
+      perm_rescale_cancel cur tgt sp;
+      perm_rescale_cancel cur tgt sv;
+      rewrite (pts_to s #(cur *. sp) sl) as (pts_to s #(tgt *. (f *. sp)) sl);
+      rewrite (SM.seq_list_match sl1 l (vmatch (cur *. sv)))
+        as (SM.seq_list_match sl1 l (vmatch (tgt *. (f *. sv))));
+      fold (base_mixed_list_match_n vmatch p off n tgt (Slice #t (f *. sp) (f *. sv) s) l);
+      intro (base_mixed_list_match_n vmatch p off n tgt (Slice #t (f *. sp) (f *. sv) s) l @==>
+             base_mixed_list_match_n vmatch p off n cur (Slice #t sp sv s) l)
+        #emp
+        fn _ {
+          unfold (base_mixed_list_match_n vmatch p off n tgt (Slice #t (f *. sp) (f *. sv) s) l);
+          with sl2 sl1_2. assert (pts_to s #(tgt *. (f *. sp)) sl2 ** SM.seq_list_match sl1_2 l (vmatch (tgt *. (f *. sv))));
+          perm_rescale_cancel cur tgt sp;
+          perm_rescale_cancel cur tgt sv;
+          rewrite (pts_to s #(tgt *. (f *. sp)) sl2) as (pts_to s #(cur *. sp) sl2);
+          rewrite (SM.seq_list_match sl1_2 l (vmatch (tgt *. (f *. sv))))
+            as (SM.seq_list_match sl1_2 l (vmatch (cur *. sv)));
+          fold (base_mixed_list_match_n vmatch p off n cur (Slice #t sp sv s) l);
+        };
+      rewrite each (Slice #t sp sv s) as i;
+      Slice (f *. sp) (f *. sv) s
+    }
+    Serialized sp count pl -> {
+      unfold (base_mixed_list_match_n vmatch p off n cur (Serialized #t sp count pl) l);
+      with l_all. assert (pts_to_parsed_strong_prefix (parse_nlist (off + n) p) pl #(cur *. sp) l_all);
+      perm_rescale_cancel cur tgt sp;
+      rewrite (pts_to_parsed_strong_prefix (parse_nlist (off + n) p) pl #(cur *. sp) l_all)
+        as (pts_to_parsed_strong_prefix (parse_nlist (off + n) p) pl #(tgt *. (f *. sp)) l_all);
+      fold (base_mixed_list_match_n vmatch p off n tgt (Serialized #t (f *. sp) count pl) l);
+      intro (base_mixed_list_match_n vmatch p off n tgt (Serialized #t (f *. sp) count pl) l @==>
+             base_mixed_list_match_n vmatch p off n cur (Serialized #t sp count pl) l)
+        #emp
+        fn _ {
+          unfold (base_mixed_list_match_n vmatch p off n tgt (Serialized #t (f *. sp) count pl) l);
+          with l_all2. assert (pts_to_parsed_strong_prefix (parse_nlist (off + n) p) pl #(tgt *. (f *. sp)) l_all2);
+          perm_rescale_cancel cur tgt sp;
+          rewrite (pts_to_parsed_strong_prefix (parse_nlist (off + n) p) pl #(tgt *. (f *. sp)) l_all2)
+            as (pts_to_parsed_strong_prefix (parse_nlist (off + n) p) pl #(cur *. sp) l_all2);
+          fold (base_mixed_list_match_n vmatch p off n cur (Serialized #t sp count pl) l);
+        };
+      rewrite each (Serialized #t sp count pl) as i;
+      Serialized (f *. sp) count pl
+    }
+  }
+}
+```
+#pop-options
+
 #push-options "--z3rlimit 4000 --fuel 2 --ifuel 1"
 
 inline_for_extraction
@@ -3498,6 +3617,12 @@ ensures (
   let mut r_off = off_sz;
   let mut r_n = n_sz;
   let mut pcontinue = not (Base? i);
+  // Real permission accumulator: tracks the current ambient permission of the
+  // node under [r_node]. Starts at [pm]; each descent into an [Append] child
+  // multiplies it by the child-ambient-scaling factor [sc]. After the loop we
+  // read it back as a *concrete* perm so we can rescale the extracted base node
+  // from this symbolic ambient back to the clean input ambient [pm].
+  let mut r_pm = pm;
   // Rewrite to use concrete sizes
   rewrite (mixed_list_match_n vmatch p off n pm i l)
     as (mixed_list_match_n vmatch p (SZ.v off_sz) (SZ.v n_sz) pm i (Ghost.reveal l));
@@ -3511,13 +3636,14 @@ ensures (
   while (
     let c = !pcontinue;
     c
-  ) invariant exists* c (cur: mixed_list t) (cur_off: SZ.t) (cur_n: SZ.t) (l_cur: list u).
+  ) invariant exists* c (cur: mixed_list t) (cur_off: SZ.t) (cur_n: SZ.t) (l_cur: list u) (cur_pm: perm).
     R.pts_to pcontinue c **
     R.pts_to r_node cur **
     R.pts_to r_off cur_off **
     R.pts_to r_n cur_n **
-    mixed_list_match_n vmatch p (SZ.v cur_off) (SZ.v cur_n) pm cur l_cur **
-    trade (mixed_list_match_n vmatch p (SZ.v cur_off) (SZ.v cur_n) pm cur l_cur)
+    R.pts_to r_pm cur_pm **
+    mixed_list_match_n vmatch p (SZ.v cur_off) (SZ.v cur_n) cur_pm cur l_cur **
+    trade (mixed_list_match_n vmatch p (SZ.v cur_off) (SZ.v cur_n) cur_pm cur l_cur)
          (mixed_list_match_n vmatch p off n pm i l) **
     pure (
       SZ.v cur_n > 0 /\
@@ -3531,17 +3657,17 @@ ensures (
     let node = !r_node;
     let cur_off_v = !r_off;
     let cur_n_v = !r_n;
-    with _l_cur . assert (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm node _l_cur);
+    with cur_pm_v _l_cur . assert (R.pts_to r_pm cur_pm_v ** mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v node _l_cur);
     match node {
-      Append depth cb ca ob bp before oa ap after -> {
-        rewrite (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm node _l_cur)
-          as (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Append #t depth cb ca ob bp before oa ap after) _l_cur);
-        unfold (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Append #t depth cb ca ob bp before oa ap after) _l_cur);
+      Append depth cb ca ob bp before oa ap after sc -> {
+        rewrite (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v node _l_cur)
+          as (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Append #t depth cb ca ob bp before oa ap after sc) _l_cur);
+        unfold (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Append #t depth cb ca ob bp before oa ap after sc) _l_cur);
         with i_before i_after l1 l2 . assert (
-          pts_to before #(pm *. bp) i_before **
-          mixed_list_match_n vmatch p (append_off_before (SZ.v cur_off_v) (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm i_before l1 **
-          pts_to after #(pm *. ap) i_after **
-          mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm i_after l2 **
+          pts_to before #(cur_pm_v *. bp) i_before **
+          mixed_list_match_n vmatch p (append_off_before (SZ.v cur_off_v) (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) i_before l1 **
+          pts_to after #(cur_pm_v *. ap) i_after **
+          mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) i_after l2 **
           pure (
             SZ.v cur_off_v + SZ.v cur_n_v <= SZ.v cb + SZ.v ca /\
             SZ.v ob + SZ.v cb <= SZ.v (mixed_list_length i_before) /\
@@ -3559,21 +3685,21 @@ ensures (
           let child_off_sz = append_off_before_sz cur_off_v ob cb;
           let ib = R.read before;
           with i_x l_x . rewrite
-            (mixed_list_match_n vmatch p (append_off_before (SZ.v cur_off_v) (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm i_x l_x)
-            as (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_before) pm ib l_x);
+            (mixed_list_match_n vmatch p (append_off_before (SZ.v cur_off_v) (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) i_x l_x)
+            as (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_before) (cur_pm_v *. sc) ib l_x);
           with l_before . assert (
-            mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_before) pm ib l_before
+            mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_before) (cur_pm_v *. sc) ib l_before
           );
           // Build trade: before_match → Append_match
           with i_aft l_aft . assert (
-            pts_to after #(pm *. ap) i_aft **
-            mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm i_aft l_aft
+            pts_to after #(cur_pm_v *. ap) i_aft **
+            mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) i_aft l_aft
           );
-          intro (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_before) pm ib (Ghost.reveal l_before) @==>
-                 mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Append #t depth cb ca ob bp before oa ap after) _l_cur)
-            #(pts_to before #(pm *. bp) ib **
-              pts_to after #(pm *. ap) i_aft **
-              mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm i_aft l_aft **
+          intro (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_before) (cur_pm_v *. sc) ib (Ghost.reveal l_before) @==>
+                 mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Append #t depth cb ca ob bp before oa ap after sc) _l_cur)
+            #(pts_to before #(cur_pm_v *. bp) ib **
+              pts_to after #(cur_pm_v *. ap) i_aft **
+              mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) i_aft l_aft **
               pure (
                 SZ.v cur_off_v + SZ.v cur_n_v <= SZ.v cb + SZ.v ca /\
                 SZ.v ob + SZ.v cb <= SZ.v (mixed_list_length ib) /\
@@ -3584,20 +3710,20 @@ ensures (
                 mixed_list_depth ib < Ghost.reveal depth /\
                 mixed_list_depth i_aft < Ghost.reveal depth))
             fn _ {
-              rewrite (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_before) pm ib (Ghost.reveal l_before))
-                as (mixed_list_match_n vmatch p (append_off_before (SZ.v cur_off_v) (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm ib l_before);
-              rewrite (mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm i_aft l_aft)
-                as (mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm i_aft l_aft);
-              fold (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Append #t depth cb ca ob bp before oa ap after) _l_cur);
+              rewrite (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_before) (cur_pm_v *. sc) ib (Ghost.reveal l_before))
+                as (mixed_list_match_n vmatch p (append_off_before (SZ.v cur_off_v) (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) ib l_before);
+              rewrite (mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) i_aft l_aft)
+                as (mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) i_aft l_aft);
+              fold (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Append #t depth cb ca ob bp before oa ap after sc) _l_cur);
             };
           // Compose with accumulated trade
-          rewrite (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm node _l_cur)
+          rewrite (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v node _l_cur)
                         (mixed_list_match_n vmatch p off n pm i l))
-            as (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Append #t depth cb ca ob bp before oa ap after) _l_cur)
+            as (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Append #t depth cb ca ob bp before oa ap after sc) _l_cur)
                       (mixed_list_match_n vmatch p off n pm i l));
           Trade.trans
-            (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_before) pm ib (Ghost.reveal l_before))
-            (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Append #t depth cb ca ob bp before oa ap after) _l_cur)
+            (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_before) (cur_pm_v *. sc) ib (Ghost.reveal l_before))
+            (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Append #t depth cb ca ob bp before oa ap after sc) _l_cur)
             (mixed_list_match_n vmatch p off n pm i l);
           // Prove list_narrow invariant for new state
           lemma_splitAt_fst_append (SZ.v child_n_before) (Ghost.reveal l_before) (Ghost.reveal l_aft);
@@ -3607,27 +3733,29 @@ ensures (
           r_off := child_off_sz;
           r_n := child_n_before;
           pcontinue := not (Base? ib);
+          // Descended into a child at ambient [cur_pm_v *. sc]: track it.
+          r_pm := !r_pm *. sc;
         } else {
           // Descend into "after" child (n_before == 0)
           let child_off_sz = append_off_after_sz cur_off_v oa ca cb;
           let child_n_sz = append_n_after_sz cur_off_v cur_n_v cb;
           let ia = R.read after;
           with i_y l_y . rewrite
-            (mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm i_y l_y)
-            as (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_sz) pm ia l_y);
+            (mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) i_y l_y)
+            as (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_sz) (cur_pm_v *. sc) ia l_y);
           with l_aft . assert (
-            mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_sz) pm ia l_aft
+            mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_sz) (cur_pm_v *. sc) ia l_aft
           );
           // Build trade: after_match → Append_match
           with i_bef l_bef . assert (
-            pts_to before #(pm *. bp) i_bef **
-            mixed_list_match_n vmatch p (append_off_before (SZ.v cur_off_v) (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm i_bef l_bef
+            pts_to before #(cur_pm_v *. bp) i_bef **
+            mixed_list_match_n vmatch p (append_off_before (SZ.v cur_off_v) (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) i_bef l_bef
           );
-          intro (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_sz) pm ia (Ghost.reveal l_aft) @==>
-                 mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Append #t depth cb ca ob bp before oa ap after) _l_cur)
-            #(pts_to before #(pm *. bp) i_bef **
-              mixed_list_match_n vmatch p (append_off_before (SZ.v cur_off_v) (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm i_bef l_bef **
-              pts_to after #(pm *. ap) ia **
+          intro (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_sz) (cur_pm_v *. sc) ia (Ghost.reveal l_aft) @==>
+                 mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Append #t depth cb ca ob bp before oa ap after sc) _l_cur)
+            #(pts_to before #(cur_pm_v *. bp) i_bef **
+              mixed_list_match_n vmatch p (append_off_before (SZ.v cur_off_v) (SZ.v ob) (SZ.v cb)) (append_n_before (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) i_bef l_bef **
+              pts_to after #(cur_pm_v *. ap) ia **
               pure (
                 SZ.v cur_off_v + SZ.v cur_n_v <= SZ.v cb + SZ.v ca /\
                 SZ.v ob + SZ.v cb <= SZ.v (mixed_list_length i_bef) /\
@@ -3638,18 +3766,18 @@ ensures (
                 mixed_list_depth i_bef < Ghost.reveal depth /\
                 mixed_list_depth ia < Ghost.reveal depth))
             fn _ {
-              rewrite (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_sz) pm ia (Ghost.reveal l_aft))
-                as (mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) pm ia l_aft);
-              fold (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Append #t depth cb ca ob bp before oa ap after) _l_cur);
+              rewrite (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_sz) (cur_pm_v *. sc) ia (Ghost.reveal l_aft))
+                as (mixed_list_match_n vmatch p (append_off_after (SZ.v cur_off_v) (SZ.v oa) (SZ.v cb)) (append_n_after (SZ.v cur_off_v) (SZ.v cur_n_v) (SZ.v cb)) (cur_pm_v *. sc) ia l_aft);
+              fold (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Append #t depth cb ca ob bp before oa ap after sc) _l_cur);
             };
           // Compose with accumulated trade
-          rewrite (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm node _l_cur)
+          rewrite (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v node _l_cur)
                         (mixed_list_match_n vmatch p off n pm i l))
-            as (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Append #t depth cb ca ob bp before oa ap after) _l_cur)
+            as (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Append #t depth cb ca ob bp before oa ap after sc) _l_cur)
                       (mixed_list_match_n vmatch p off n pm i l));
           Trade.trans
-            (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_sz) pm ia (Ghost.reveal l_aft))
-            (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Append #t depth cb ca ob bp before oa ap after) _l_cur)
+            (mixed_list_match_n vmatch p (SZ.v child_off_sz) (SZ.v child_n_sz) (cur_pm_v *. sc) ia (Ghost.reveal l_aft))
+            (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Append #t depth cb ca ob bp before oa ap after sc) _l_cur)
             (mixed_list_match_n vmatch p off n pm i l);
           // Prove list_narrow invariant: n_before == 0, so l_bef == [] and _l_cur == l_aft
           List.Tot.Properties.append_l_nil (Ghost.reveal l_aft);
@@ -3658,6 +3786,8 @@ ensures (
           r_off := child_off_sz;
           r_n := child_n_sz;
           pcontinue := not (Base? ia);
+          // Descended into a child at ambient [cur_pm_v *. sc]: track it.
+          r_pm := !r_pm *. sc;
         }
       }
       Base _ -> {
@@ -3671,57 +3801,89 @@ ensures (
   let node = !r_node;
   let cur_off_v = !r_off;
   let cur_n_v = !r_n;
-  with _l_fin . assert (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm node _l_fin);
+  with cur_pm_v _l_fin . assert (R.pts_to r_pm cur_pm_v ** mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v node _l_fin);
+  // Read the accumulated ambient as a *concrete* perm (== the ghost witness
+  // [cur_pm_v]); needed to call the non-ghost rescale below.
+  let final_pm = !r_pm;
   match node {
     Base bi -> {
-      rewrite (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm node _l_fin)
-        as (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Base bi) _l_fin);
-      unfold (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Base bi) _l_fin);
-      let bi' = base_mixed_list_narrow_n vmatch p j (SZ.v cur_off_v) (SZ.v cur_n_v) pm bi _l_fin cur_off_v cur_n_v;
-      // bi' has: base_mixed_list_match pm bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)) + trade + pure
+      rewrite (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v node _l_fin)
+        as (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Base bi) _l_fin);
+      unfold (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Base bi) _l_fin);
+      let bi' = base_mixed_list_narrow_n vmatch p j (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v bi _l_fin cur_off_v cur_n_v;
+      // bi' has: base_mixed_list_match cur_pm_v bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)) + trade + pure
       // list_narrow _l_fin 0 cur_n_v == list_narrow l 0 cur_n_v (from invariant)
-      rewrite (base_mixed_list_match vmatch p pm bi' (list_narrow _l_fin (SZ.v cur_off_v - SZ.v cur_off_v) (SZ.v cur_n_v)))
-        as (base_mixed_list_match vmatch p pm bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)));
-      rewrite (trade (base_mixed_list_match vmatch p pm bi' (list_narrow _l_fin (SZ.v cur_off_v - SZ.v cur_off_v) (SZ.v cur_n_v)))
-                    (base_mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm bi _l_fin))
-        as (trade (base_mixed_list_match vmatch p pm bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)))
-                  (base_mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm bi _l_fin));
+      rewrite (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow _l_fin (SZ.v cur_off_v - SZ.v cur_off_v) (SZ.v cur_n_v)))
+        as (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)));
+      rewrite (trade (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow _l_fin (SZ.v cur_off_v - SZ.v cur_off_v) (SZ.v cur_n_v)))
+                    (base_mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v bi _l_fin))
+        as (trade (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)))
+                  (base_mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v bi _l_fin));
       // Build trade: base_match_n → mixed_list_match_n (Base)
-      intro (base_mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm bi (Ghost.reveal _l_fin) @==>
-             mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Base bi) _l_fin)
+      intro (base_mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v bi (Ghost.reveal _l_fin) @==>
+             mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Base bi) _l_fin)
         fn _ {
-          fold (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Base bi) _l_fin);
+          fold (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Base bi) _l_fin);
         };
       // Compose: base_mixed_list_match → base_match_n → mixed_list_match_n (Base) → original
       Trade.trans
-        (base_mixed_list_match vmatch p pm bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)))
-        (base_mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm bi _l_fin)
-        (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Base bi) _l_fin);
-      rewrite (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm node _l_fin)
+        (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)))
+        (base_mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v bi _l_fin)
+        (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Base bi) _l_fin);
+      rewrite (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v node _l_fin)
                     (mixed_list_match_n vmatch p off n pm i l))
-        as (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Base bi) _l_fin)
+        as (trade (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Base bi) _l_fin)
                   (mixed_list_match_n vmatch p off n pm i l));
       Trade.trans
-        (base_mixed_list_match vmatch p pm bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)))
-        (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) pm (Base bi) _l_fin)
+        (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)))
+        (mixed_list_match_n vmatch p (SZ.v cur_off_v) (SZ.v cur_n_v) cur_pm_v (Base bi) _l_fin)
         (mixed_list_match_n vmatch p off n pm i l);
       // Rewrite list_narrow _l_fin to list_narrow l (using invariant)
-      rewrite (base_mixed_list_match vmatch p pm bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)))
-        as (base_mixed_list_match vmatch p pm bi' (list_narrow l 0 (SZ.v cur_n_v)));
-      rewrite (trade (base_mixed_list_match vmatch p pm bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)))
+      rewrite (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)))
+        as (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow l 0 (SZ.v cur_n_v)));
+      rewrite (trade (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow _l_fin 0 (SZ.v cur_n_v)))
                     (mixed_list_match_n vmatch p off n pm i l))
-        as (trade (base_mixed_list_match vmatch p pm bi' (list_narrow l 0 (SZ.v cur_n_v)))
+        as (trade (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow l 0 (SZ.v cur_n_v)))
                   (mixed_list_match_n vmatch p off n pm i l));
       let len = base_mixed_list_length bi';
-      rewrite (base_mixed_list_match vmatch p pm bi' (list_narrow l 0 (SZ.v cur_n_v)))
-        as (base_mixed_list_match vmatch p pm bi' (list_narrow l 0 (SZ.v len)));
-      rewrite (trade (base_mixed_list_match vmatch p pm bi' (list_narrow l 0 (SZ.v cur_n_v)))
+      rewrite (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow l 0 (SZ.v cur_n_v)))
+        as (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow l 0 (SZ.v len)));
+      rewrite (trade (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow l 0 (SZ.v cur_n_v)))
                     (mixed_list_match_n vmatch p off n pm i l))
-        as (trade (base_mixed_list_match vmatch p pm bi' (list_narrow l 0 (SZ.v len)))
+        as (trade (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow l 0 (SZ.v len)))
                   (mixed_list_match_n vmatch p off n pm i l));
-      (bi', len)
+      // === Rescale the extracted base from the accumulated symbolic ambient
+      // [cur_pm_v] (which equals the concrete perm [final_pm]) back to the clean
+      // input ambient [pm], so the returned base matches at exactly [pm].
+      // First move the standalone match and the trade LHS onto the concrete [final_pm].
+      rewrite (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow l 0 (SZ.v len)))
+        as (base_mixed_list_match vmatch p final_pm bi' (list_narrow l 0 (SZ.v len)));
+      rewrite (trade (base_mixed_list_match vmatch p cur_pm_v bi' (list_narrow l 0 (SZ.v len)))
+                    (mixed_list_match_n vmatch p off n pm i l))
+        as (trade (base_mixed_list_match vmatch p final_pm bi' (list_narrow l 0 (SZ.v len)))
+                  (mixed_list_match_n vmatch p off n pm i l));
+      // Unfold the top-level match to its [_n] form so we can call the rescale helper.
+      unfold (base_mixed_list_match vmatch p final_pm bi' (list_narrow l 0 (SZ.v len)));
+      let bi'' = base_mixed_list_match_n_rescale vmatch p 0 (SZ.v (base_mixed_list_length bi')) final_pm pm bi' (list_narrow l 0 (SZ.v len));
+      // rescale gives: base_n 0 (base_length bi') pm bi'' L  +  trade(that)(base_n final_pm bi' L)
+      //               + pure (base_mixed_list_length bi'' == base_mixed_list_length bi').
+      // Fold the rescaled match back to top-level form (index agrees via lengths equality).
+      rewrite (base_mixed_list_match_n vmatch p 0 (SZ.v (base_mixed_list_length bi')) pm bi'' (list_narrow l 0 (SZ.v len)))
+        as (base_mixed_list_match_n vmatch p 0 (SZ.v (base_mixed_list_length bi'')) pm bi'' (list_narrow l 0 (SZ.v len)));
+      fold (base_mixed_list_match vmatch p pm bi'' (list_narrow l 0 (SZ.v len)));
+      // Convert the rescale trade to top-level form on both sides.
+      rewrite (trade (base_mixed_list_match_n vmatch p 0 (SZ.v (base_mixed_list_length bi')) pm bi'' (list_narrow l 0 (SZ.v len)))
+                    (base_mixed_list_match_n vmatch p 0 (SZ.v (base_mixed_list_length bi')) final_pm bi' (list_narrow l 0 (SZ.v len))))
+        as (trade (base_mixed_list_match vmatch p pm bi'' (list_narrow l 0 (SZ.v len)))
+                  (base_mixed_list_match vmatch p final_pm bi' (list_narrow l 0 (SZ.v len))));
+      // Compose: (pm, bi'') -> (final_pm, bi') -> original mixed_list_match_n.
+      Trade.trans
+        (base_mixed_list_match vmatch p pm bi'' (list_narrow l 0 (SZ.v len)))
+        (base_mixed_list_match vmatch p final_pm bi' (list_narrow l 0 (SZ.v len)))
+        (mixed_list_match_n vmatch p off n pm i l);
+      (bi'', len)
     }
-    Append _ _ _ _ _ _ _ _ _ -> {
+    Append _ _ _ _ _ _ _ _ _ _ -> {
       // Unreachable: loop exited with Base? cur
       unreachable ()
     }

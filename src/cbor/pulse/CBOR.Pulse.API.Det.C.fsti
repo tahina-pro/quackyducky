@@ -160,16 +160,18 @@ val cbor_det_array_owned (x: cbor_det_array_t) (l: list Spec.cbor) : slprop
 
 val cbor_det_array_init
   (x: cbor_det_t)
+  (r1 r2: R.ref cbor_det_array_append_cell_t)
   (#p: perm)
   (#l: Ghost.erased Spec.cbor)
+  (#w1 #w2: Ghost.erased cbor_det_array_append_cell_t)
 : stt cbor_det_array_t
-    (cbor_det_match p x l ** pure (Spec.CArray? (Spec.unpack l)))
+    (cbor_det_match p x l ** R.pts_to r1 w1 ** R.pts_to r2 w2 ** pure (Spec.CArray? (Spec.unpack l)))
     (fun y ->
       exists* (l' : list Spec.cbor) .
         cbor_det_array_owned y l' **
         Trade.trade
           (cbor_det_array_owned y l')
-          (cbor_det_match p x l) **
+          (cbor_det_match p x l ** (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2)) **
         pure (Spec.CArray? (Spec.unpack l) /\ l' == Spec.CArray?.v (Spec.unpack l))
     )
 

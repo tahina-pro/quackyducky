@@ -7,6 +7,14 @@ but it has been moved here to be hidden from verified clients. *)
 [@@pulse_unfold]
 let cbor_det_match = CBOR.Pulse.API.Det.Common.cbor_det_match
 
+(* raw/-visible interfaces of the everparse/ structural-builder adapters.
+   Their .fsti live in raw/ (declaring only non-lowparse abstract types),
+   their .fst live in everparse/ (written against lowparse mixed_list and
+   friending ...Type / ...MixedList).  This mirrors the proven
+   CBOR.Pulse.Raw.Format.Match .fsti/.fst split. *)
+module ADet = CBOR.Pulse.Raw.EverParse.Det.ArrayBuilder
+module DMIS = CBOR.Pulse.Raw.EverParse.Det.MapInsertSpec
+
 let cbor_det_reset_perm = CBOR.Pulse.API.Det.Common.cbor_det_reset_perm
 
 let cbor_det_share = CBOR.Pulse.API.Det.Common.cbor_det_share
@@ -184,6 +192,90 @@ let cbor_det_mk_text_string_from_arrayptr (_: unit) =
 let cbor_det_mk_array_from_array (_: unit) =
   mk_array_from_array (CBOR.Pulse.API.Det.Common.cbor_det_mk_array ())
 
+(* ================================================================ *)
+(* STEP 2: structural array builder.                                 *)
+(* Realized on top of the raw/ adapter interface                     *)
+(*   ADet = CBOR.Pulse.Raw.EverParse.Det.ArrayBuilder                *)
+(* (implementation in everparse/).  The public abstract handle type  *)
+(* [cbor_det_array_t] is realized as [cbor_mixed_list_array]; after   *)
+(* that, the adapter's [cbor_mixed_list_array]-typed ops match the    *)
+(* public [cbor_det_array_t]-typed ones.  Defined here (interface     *)
+(* order 157-235) so [cbor_det_array_t] precedes [cbor_det_map_entry_match]. *)
+(* ================================================================ *)
+
+(* PLATFORM AXIOM: [FStar.SizeT.fits_u64].  Per the FStar.SizeT docs it
+   "can only be introduced through a stateful function (currently in
+   Steel.ST.HigherArray), which will be extracted to a static_assert by
+   krml".  That module is ABSENT from this Pulse-only F* install, so we
+   materialize the same axiom here.  It is the ONLY assume in this module,
+   used solely to discharge the [SZ.fits_u64] preconditions of the
+   structural array-append / array-init / map-entry-insert adapters (the
+   platform size_t being at least 64-bit).  Both the provided reference
+   (PR #291) and upstream Steel introduce it the same way. *)
+let fits_u64_axiom () : squash SZ.fits_u64 = assume (SZ.fits_u64)
+
+(* Realize the public abstract array-handle type. *)
+let cbor_det_array_t = CBOR.Pulse.Raw.Type.cbor_mixed_list_array
+
+[@@pulse_unfold]
+let cbor_det_array_owned = ADet.cbor_det_array_owned
+
+(* [init] needs [SZ.fits_u64] (platform); the public interface does not expose
+   it, so this thin wrapper materializes it before delegating to the adapter. *)
+fn cbor_det_array_init
+  (x: cbor_det_t)
+  (r1 r2: R.ref cbor_det_array_append_cell_t)
+  (#p: perm)
+  (#l: Ghost.erased Spec.cbor)
+  (#w1 #w2: Ghost.erased cbor_det_array_append_cell_t)
+requires
+  (cbor_det_match p x l ** R.pts_to r1 w1 ** R.pts_to r2 w2 ** pure (Spec.CArray? (Spec.unpack l)))
+returns y: cbor_det_array_t
+ensures
+  (exists* (l' : list Spec.cbor) .
+    cbor_det_array_owned y l' **
+    Trade.trade
+      (cbor_det_array_owned y l')
+      (cbor_det_match p x l ** (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2)) **
+    pure (Spec.CArray? (Spec.unpack l) /\ l' == Spec.CArray?.v (Spec.unpack l)))
+{
+  let f64 = fits_u64_axiom ();
+  ADet.cbor_det_array_init x r1 r2
+}
+
+let cbor_det_array_empty = ADet.cbor_det_array_empty
+let cbor_det_array_singleton = ADet.cbor_det_array_singleton
+
+(* [append] needs [SZ.fits_u64] (platform); same treatment as [init]. *)
+fn cbor_det_array_append
+  (x1 x2: cbor_det_array_t)
+  (r_before r_after: R.ref cbor_det_array_append_cell_t)
+  (#l1 #l2: Ghost.erased (list Spec.cbor))
+  (#vb0 #va0: Ghost.erased cbor_det_array_append_cell_t)
+requires
+  (cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
+   R.pts_to r_before vb0 ** R.pts_to r_after va0)
+returns res: option cbor_det_array_t
+ensures
+  (match res with
+   | None ->
+     cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
+     (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va) **
+     pure (~ (FStar.UInt.fits (L.length (Ghost.reveal l1) + L.length (Ghost.reveal l2)) U64.n))
+   | Some r ->
+     cbor_det_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)) **
+     Trade.trade
+       (cbor_det_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
+       (cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
+        (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
+{
+  let f64 = fits_u64_axiom ();
+  ADet.cbor_det_array_append x1 x2 r_before r_after
+}
+
+let cbor_det_array_finalize = ADet.cbor_det_array_finalize
+let cbor_det_array_owned_length_fits = ADet.cbor_det_array_owned_length_fits
+
 [@@pulse_unfold]
 let cbor_det_map_entry_match = CBOR.Pulse.API.Det.Common.cbor_det_map_entry_match
 
@@ -355,6 +447,83 @@ fn cbor_det_map_get
   (#vdest0: _)
 {
   CBOR.Pulse.API.Det.Common.cbor_det_map_get () x k dest
+}
+
+(* ================================================================ *)
+(* STEP 2: structural map-entry insertion.                           *)
+(* Realized on top of the raw/ adapter interface                     *)
+(*   DMIS = CBOR.Pulse.Raw.EverParse.Det.MapInsertSpec               *)
+(* (implementation in everparse/).  Defined here (interface order    *)
+(* 345, after [cbor_det_map_get] at 322, before the serialize ops).  *)
+(* ================================================================ *)
+
+(* Bridge: the major type of [y] decides whether [unpack y] is a [CMap]. *)
+let cmap_of_major_type (y: Spec.cbor)
+: Lemma
+    (requires (cbor_major_type y == cbor_major_type_map))
+    (ensures (Spec.CMap? (Spec.unpack y)))
+= ()
+
+let not_cmap_of_major_type (y: Spec.cbor)
+: Lemma
+    (requires (~ (cbor_major_type y == cbor_major_type_map)))
+    (ensures (~ (Spec.CMap? (Spec.unpack y))))
+= ()
+
+fn cbor_det_map_entry_insert
+  (x key value: cbor_det_t)
+  (r1 r2 r3 r4: R.ref cbor_det_map_entry_insert_cell_t)
+  (ry: R.ref cbor_det_map_entry_t)
+  (#p: perm) (#y: Ghost.erased Spec.cbor)
+  (#pkv: perm) (#vk #vv: Ghost.erased Spec.cbor)
+requires
+    (cbor_det_match p x y **
+     cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+     cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry)
+returns res: option cbor_det_t
+ensures (match res with
+  | None ->
+    cbor_det_match p x y **
+    cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+    cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry **
+    pure (
+      ~ (Spec.CMap? (Spec.unpack y)) \/
+      (Spec.CMap? (Spec.unpack y) /\
+        (Spec.cbor_map_defined vk (Spec.CMap?.c (Spec.unpack y)) \/
+         ~ (FStar.UInt.fits (Spec.cbor_map_length (Spec.CMap?.c (Spec.unpack y)) + 1) U64.n))))
+  | Some m ->
+    exists* (p_res: perm) (vres: Spec.cbor).
+      cbor_det_match p_res m vres **
+      Trade.trade
+        (cbor_det_match p_res m vres)
+        (cbor_det_match p x y **
+         cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+         cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry) **
+      pure (
+        Spec.CMap? (Spec.unpack y) /\
+        Spec.CMap? (Spec.unpack vres) /\
+        (Spec.CMap?.c (Spec.unpack vres) <: Spec.cbor_map) ==
+          Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv)))
+{
+  let mt = cbor_det_major_type () x;
+  if (mt = cbor_major_type_map) {
+    cmap_of_major_type y;
+    let f64 = fits_u64_axiom ();
+    unfold (cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry);
+    let res = DMIS.cbor_det_map_entry_insert_spec f64 x key value r1 r2 r3 r4 ry;
+    match res {
+      None -> {
+        fold (cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry);
+        None #cbor_det_t
+      }
+      Some m -> {
+        Some m
+      }
+    }
+  } else {
+    not_cmap_of_major_type y;
+    None #cbor_det_t
+  }
 }
 
 fn cbor_det_serialize_tag_to_array (_: unit)
