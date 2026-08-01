@@ -285,6 +285,75 @@ pub fn cbor_nondet_get_array_item <'a>(x: crate::cbornondetveraux::cbor_raw <'a>
     }
 }
 
+pub type cbor_nondet_array_append_cell_t <'a> =
+crate::cbornondetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_raw <'a>;
+
+pub fn cbor_nondet_array_empty <'a>() -> crate::cbornondetveraux::cbor_raw <'a>
+{
+    let arec: crate::cbornondetveraux::cbor_mixed_list_array =
+        crate::cbornondetveraux::cbor_array_empty();
+    crate::cbornondetveraux::array_gen(arec)
+}
+
+pub fn cbor_nondet_array_singleton <'a>(
+    x: crate::cbornondetveraux::cbor_raw <'a>,
+    ry: &'a mut [crate::cbornondetveraux::cbor_raw <'a>]
+) ->
+    crate::cbornondetveraux::cbor_raw
+    <'a>
+{
+    let arec: crate::cbornondetveraux::cbor_mixed_list_array =
+        crate::cbornondetveraux::cbor_nondet_array_singleton(x, ry);
+    crate::cbornondetveraux::array_gen(arec)
+}
+
+#[derive(PartialEq, Clone, Copy)]
+pub enum option__CBOR_Pulse_API_Nondet_Rust_cbor_nondet_array <'a>
+{
+    None,
+    Some { v: crate::cbornondetveraux::cbor_raw <'a> }
+}
+
+pub fn cbor_nondet_array_append <'a>(
+    x1: crate::cbornondetveraux::cbor_raw <'a>,
+    x2: crate::cbornondetveraux::cbor_raw <'a>,
+    r_before: &'a mut [crate::cbornondetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_raw <'a>],
+    r_after: &'a mut [crate::cbornondetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_raw <'a>]
+) ->
+    option__CBOR_Pulse_API_Nondet_Rust_cbor_nondet_array
+    <'a>
+{
+    let arec1: crate::cbornondetveraux::cbor_mixed_list_array =
+        crate::cbornondetveraux::array_gen_recover(x1);
+    let arec2: crate::cbornondetveraux::cbor_mixed_list_array =
+        crate::cbornondetveraux::array_gen_recover(x2);
+    let o: crate::cbornondetveraux::option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array =
+        crate::cbornondetveraux::cbor_nondet_array_append(arec1, arec2, r_before, r_after);
+    match o
+    {
+        crate::cbornondetveraux::option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array::None =>
+          option__CBOR_Pulse_API_Nondet_Rust_cbor_nondet_array::None,
+        crate::cbornondetveraux::option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array::Some
+        { v: arec· }
+        =>
+          {
+              let res: crate::cbornondetveraux::cbor_raw =
+                  crate::cbornondetveraux::array_gen(arec·);
+              option__CBOR_Pulse_API_Nondet_Rust_cbor_nondet_array::Some { v: res }
+          },
+        _ => panic!("Incomplete pattern matching")
+    }
+}
+
+pub fn cbor_nondet_array_to_cbor <'a>(a: crate::cbornondetveraux::cbor_raw <'a>) ->
+    crate::cbornondetveraux::cbor_raw
+    <'a>
+{
+    let arec: crate::cbornondetveraux::cbor_mixed_list_array =
+        crate::cbornondetveraux::array_gen_recover(a);
+    crate::cbornondetveraux::cbor_nondet_array_finalize(arec)
+}
+
 pub fn cbor_nondet_map_length(x: crate::cbornondetveraux::cbor_raw) -> u64
 { crate::cbornondetveraux::cbor_nondet_get_map_length(x) }
 
@@ -328,5 +397,75 @@ pub fn cbor_nondet_map_get <'a>(
     <'a>
 { crate::cbornondetveraux::cbor_nondet_map_get(x, k) }
 
+pub type cbor_nondet_map_entry_insert_cell_t <'a> =
+crate::cbornondetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>;
+
+#[derive(PartialEq, Clone, Copy)]
+pub enum option__CBOR_Pulse_API_Nondet_Rust_cbor_nondet_map <'a>
+{
+    None,
+    Some { v: crate::cbornondetveraux::cbor_raw <'a> }
+}
+
+pub fn cbor_nondet_map_entry_insert <'a>(
+    x: crate::cbornondetveraux::cbor_raw <'a>,
+    key: crate::cbornondetveraux::cbor_raw <'a>,
+    value: crate::cbornondetveraux::cbor_raw <'a>,
+    r1: &'a mut [crate::cbornondetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
+    r2: &'a mut [crate::cbornondetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
+    ry: &'a mut [crate::cbornondetveraux::cbor_map_entry <'a>]
+) ->
+    option__CBOR_Pulse_API_Nondet_Rust_cbor_nondet_map
+    <'a>
+{
+    let res: crate::cbornondetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
+        crate::cbornondetveraux::cbor_raw_nondet_map_entry_insert(x, key, value, r1, r2, ry);
+    let res0: crate::cbornondetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
+        match res
+        {
+            crate::cbornondetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+              crate::cbornondetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None,
+            crate::cbornondetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: m } =>
+              crate::cbornondetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: m },
+            _ => panic!("Incomplete pattern matching")
+        };
+    match res0
+    {
+        crate::cbornondetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+          option__CBOR_Pulse_API_Nondet_Rust_cbor_nondet_map::None,
+        crate::cbornondetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: m } =>
+          {
+              let res_map: crate::cbornondetveraux::cbor_raw = m;
+              option__CBOR_Pulse_API_Nondet_Rust_cbor_nondet_map::Some { v: res_map }
+          },
+        _ => panic!("Incomplete pattern matching")
+    }
+}
+
 pub fn dummy_cbor_nondet_t <'a>() -> crate::cbornondetveraux::cbor_raw <'a>
 { crate::cbornondetveraux::cbor_raw::CBOR_Case_Simple { v: 0u8 } }
+
+pub fn dummy_cbor_nondet_array_append_cell <'a>() ->
+    crate::cbornondetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_raw
+    <'a>
+{
+    crate::cbornondetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_raw::Base
+    { _0: crate::cbornondetveraux::base_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw::Empty }
+}
+
+pub fn dummy_cbor_nondet_map_entry_insert_cell <'a>() ->
+    crate::cbornondetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry
+    <'a>
+{
+    crate::cbornondetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry::Base
+    { _0: crate::cbornondetveraux::base_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry::Empty }
+}
+
+pub fn dummy_cbor_nondet_map_entry <'a>() -> crate::cbornondetveraux::cbor_map_entry <'a>
+{
+    crate::cbornondetveraux::cbor_map_entry
+    {
+        cbor_map_entry_key: crate::cbornondetveraux::cbor_raw::CBOR_Case_Simple { v: 0u8 },
+        cbor_map_entry_value: crate::cbornondetveraux::cbor_raw::CBOR_Case_Simple { v: 0u8 }
+    }
+}

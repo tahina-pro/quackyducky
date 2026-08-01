@@ -327,6 +327,12 @@ typedef cbor_array_iterator cbor_det_array_iterator_t;
 
 typedef cbor_map_iterator cbor_det_map_iterator_t;
 
+typedef LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw
+cbor_det_array_append_cell_t;
+
+typedef LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry
+cbor_det_map_entry_insert_cell_t;
+
 #if defined(__cplusplus)
 }
 #endif

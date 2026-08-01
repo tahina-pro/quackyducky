@@ -11,6 +11,25 @@ extern "C" {
 
 #include "CBORNondetType.h"
 
+#define FStar_Pervasives_Native_None 0
+#define FStar_Pervasives_Native_Some 1
+
+typedef uint8_t FStar_Pervasives_Native_option__bool_tags;
+
+typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw_s
+{
+  FStar_Pervasives_Native_option__bool_tags tag;
+  cbor_raw v;
+}
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw;
+
+typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array_s
+{
+  FStar_Pervasives_Native_option__bool_tags tag;
+  cbor_mixed_list_array v;
+}
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array;
+
 #define CBOR_MAJOR_TYPE_SIMPLE_VALUE (7U)
 
 #define CBOR_MAJOR_TYPE_UINT64 (0U)
@@ -74,6 +93,29 @@ cbor_array_iterator cbor_nondet_array_iterator_truncate(cbor_array_iterator x, u
 
 bool cbor_nondet_get_array_item(cbor_raw x, uint64_t i, cbor_raw *dest);
 
+typedef cbor_mixed_list_array cbor_nondet_array_t;
+
+cbor_mixed_list_array
+cbor_nondet_array_init(
+  cbor_raw x,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r2
+);
+
+cbor_mixed_list_array cbor_nondet_array_empty(void);
+
+extern cbor_mixed_list_array (*cbor_nondet_array_singleton)(cbor_raw x0, cbor_raw *x1);
+
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array
+cbor_nondet_array_append(
+  cbor_mixed_list_array x1,
+  cbor_mixed_list_array x2,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r_before,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r_after
+);
+
+extern cbor_raw (*cbor_nondet_array_finalize)(cbor_mixed_list_array x0);
+
 bool cbor_nondet_get_map_length(cbor_raw x, uint64_t *dest);
 
 bool cbor_nondet_map_iterator_start(cbor_raw x, cbor_map_iterator *dest);
@@ -124,6 +166,21 @@ cbor_nondet_map_get_multiple(
   cbor_raw map,
   cbor_nondet_map_get_multiple_entry_t *dest,
   size_t len
+);
+
+LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry
+dummy_cbor_nondet_map_entry_insert_cell(void);
+
+cbor_map_entry dummy_cbor_nondet_map_entry(void);
+
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw
+cbor_nondet_map_entry_insert(
+  cbor_raw x,
+  cbor_raw key,
+  cbor_raw value,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry *r2,
+  cbor_map_entry *ry
 );
 
 #if defined(__cplusplus)

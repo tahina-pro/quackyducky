@@ -11,6 +11,28 @@ extern "C" {
 
 #include "CBORDetType.h"
 
+#define FStar_Pervasives_Native_None 0
+#define FStar_Pervasives_Native_Some 1
+
+typedef uint8_t
+FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_tags;
+
+typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw_s
+{
+  FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_tags
+  tag;
+  cbor_raw v;
+}
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw;
+
+typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array_s
+{
+  FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_tags
+  tag;
+  cbor_mixed_list_array v;
+}
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array;
+
 typedef struct cbor_freeable0_s cbor_freeable0;
 
 typedef struct cbor_freeable_box_s
@@ -119,6 +141,29 @@ bool cbor_det_mk_text_string_from_arrayptr(uint8_t *a, uint64_t len, cbor_raw *d
 
 cbor_raw cbor_det_mk_array_from_array(cbor_raw *a, uint64_t len);
 
+typedef cbor_mixed_list_array cbor_det_array_t;
+
+cbor_mixed_list_array
+cbor_det_array_init(
+  cbor_raw x,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r2
+);
+
+cbor_mixed_list_array cbor_det_array_empty(void);
+
+cbor_mixed_list_array cbor_det_array_singleton(cbor_raw x, cbor_raw *ry);
+
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array
+cbor_det_array_append(
+  cbor_mixed_list_array x1,
+  cbor_mixed_list_array x2,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r_before,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r_after
+);
+
+cbor_raw cbor_det_array_finalize(cbor_mixed_list_array x);
+
 cbor_map_entry cbor_det_mk_map_entry(cbor_raw xk, cbor_raw xv);
 
 cbor_raw cbor_det_mk_map_from_array(cbor_map_entry *a, uint64_t len);
@@ -169,6 +214,18 @@ cbor_raw cbor_det_map_entry_value(cbor_map_entry x2);
 
 bool cbor_det_map_get(cbor_raw x, cbor_raw k, cbor_raw *dest);
 
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw
+cbor_det_map_entry_insert(
+  cbor_raw x,
+  cbor_raw key,
+  cbor_raw value,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry *r2,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry *r3,
+  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry *r4,
+  cbor_map_entry *ry
+);
+
 size_t cbor_det_serialize_tag_to_array(uint64_t tag, uint8_t *out, size_t out_len);
 
 size_t
@@ -191,6 +248,14 @@ cbor_freeable cbor_copy(cbor_raw c);
 void cbor_free(cbor_freeable x);
 
 cbor_raw dummy_cbor_det_t(void);
+
+LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw
+dummy_cbor_det_array_append_cell(void);
+
+LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry
+dummy_cbor_det_map_entry_insert_cell(void);
+
+cbor_map_entry dummy_cbor_det_map_entry(void);
 
 #if defined(__cplusplus)
 }
