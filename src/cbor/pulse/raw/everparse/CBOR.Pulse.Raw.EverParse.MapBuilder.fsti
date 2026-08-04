@@ -14,6 +14,7 @@ module R = Pulse.Lib.Reference
 module Trade = Pulse.Lib.Trade.Util
 module I = LowParse.PulseParse.Iterator
 module IT = LowParse.PulseParse.Iterator.Type
+module IO = LowParse.PulseParse.Iterator.IntOps
 
 (* ================================================================ *)
 (* Minimal (canonical) integer_size for a u64 length                *)
@@ -56,25 +57,24 @@ val minimal_len_size_prop (len: U64.t)
 (* TYPE level, only available from the binder refinement).            *)
 let cbor_map_finalized
   (pm: perm)
-  (ml: IT.mixed_list cbor_map_entry) (y: cbor_raw)
+  (ml: IT.mixed_list U64.t cbor_map_entry) (y: cbor_raw)
   (l: list (raw_data_item & raw_data_item))
 : slprop
 = exists* (len: (len: raw_uint64 { U64.v len.value == List.Tot.length l })).
     cbor_match 1.0R y (Map len l) **
     Trade.trade
       (cbor_match 1.0R y (Map len l))
-      (I.mixed_list_match cbor_match_map_entry
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops
         (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l) **
     pure ((len <: raw_uint64) == mk_raw_uint64 len.value)
 
 val cbor_mk_map_full
   (pm: perm)
-  (ml: IT.mixed_list cbor_map_entry)
+  (ml: IT.mixed_list U64.t cbor_map_entry)
   (#l: Ghost.erased (list (raw_data_item & raw_data_item)))
 : stt cbor_raw
-    (I.mixed_list_match cbor_match_map_entry
-      (nondep_then parse_raw_data_item parse_raw_data_item) pm ml (Ghost.reveal l) **
-     pure (FStar.UInt.fits (SZ.v (IT.mixed_list_length ml)) 64))
+    (I.mixed_list_match cbor_match_map_entry IO.u64_ops
+      (nondep_then parse_raw_data_item parse_raw_data_item) pm ml (Ghost.reveal l))
     (fun y ->
       cbor_map_finalized pm ml y (Ghost.reveal l) **
       pure (CBOR_Case_Map_Gen? y))
@@ -96,22 +96,22 @@ val cbor_mk_map_full
 (* [pm *. serialized_perm] for the serialized case, and             *)
 (* [pm *. array_perm] for the inline case).                         *)
 (*                                                                  *)
-(* NOTE (deviation): requires [pure SZ.fits_u64].  It is NECESSARY   *)
-(* for the serialized case, which recovers the [SZ.t] entry count    *)
-(* from the u64 header length via [SZ.uint64_to_sizet].             *)
+(* The entry count is now a [U64.t] (the CBOR wire count type), so   *)
+(* the serialized case reads the u64 header length directly: no      *)
+(* [SZ.t] conversion and no [SZ.fits_u64] assumption are needed.     *)
 (* ================================================================ *)
 
 val cbor_map_borrow_entries
   (pm: perm) (x: cbor_raw)
   (#xh: Ghost.erased (r: raw_data_item { Map? r }))
-: stt (IT.mixed_list cbor_map_entry)
-    (cbor_match pm x (Ghost.reveal xh) ** pure (SZ.fits_u64))
+: stt (IT.mixed_list U64.t cbor_map_entry)
+    (cbor_match pm x (Ghost.reveal xh))
     (fun ml -> exists* (pm': perm).
-      I.mixed_list_match cbor_match_map_entry
+      I.mixed_list_match cbor_match_map_entry IO.u64_ops
         (nondep_then parse_raw_data_item parse_raw_data_item) pm' ml
         (Map?.v (Ghost.reveal xh)) **
       Trade.trade
-        (I.mixed_list_match cbor_match_map_entry
+        (I.mixed_list_match cbor_match_map_entry IO.u64_ops
           (nondep_then parse_raw_data_item parse_raw_data_item) pm' ml
           (Map?.v (Ghost.reveal xh)))
         (cbor_match pm x (Ghost.reveal xh)))

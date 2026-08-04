@@ -4,9 +4,10 @@ module CBOR.Pulse.Raw.EverParse.Det.ArrayBuilder
 (* Layer-2 (raw/) interface of the deterministic-CBOR structural array builder.
 
    The implementation ([.fst]) lives in [everparse/] and is written against the
-   lowparse [IT.mixed_list cbor_raw] type; it [friend]s [CBOR.Pulse.API.Det.Type]
-   (and [CBOR.Pulse.Raw.Format.MixedList]) so that, inside it,
-     [cbor_det_array_append_cell_t == IT.mixed_list cbor_raw]  and
+   lowparse [IT.mixed_list U64.t cbor_raw] type; it [friend]s
+   [CBOR.Pulse.API.Det.Type] (and [CBOR.Pulse.Raw.Format.MixedList]) so that,
+   inside it,
+     [cbor_det_array_append_cell_t == IT.mixed_list U64.t cbor_raw]  and
      [cbor_det_t == cbor_raw],
    which is how the concrete [.fst] realizes this abstract-typed interface.
 
@@ -59,10 +60,10 @@ ensures cbor_det_array_owned x l ** pure (FStar.UInt.fits (L.length (Ghost.revea
 
 (* Append two owned arrays.
 
-   NOTE (deviation): like the underlying raw [cbor_array_append], this requires
-   [pure SZ.fits_u64] (the platform size_t is at least 64-bit): forming the
-   underlying [Append] node needs [SZ.fits (len1 + len2)], only obtainable from
-   [SZ.fits_u64] once the u64 sum is known not to overflow. *)
+   Element counts are now [U64.t] (the CBOR wire count type), so the underlying
+   [Append] node's [fits (len1 + len2)] obligation is exactly the plain u64
+   non-overflow test performed at runtime by the raw [cbor_array_append]; no
+   unsound [size_t]-width platform assumption is required. *)
 inline_for_extraction
 fn cbor_det_array_append
   (x1 x2: cbor_mixed_list_array)
@@ -71,8 +72,7 @@ fn cbor_det_array_append
   (#vb0 #va0: Ghost.erased cbor_det_array_append_cell_t)
 requires
   cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
-  R.pts_to r_before vb0 ** R.pts_to r_after va0 **
-  pure (SZ.fits_u64)
+  R.pts_to r_before vb0 ** R.pts_to r_after va0
 returns res: option cbor_mixed_list_array
 ensures
   (match res with
@@ -106,14 +106,15 @@ ensures
 (* Init: view an existing deterministic-CBOR ARRAY object as an owned-array
    handle (the reverse of [cbor_det_array_finalize]).
 
-   NOTE (deviation): requires [pure SZ.fits_u64] (see [cbor_det_array_append]). *)
+   Element counts are now [U64.t], so (as in [cbor_det_array_append]) no
+   unsound [size_t]-width platform assumption is required. *)
 inline_for_extraction
 fn cbor_det_array_init
   (x: cbor_det_t) (r1 r2: R.ref cbor_det_array_append_cell_t)
   (#p: perm) (#l: Ghost.erased Spec.cbor) (#w1 #w2: Ghost.erased cbor_det_array_append_cell_t)
 requires
   Det.cbor_det_match p x l ** R.pts_to r1 w1 ** R.pts_to r2 w2 **
-  pure (Spec.CArray? (Spec.unpack l) /\ SZ.fits_u64)
+  pure (Spec.CArray? (Spec.unpack l))
 returns y: cbor_mixed_list_array
 ensures
   exists* (l': list Spec.cbor).

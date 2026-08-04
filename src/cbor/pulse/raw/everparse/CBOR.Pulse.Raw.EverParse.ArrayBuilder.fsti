@@ -13,6 +13,7 @@ module R = Pulse.Lib.Reference
 module Trade = Pulse.Lib.Trade.Util
 module I = LowParse.PulseParse.Iterator
 module IT = LowParse.PulseParse.Iterator.Type
+module IO = LowParse.PulseParse.Iterator.IntOps
 
 (* ================================================================ *)
 (* Minimal (canonical) integer_size for a u64 length                *)
@@ -70,23 +71,20 @@ val cbor_array_singleton
 (* the caller-supplied refs [r_before]/[r_after].  Returns [None] if  *)
 (* the combined length would not fit in a u64.                        *)
 (*                                                                    *)
-(* NOTE (deviation): this requires [pure SZ.fits_u64] (the platform    *)
-(* [size_t] is at least 64-bit).  It is provably NECESSARY: forming    *)
-(* the underlying [Append] node needs [SZ.fits (len1 + len2)], which   *)
-(* when the u64 sum does not overflow is only obtainable from          *)
-(* [SZ.fits_u64] (an exact width-agnostic decision of [SZ.fits] is     *)
-(* impossible, and [SZ.fits_u64] is not otherwise available).          *)
+(* Element counts are now [U64.t] (the CBOR wire count type), so the   *)
+(* [Append] node's [io.fits (len1 + len2)] obligation is exactly the   *)
+(* plain u64 non-overflow test performed at runtime; no [SZ.fits_u64]  *)
+(* platform assumption is required.                                    *)
 (* ================================================================ *)
 
 val cbor_array_append
   (x1 x2: cbor_mixed_list_array)
-  (r_before r_after: R.ref (IT.mixed_list cbor_raw))
+  (r_before r_after: R.ref (IT.mixed_list U64.t cbor_raw))
   (#l1 #l2: Ghost.erased (list raw_data_item))
-  (#vb0 #va0: Ghost.erased (IT.mixed_list cbor_raw))
+  (#vb0 #va0: Ghost.erased (IT.mixed_list U64.t cbor_raw))
 : stt (option cbor_mixed_list_array)
     (cbor_array_owned x1 l1 ** cbor_array_owned x2 l2 **
-     R.pts_to r_before vb0 ** R.pts_to r_after va0 **
-     pure (SZ.fits_u64))
+     R.pts_to r_before vb0 ** R.pts_to r_after va0)
     (fun res ->
       match res with
       | None ->
@@ -173,14 +171,14 @@ let cbor_array_borrow_pre (pm: perm) (x: cbor_raw) : prop =
 val cbor_array_borrow_entries
   (pm: perm) (x: cbor_raw)
   (#xh: Ghost.erased (r: raw_data_item { Array? r }))
-: stt (IT.mixed_list cbor_raw)
+: stt (IT.mixed_list U64.t cbor_raw)
     (cbor_match pm x (Ghost.reveal xh) **
-     pure (SZ.fits_u64 /\ cbor_array_borrow_pre pm x))
+     pure (cbor_array_borrow_pre pm x))
     (fun ml ->
-      I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml
+      I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml
         (Array?.v (Ghost.reveal xh)) **
       Trade.trade
-        (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml
+        (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml
           (Array?.v (Ghost.reveal xh)))
         (cbor_match pm x (Ghost.reveal xh)))
 
@@ -202,11 +200,11 @@ val cbor_array_borrow_entries
 (* are returned (existentially) as part of the trade back.             *)
 val cbor_array_init
   (pm: perm) (x: cbor_raw)
-  (r1 r2: R.ref (IT.mixed_list cbor_raw))
+  (r1 r2: R.ref (IT.mixed_list U64.t cbor_raw))
   (#xh: Ghost.erased (r: raw_data_item { Array? r }))
-  (#w1 #w2: Ghost.erased (IT.mixed_list cbor_raw))
+  (#w1 #w2: Ghost.erased (IT.mixed_list U64.t cbor_raw))
 : stt cbor_mixed_list_array
-    (cbor_match pm x (Ghost.reveal xh) ** R.pts_to r1 w1 ** R.pts_to r2 w2 ** pure (SZ.fits_u64))
+    (cbor_match pm x (Ghost.reveal xh) ** R.pts_to r1 w1 ** R.pts_to r2 w2)
     (fun y ->
       cbor_array_owned y (Array?.v (Ghost.reveal xh)) **
       Trade.trade

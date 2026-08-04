@@ -1,6 +1,7 @@
 module CBOR.Pulse.Raw.EverParse.ArrayBuilder
 #lang-pulse
 friend CBOR.Pulse.Raw.Format.Match
+friend CBOR.Pulse.Raw.Format.MixedList
 open Pulse.Lib.Pervasives
 open CBOR.Spec.Raw.Base
 open CBOR.Spec.Raw.EverParse
@@ -14,6 +15,7 @@ module R = Pulse.Lib.Reference
 module Trade = Pulse.Lib.Trade.Util
 module I = LowParse.PulseParse.Iterator
 module IT = LowParse.PulseParse.Iterator.Type
+module IO = LowParse.PulseParse.Iterator.IntOps
 module Append = LowParse.PulseParse.Iterator.Append
 module MP = CBOR.Pulse.Raw.Match.Perm
 module PB = LowParse.PulseParse.Base
@@ -22,6 +24,20 @@ module Util = CBOR.Pulse.Raw.Util
 module S = Pulse.Lib.Slice
 module PM = Pulse.Lib.SeqMatch
 open LowParse.Spec.VCList
+
+(* Bridge the lowparse dictionary views [IO.u64_ops.v]/[IO.u64_ops.fits] to  *)
+(* the concrete [U64.v]/[< pow2 64]: both are definitionally the identity/    *)
+(* comparison, proved by computation.  Lets the u64 length/overflow facts     *)
+(* connect [io.v (mixed_list_length io ..)] to plain [U64.v].                 *)
+let u64_ops_v_eq (x: U64.t)
+  : Lemma (IO.u64_ops.v x == U64.v x)
+    [SMTPat (IO.u64_ops.v x)]
+= ()
+
+let u64_ops_fits_eq (n: nat)
+  : Lemma (IO.u64_ops.fits n == (n < pow2 64 <: prop))
+    [SMTPat (IO.u64_ops.fits n)]
+= ()
 
 (* ================================================================ *)
 (* minimal_len_size_prop                                            *)
@@ -42,10 +58,10 @@ let minimal_len_size_prop (len: U64.t)
 (* ================================================================ *)
 
 let cbor_array_owned (x: cbor_mixed_list_array) (l: list raw_data_item) : slprop =
-  I.mixed_list_match cbor_match parse_raw_data_item 1.0R x.cbor_array_gen_ptr l **
+  I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R x.cbor_array_gen_ptr l **
   pure (x.cbor_array_gen_perm == 1.0R /\
         x.cbor_array_gen_length_size ==
-          (mk_raw_uint64 (SZ.sizet_to_uint64 (IT.mixed_list_length x.cbor_array_gen_ptr))).size)
+          (mk_raw_uint64 (IT.mixed_list_length IO.u64_ops x.cbor_array_gen_ptr)).size)
 
 (* gather_t instance for the top-level cbor_match, needed by the      *)
 (* singleton builder.                                                 *)
@@ -66,38 +82,35 @@ ensures cbor_match (p +. p') x1 x2 ** pure (x2 == x2')
 #push-options "--z3rlimit 10 --fuel 2 --ifuel 2"
 inline_for_extraction
 fn cbor_array_of_ml
-  (ml: IT.mixed_list cbor_raw)
+  (ml: IT.mixed_list U64.t cbor_raw)
   (#l: Ghost.erased (list raw_data_item))
 requires
-  I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Ghost.reveal l) **
-  pure (FStar.UInt.fits (SZ.v (IT.mixed_list_length ml)) 64)
+  I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Ghost.reveal l)
 returns res: cbor_mixed_list_array
 ensures
   cbor_array_owned res (Ghost.reveal l) **
   Trade.trade
     (cbor_array_owned res (Ghost.reveal l))
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Ghost.reveal l))
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Ghost.reveal l))
 {
-  let mll = IT.mixed_list_length ml;
-  let len64 = SZ.sizet_to_uint64 mll;
-  FStar.Math.Lemmas.small_mod (SZ.v mll) (pow2 64);
-  minimal_len_size_prop len64;
+  let mll = IT.mixed_list_length IO.u64_ops ml;
+  minimal_len_size_prop mll;
   let res : cbor_mixed_list_array = {
-    cbor_array_gen_length_size = minimal_len_size len64;
+    cbor_array_gen_length_size = minimal_len_size mll;
     cbor_array_gen_ptr = ml;
     cbor_array_gen_perm = 1.0R;
   };
-  rewrite (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Ghost.reveal l))
-    as (I.mixed_list_match cbor_match parse_raw_data_item 1.0R res.cbor_array_gen_ptr (Ghost.reveal l));
+  rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Ghost.reveal l))
+    as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R res.cbor_array_gen_ptr (Ghost.reveal l));
   fold (cbor_array_owned res (Ghost.reveal l));
   Trade.intro_trade
     (cbor_array_owned res (Ghost.reveal l))
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Ghost.reveal l))
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Ghost.reveal l))
     emp
     fn _ {
       unfold (cbor_array_owned res (Ghost.reveal l));
-      rewrite (I.mixed_list_match cbor_match parse_raw_data_item 1.0R res.cbor_array_gen_ptr (Ghost.reveal l))
-        as (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Ghost.reveal l));
+      rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R res.cbor_array_gen_ptr (Ghost.reveal l))
+        as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Ghost.reveal l));
     };
   res
 }
@@ -113,28 +126,28 @@ fn cbor_array_owned_elim
   (x: cbor_mixed_list_array)
   (#l: Ghost.erased (list raw_data_item))
 requires cbor_array_owned x (Ghost.reveal l)
-returns ml: IT.mixed_list cbor_raw
+returns ml: IT.mixed_list U64.t cbor_raw
 ensures
-  I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Ghost.reveal l) **
+  I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Ghost.reveal l) **
   Trade.trade
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Ghost.reveal l))
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Ghost.reveal l))
     (cbor_array_owned x (Ghost.reveal l)) **
   pure (ml == x.cbor_array_gen_ptr /\
-        FStar.UInt.fits (SZ.v (IT.mixed_list_length ml)) 64)
+        FStar.UInt.fits (U64.v (IT.mixed_list_length IO.u64_ops ml)) 64)
 {
   unfold (cbor_array_owned x (Ghost.reveal l));
   let ml = x.cbor_array_gen_ptr;
-  rewrite (I.mixed_list_match cbor_match parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l))
-    as (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Ghost.reveal l));
+  rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l))
+    as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Ghost.reveal l));
   Trade.intro_trade
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Ghost.reveal l))
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Ghost.reveal l))
     (cbor_array_owned x (Ghost.reveal l))
     (pure (x.cbor_array_gen_perm == 1.0R /\
            x.cbor_array_gen_length_size ==
-             (mk_raw_uint64 (SZ.sizet_to_uint64 (IT.mixed_list_length x.cbor_array_gen_ptr))).size))
+             (mk_raw_uint64 (IT.mixed_list_length IO.u64_ops x.cbor_array_gen_ptr)).size))
     fn _ {
-      rewrite (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Ghost.reveal l))
-        as (I.mixed_list_match cbor_match parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l));
+      rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Ghost.reveal l))
+        as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l));
       fold (cbor_array_owned x (Ghost.reveal l));
     };
   ml
@@ -154,7 +167,7 @@ ensures cbor_array_owned x (Ghost.reveal l) **
   pure (FStar.UInt.fits (List.Tot.length (Ghost.reveal l)) 64)
 {
   unfold (cbor_array_owned x (Ghost.reveal l));
-  I.mixed_list_match_length cbor_match parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l);
+  I.mixed_list_match_length cbor_match IO.u64_ops parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l);
   fold (cbor_array_owned x (Ghost.reveal l));
 }
 #pop-options
@@ -169,11 +182,11 @@ requires emp
 returns res: cbor_mixed_list_array
 ensures cbor_array_owned res []
 {
-  Append.mixed_list_empty cbor_match parse_raw_data_item 1.0R;
+  Append.mixed_list_empty cbor_match IO.u64_ops parse_raw_data_item 1.0R;
   let res = cbor_array_of_ml (IT.Base IT.Empty) #(Ghost.hide ([] <: list raw_data_item));
   drop_ (Trade.trade
     (cbor_array_owned res [])
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R (IT.Base IT.Empty) []));
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R (IT.Base IT.Empty) []));
   res
 }
 #pop-options
@@ -195,15 +208,15 @@ ensures
     (cbor_match pm x (Ghost.reveal v) ** (exists* w. R.pts_to ry w))
 {
   let ml =
-    Append.mixed_list_singleton cbor_match parse_raw_data_item pm x v ry cbor_match_gather_t;
+    Append.mixed_list_singleton cbor_match IO.u64_ops parse_raw_data_item pm x v ry cbor_match_gather_t;
   (* ml : mixed_list cbor_raw, with
-       mixed_list_match cbor_match parse_raw_data_item 1.0R ml [reveal v]
+       mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml [reveal v]
        ** trade (that) (cbor_match pm x v ** exists* vy. pts_to ry vy)
        ** pure (mixed_list_length ml == 1sz) *)
   let res = cbor_array_of_ml ml #(Ghost.hide [Ghost.reveal v]);
   Trade.trans
     (cbor_array_owned res [Ghost.reveal v])
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml [Ghost.reveal v])
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml [Ghost.reveal v])
     (cbor_match pm x (Ghost.reveal v) ** (exists* w. R.pts_to ry w));
   res
 }
@@ -231,13 +244,12 @@ let array_append_overflow (la lb: U64.t) (na nb: nat)
 #push-options "--z3rlimit 10 --fuel 2 --ifuel 2"
 fn cbor_array_append
   (x1 x2: cbor_mixed_list_array)
-  (r_before r_after: R.ref (IT.mixed_list cbor_raw))
+  (r_before r_after: R.ref (IT.mixed_list U64.t cbor_raw))
   (#l1 #l2: Ghost.erased (list raw_data_item))
-  (#vb0 #va0: Ghost.erased (IT.mixed_list cbor_raw))
+  (#vb0 #va0: Ghost.erased (IT.mixed_list U64.t cbor_raw))
 requires
   cbor_array_owned x1 (Ghost.reveal l1) ** cbor_array_owned x2 (Ghost.reveal l2) **
-  R.pts_to r_before (Ghost.reveal vb0) ** R.pts_to r_after (Ghost.reveal va0) **
-  pure (SZ.fits_u64)
+  R.pts_to r_before (Ghost.reveal vb0) ** R.pts_to r_after (Ghost.reveal va0)
 returns res: option cbor_mixed_list_array
 ensures
   (match res with
@@ -255,30 +267,24 @@ ensures
 {
   let ml_a = cbor_array_owned_elim x1 #l1;
   let ml_b = cbor_array_owned_elim x2 #l2;
-  I.mixed_list_match_length cbor_match parse_raw_data_item 1.0R ml_a (Ghost.reveal l1);
-  I.mixed_list_match_length cbor_match parse_raw_data_item 1.0R ml_b (Ghost.reveal l2);
-  let len_a = IT.mixed_list_length ml_a;
-  let len_b = IT.mixed_list_length ml_b;
-  let la64 = SZ.sizet_to_uint64 len_a;
-  let lb64 = SZ.sizet_to_uint64 len_b;
-  let limit = U64.sub 0xffffffffffffffffuL lb64;
-  if (U64.gt la64 limit) {
+  I.mixed_list_match_length cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_a (Ghost.reveal l1);
+  I.mixed_list_match_length cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_b (Ghost.reveal l2);
+  let len_a = IT.mixed_list_length IO.u64_ops ml_a;
+  let len_b = IT.mixed_list_length IO.u64_ops ml_b;
+  let limit = U64.sub 0xffffffffffffffffuL len_b;
+  if (U64.gt len_a limit) {
     (* sum would not fit in a u64: restore both owned handles, return None *)
-    array_append_overflow la64 lb64 (SZ.v len_a) (SZ.v len_b);
+    array_append_overflow len_a len_b (U64.v len_a) (U64.v len_b);
     Trade.elim
-      (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_a (Ghost.reveal l1))
+      (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_a (Ghost.reveal l1))
       (cbor_array_owned x1 (Ghost.reveal l1));
     Trade.elim
-      (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_b (Ghost.reveal l2))
+      (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_b (Ghost.reveal l2))
       (cbor_array_owned x2 (Ghost.reveal l2));
     None #cbor_mixed_list_array
   } else {
-    FStar.Math.Lemmas.small_mod (SZ.v len_a) (pow2 64);
-    FStar.Math.Lemmas.small_mod (SZ.v len_b) (pow2 64);
-    assert_norm (pow2 64 == 0xffffffffffffffff + 1);
-    SZ.fits_u64_implies_fits (SZ.v len_a + SZ.v len_b);
     let ml_res =
-      Append.mixed_list_append cbor_match parse_raw_data_item 1.0R ml_a l1 ml_b l2 r_before r_after;
+      Append.mixed_list_append cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_a l1 ml_b l2 r_before r_after;
     List.Tot.Properties.append_length (Ghost.reveal l1) (Ghost.reveal l2);
     let res =
       cbor_array_of_ml ml_res #(Ghost.hide (List.Tot.append (Ghost.reveal l1) (Ghost.reveal l2)));
@@ -288,36 +294,36 @@ ensures
        (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va))
       (Trade.trade
          (cbor_array_owned res (List.Tot.append (Ghost.reveal l1) (Ghost.reveal l2)))
-         (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_res
+         (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_res
             (List.Tot.append (Ghost.reveal l1) (Ghost.reveal l2))) **
        Trade.trade
-         (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_res
+         (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_res
             (List.Tot.append (Ghost.reveal l1) (Ghost.reveal l2)))
-         (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_a (Ghost.reveal l1) **
-          I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_b (Ghost.reveal l2) **
+         (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_a (Ghost.reveal l1) **
+          I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_b (Ghost.reveal l2) **
           (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)) **
        Trade.trade
-         (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_a (Ghost.reveal l1))
+         (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_a (Ghost.reveal l1))
          (cbor_array_owned x1 (Ghost.reveal l1)) **
        Trade.trade
-         (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_b (Ghost.reveal l2))
+         (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_b (Ghost.reveal l2))
          (cbor_array_owned x2 (Ghost.reveal l2)))
       fn _ {
         Trade.elim
           (cbor_array_owned res (List.Tot.append (Ghost.reveal l1) (Ghost.reveal l2)))
-          (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_res
+          (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_res
              (List.Tot.append (Ghost.reveal l1) (Ghost.reveal l2)));
         Trade.elim
-          (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_res
+          (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_res
              (List.Tot.append (Ghost.reveal l1) (Ghost.reveal l2)))
-          (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_a (Ghost.reveal l1) **
-           I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_b (Ghost.reveal l2) **
+          (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_a (Ghost.reveal l1) **
+           I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_b (Ghost.reveal l2) **
            (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va));
         Trade.elim
-          (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_a (Ghost.reveal l1))
+          (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_a (Ghost.reveal l1))
           (cbor_array_owned x1 (Ghost.reveal l1));
         Trade.elim
-          (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_b (Ghost.reveal l2))
+          (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_b (Ghost.reveal l2))
           (cbor_array_owned x2 (Ghost.reveal l2));
       };
     Some #cbor_mixed_list_array res
@@ -339,15 +345,14 @@ ensures
   pure (y == CBOR_Case_Array_Gen x)
 {
   unfold (cbor_array_owned x (Ghost.reveal l));
-  I.mixed_list_match_length cbor_match parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l);
-  FStar.Math.Lemmas.small_mod (SZ.v (IT.mixed_list_length x.cbor_array_gen_ptr)) (pow2 64);
+  I.mixed_list_match_length cbor_match IO.u64_ops parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l);
   let len : raw_uint64 =
-    mk_raw_uint64 (SZ.sizet_to_uint64 (IT.mixed_list_length x.cbor_array_gen_ptr));
+    mk_raw_uint64 (IT.mixed_list_length IO.u64_ops x.cbor_array_gen_ptr);
   let xh0 : Ghost.erased (r: raw_data_item { Array? r }) =
     Ghost.hide (Array len (Ghost.reveal l));
   let y : cbor_raw = CBOR_Case_Array_Gen x;
-  rewrite (I.mixed_list_match cbor_match parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l))
-    as (I.mixed_list_match cbor_match parse_raw_data_item
+  rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l))
+    as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item
           (1.0R *. x.cbor_array_gen_perm) x.cbor_array_gen_ptr
           (Array?.v (Ghost.reveal xh0)));
   ghost
@@ -363,7 +368,7 @@ ensures
   };
   I.mixed_list_match_weaken
     cbor_match (cbor_match_bounded (Ghost.reveal xh0) cbor_match)
-    parse_raw_data_item (1.0R *. x.cbor_array_gen_perm) x.cbor_array_gen_ptr
+    IO.u64_ops parse_raw_data_item (1.0R *. x.cbor_array_gen_perm) x.cbor_array_gen_ptr
     (Array?.v (Ghost.reveal xh0)) prf_bwd;
   fold (cbor_match_mixed_list_array 1.0R x (Ghost.reveal xh0) cbor_match);
   cbor_match_eq_array_gen 1.0R x (Ghost.reveal xh0);
@@ -389,12 +394,12 @@ ensures
       };
       I.mixed_list_match_weaken
         (cbor_match_bounded (Ghost.reveal xh0) cbor_match) cbor_match
-        parse_raw_data_item (1.0R *. x.cbor_array_gen_perm) x.cbor_array_gen_ptr
+        IO.u64_ops parse_raw_data_item (1.0R *. x.cbor_array_gen_perm) x.cbor_array_gen_ptr
         (Array?.v (Ghost.reveal xh0)) prf_fwd;
-      rewrite (I.mixed_list_match cbor_match parse_raw_data_item
+      rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item
                  (1.0R *. x.cbor_array_gen_perm) x.cbor_array_gen_ptr
                  (Array?.v (Ghost.reveal xh0)))
-        as (I.mixed_list_match cbor_match parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l));
+        as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l));
       fold (cbor_array_owned x (Ghost.reveal l));
     };
   Trade.trans
@@ -480,12 +485,12 @@ fn cbor_array_borrow_entries_serialized
   (pm: perm) (v: cbor_serialized)
   (#xh: Ghost.erased (r: raw_data_item { Array? r }))
 requires
-  cbor_match pm (CBOR_Case_Serialized_Array v) (Ghost.reveal xh) ** pure (SZ.fits_u64)
-returns ml: IT.mixed_list cbor_raw
+  cbor_match pm (CBOR_Case_Serialized_Array v) (Ghost.reveal xh)
+returns ml: IT.mixed_list U64.t cbor_raw
 ensures
-  I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)) **
+  I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)) **
   Trade.trade
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
     (cbor_match pm (CBOR_Case_Serialized_Array v) (Ghost.reveal xh))
 {
   Trade.rewrite_with_trade
@@ -493,6 +498,17 @@ ensures
     (cbor_match_serialized_array v pm (Ghost.reveal xh));
   array_serialized_elim v pm (Ghost.reveal xh);
   with pm_s. _;
+  (* Derive [SZ.fits (U64.v count)] from the serialized payload: an nlist of  *)
+  (* N raw_data_items (each >= 1 byte) occupies >= N bytes, and the payload    *)
+  (* slice length is a [size_t], so N <= SZ-addressable length, hence fits.    *)
+  LPB.pts_to_serialized_length
+    (serialize_nlist (U64.v (Array?.len (Ghost.reveal xh)).value) serialize_raw_data_item)
+    (to_slice v.cbor_serialized_payload);
+  parse_nlist_kind_low (U64.v (Array?.len (Ghost.reveal xh)).value) parse_raw_data_item_kind;
+  assert_norm (parse_raw_data_item_kind.parser_kind_low == 1);
+  SZ.fits_lte
+    (U64.v (Array?.len (Ghost.reveal xh)).value)
+    (SZ.v (S.len (to_slice v.cbor_serialized_payload)));
   Trade.trans _ _ (cbor_match pm (CBOR_Case_Serialized_Array v) (Ghost.reveal xh));
   PB.pts_to_serialized_parsed (to_slice v.cbor_serialized_payload);
   Trade.trans _ _ (cbor_match pm (CBOR_Case_Serialized_Array v) (Ghost.reveal xh));
@@ -501,60 +517,60 @@ ensures
     (parse_nlist (U64.v (Array?.len (Ghost.reveal xh)).value) parse_raw_data_item)
     (to_slice v.cbor_serialized_payload);
   Trade.trans _ _ (cbor_match pm (CBOR_Case_Serialized_Array v) (Ghost.reveal xh));
-  let count = SZ.uint64_to_sizet v.cbor_serialized_header.value;
+  let count = v.cbor_serialized_header.value;
   perm_one_l (pm_s /. 2.0R);
   rewrite (PB.pts_to_parsed_strong_prefix
              (parse_nlist (U64.v (Array?.len (Ghost.reveal xh)).value) parse_raw_data_item)
              (to_slice v.cbor_serialized_payload) #(pm_s /. 2.0R) (Array?.v (Ghost.reveal xh)))
     as (PB.pts_to_parsed_strong_prefix
-          (parse_nlist (0 + SZ.v count) parse_raw_data_item)
+          (parse_nlist (0 + U64.v count) parse_raw_data_item)
           (to_slice v.cbor_serialized_payload) #(1.0R *. (pm_s /. 2.0R)) (Array?.v (Ghost.reveal xh)));
-  fold (I.base_mixed_list_match_n cbor_match parse_raw_data_item 0 (SZ.v count) 1.0R
-          (IT.Serialized #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload))
+  fold (I.base_mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item 0 (U64.v count) 1.0R
+          (IT.Serialized #U64.t #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload))
           (Array?.v (Ghost.reveal xh)));
-  fold (I.mixed_list_match_n cbor_match parse_raw_data_item 0 (SZ.v count) 1.0R
-          (IT.Base #cbor_raw
-             (IT.Serialized #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
+  fold (I.mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item 0 (U64.v count) 1.0R
+          (IT.Base #U64.t #cbor_raw
+             (IT.Serialized #U64.t #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
           (Array?.v (Ghost.reveal xh)));
-  fold (I.mixed_list_match cbor_match parse_raw_data_item 1.0R
-          (IT.Base #cbor_raw
-             (IT.Serialized #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
+  fold (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R
+          (IT.Base #U64.t #cbor_raw
+             (IT.Serialized #U64.t #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
           (Array?.v (Ghost.reveal xh)));
-  let ml : IT.mixed_list cbor_raw =
-    IT.Base #cbor_raw
-      (IT.Serialized #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload));
-  rewrite (I.mixed_list_match cbor_match parse_raw_data_item 1.0R
-             (IT.Base #cbor_raw
-                (IT.Serialized #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
+  let ml : IT.mixed_list U64.t cbor_raw =
+    IT.Base #U64.t #cbor_raw
+      (IT.Serialized #U64.t #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload));
+  rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R
+             (IT.Base #U64.t #cbor_raw
+                (IT.Serialized #U64.t #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
              (Array?.v (Ghost.reveal xh)))
-    as (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)));
+    as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)));
   Trade.intro_trade
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
     (PB.pts_to_parsed_strong_prefix
        (parse_nlist (U64.v (Array?.len (Ghost.reveal xh)).value) parse_raw_data_item)
        (to_slice v.cbor_serialized_payload) #(pm_s /. 2.0R) (Array?.v (Ghost.reveal xh)))
-    (pure (U64.v (Array?.len (Ghost.reveal xh)).value == 0 + SZ.v count))
+    (pure (U64.v (Array?.len (Ghost.reveal xh)).value == 0 + U64.v count))
     fn _ {
-      rewrite (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
-        as (I.mixed_list_match cbor_match parse_raw_data_item 1.0R
-              (IT.Base #cbor_raw
-                 (IT.Serialized #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
+      rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+        as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R
+              (IT.Base #U64.t #cbor_raw
+                 (IT.Serialized #U64.t #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
               (Array?.v (Ghost.reveal xh)));
-      unfold (I.mixed_list_match cbor_match parse_raw_data_item 1.0R
-                (IT.Base #cbor_raw
-                   (IT.Serialized #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
+      unfold (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R
+                (IT.Base #U64.t #cbor_raw
+                   (IT.Serialized #U64.t #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
                 (Array?.v (Ghost.reveal xh)));
-      unfold (I.mixed_list_match_n cbor_match parse_raw_data_item 0 (SZ.v count) 1.0R
-                (IT.Base #cbor_raw
-                   (IT.Serialized #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
+      unfold (I.mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item 0 (U64.v count) 1.0R
+                (IT.Base #U64.t #cbor_raw
+                   (IT.Serialized #U64.t #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload)))
                 (Array?.v (Ghost.reveal xh)));
-      unfold (I.base_mixed_list_match_n cbor_match parse_raw_data_item 0 (SZ.v count) 1.0R
-                (IT.Serialized #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload))
+      unfold (I.base_mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item 0 (U64.v count) 1.0R
+                (IT.Serialized #U64.t #cbor_raw (pm_s /. 2.0R) count (to_slice v.cbor_serialized_payload))
                 (Array?.v (Ghost.reveal xh)));
       with l_all. _;
       perm_one_l (pm_s /. 2.0R);
       rewrite (PB.pts_to_parsed_strong_prefix
-                 (parse_nlist (0 + SZ.v count) parse_raw_data_item)
+                 (parse_nlist (0 + U64.v count) parse_raw_data_item)
                  (to_slice v.cbor_serialized_payload) #(1.0R *. (pm_s /. 2.0R)) l_all)
         as (PB.pts_to_parsed_strong_prefix
               (parse_nlist (U64.v (Array?.len (Ghost.reveal xh)).value) parse_raw_data_item)
@@ -582,11 +598,11 @@ fn cbor_array_borrow_entries_inline
   (#xh: Ghost.erased (r: raw_data_item { Array? r }))
 requires
   cbor_match pm (CBOR_Case_Array v) (Ghost.reveal xh)
-returns ml: IT.mixed_list cbor_raw
+returns ml: IT.mixed_list U64.t cbor_raw
 ensures
-  I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)) **
+  I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)) **
   Trade.trade
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
     (cbor_match pm (CBOR_Case_Array v) (Ghost.reveal xh))
 {
   cbor_match_eq_array pm v (Ghost.reveal xh);
@@ -596,6 +612,9 @@ ensures
   unfold (cbor_match_array v pm (Ghost.reveal xh) cbor_match);
   with w. _;
   S.pts_to_len v.cbor_array_ptr;
+  (* Element count as a u64 (the [cbor_array_ptr] refinement guarantees the  *)
+  (* slice length fits in 64 bits), for the [Slice] node's [count] field.    *)
+  let count = IO.u64_ops.of_sizet (S.len v.cbor_array_ptr);
   ghost
   fn weaken_fwd (c: cbor_raw)
     (yv: (yv: raw_data_item { yv << Array?.v (Ghost.reveal xh) }))
@@ -615,51 +634,51 @@ ensures
   rewrite (S.pts_to v.cbor_array_ptr #(pm `Util.perm_mul` v.cbor_array_array_perm) w)
     as (S.pts_to v.cbor_array_ptr #(1.0R *. (pm *. v.cbor_array_array_perm)) w);
   assert (pure (w `Seq.equal`
-    Seq.slice w 0 (0 + SZ.v (S.len v.cbor_array_ptr))));
-  fold (I.base_mixed_list_match_n cbor_match parse_raw_data_item
-          0 (SZ.v (S.len v.cbor_array_ptr)) 1.0R
-          (IT.Slice #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr)
+    Seq.slice w 0 (0 + U64.v count)));
+  fold (I.base_mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item
+          0 (U64.v count) 1.0R
+          (IT.Slice #U64.t #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr count)
           (Array?.v (Ghost.reveal xh)));
-  fold (I.mixed_list_match_n cbor_match parse_raw_data_item
-          0 (SZ.v (S.len v.cbor_array_ptr)) 1.0R
-          (IT.Base #cbor_raw
-             (IT.Slice #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr))
+  fold (I.mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item
+          0 (U64.v count) 1.0R
+          (IT.Base #U64.t #cbor_raw
+             (IT.Slice #U64.t #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr count))
           (Array?.v (Ghost.reveal xh)));
-  fold (I.mixed_list_match cbor_match parse_raw_data_item 1.0R
-          (IT.Base #cbor_raw
-             (IT.Slice #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr))
+  fold (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R
+          (IT.Base #U64.t #cbor_raw
+             (IT.Slice #U64.t #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr count))
           (Array?.v (Ghost.reveal xh)));
-  let ml : IT.mixed_list cbor_raw =
-    IT.Base #cbor_raw
-      (IT.Slice #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr);
-  rewrite (I.mixed_list_match cbor_match parse_raw_data_item 1.0R
-             (IT.Base #cbor_raw
-                (IT.Slice #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr))
+  let ml : IT.mixed_list U64.t cbor_raw =
+    IT.Base #U64.t #cbor_raw
+      (IT.Slice #U64.t #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr count);
+  rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R
+             (IT.Base #U64.t #cbor_raw
+                (IT.Slice #U64.t #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr count))
              (Array?.v (Ghost.reveal xh)))
-    as (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)));
+    as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)));
   Trade.intro_trade
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
     (cbor_match_array v pm (Ghost.reveal xh) cbor_match)
     (pure (v.cbor_array_length_size == (Array?.len (Ghost.reveal xh)).size /\
            SZ.v (S.len v.cbor_array_ptr) == U64.v (Array?.len (Ghost.reveal xh)).value))
     fn _ {
-      rewrite (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
-        as (I.mixed_list_match cbor_match parse_raw_data_item 1.0R
-              (IT.Base #cbor_raw
-                 (IT.Slice #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr))
+      rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+        as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R
+              (IT.Base #U64.t #cbor_raw
+                 (IT.Slice #U64.t #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr count))
               (Array?.v (Ghost.reveal xh)));
-      unfold (I.mixed_list_match cbor_match parse_raw_data_item 1.0R
-                (IT.Base #cbor_raw
-                   (IT.Slice #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr))
+      unfold (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R
+                (IT.Base #U64.t #cbor_raw
+                   (IT.Slice #U64.t #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr count))
                 (Array?.v (Ghost.reveal xh)));
-      unfold (I.mixed_list_match_n cbor_match parse_raw_data_item
-                0 (SZ.v (S.len v.cbor_array_ptr)) 1.0R
-                (IT.Base #cbor_raw
-                   (IT.Slice #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr))
+      unfold (I.mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item
+                0 (U64.v count) 1.0R
+                (IT.Base #U64.t #cbor_raw
+                   (IT.Slice #U64.t #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr count))
                 (Array?.v (Ghost.reveal xh)));
-      unfold (I.base_mixed_list_match_n cbor_match parse_raw_data_item
-                0 (SZ.v (S.len v.cbor_array_ptr)) 1.0R
-                (IT.Slice #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr)
+      unfold (I.base_mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item
+                0 (U64.v count) 1.0R
+                (IT.Slice #U64.t #cbor_raw (pm *. v.cbor_array_array_perm) (pm *. v.cbor_array_payload_perm) v.cbor_array_ptr count)
                 (Array?.v (Ghost.reveal xh)));
       with l' l1. _;
       S.pts_to_len v.cbor_array_ptr;
@@ -703,12 +722,12 @@ fn cbor_array_borrow_entries
   (#xh: Ghost.erased (r: raw_data_item { Array? r }))
 requires
   cbor_match pm x (Ghost.reveal xh) **
-  pure (SZ.fits_u64 /\ cbor_array_borrow_pre pm x)
-returns ml: IT.mixed_list cbor_raw
+  pure (cbor_array_borrow_pre pm x)
+returns ml: IT.mixed_list U64.t cbor_raw
 ensures
-  I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)) **
+  I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)) **
   Trade.trade
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
     (cbor_match pm x (Ghost.reveal xh))
 {
   cbor_match_cases x;
@@ -750,20 +769,20 @@ ensures
       };
       I.mixed_list_match_weaken
         (cbor_match_bounded (Ghost.reveal xh) cbor_match) cbor_match
-        parse_raw_data_item (pm *. v.cbor_array_gen_perm) v.cbor_array_gen_ptr
+        IO.u64_ops parse_raw_data_item (pm *. v.cbor_array_gen_perm) v.cbor_array_gen_ptr
         (Array?.v (Ghost.reveal xh)) prf_fwd;
       let ml = v.cbor_array_gen_ptr;
-      rewrite (I.mixed_list_match cbor_match parse_raw_data_item
+      rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item
                  (pm *. v.cbor_array_gen_perm) v.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh)))
-        as (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)));
+        as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)));
       Trade.intro_trade
-        (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+        (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
         (cbor_match_mixed_list_array pm v (Ghost.reveal xh) cbor_match)
         (pure (v.cbor_array_gen_length_size == (Array?.len (Ghost.reveal xh)).size /\
                pm *. v.cbor_array_gen_perm == 1.0R))
         fn _ {
-          rewrite (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
-            as (I.mixed_list_match cbor_match parse_raw_data_item
+          rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+            as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item
                   (pm *. v.cbor_array_gen_perm) v.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh)));
           ghost
           fn prf_bwd (c: cbor_raw) (pm0: perm)
@@ -778,12 +797,12 @@ ensures
           };
           I.mixed_list_match_weaken
             cbor_match (cbor_match_bounded (Ghost.reveal xh) cbor_match)
-            parse_raw_data_item (pm *. v.cbor_array_gen_perm) v.cbor_array_gen_ptr
+            IO.u64_ops parse_raw_data_item (pm *. v.cbor_array_gen_perm) v.cbor_array_gen_ptr
             (Array?.v (Ghost.reveal xh)) prf_bwd;
           fold (cbor_match_mixed_list_array pm v (Ghost.reveal xh) cbor_match);
         };
       Trade.trans
-        (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+        (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
         (cbor_match_mixed_list_array pm v (Ghost.reveal xh) cbor_match)
         (cbor_match pm x (Ghost.reveal xh));
       ml
@@ -817,17 +836,16 @@ ensures
 inline_for_extraction
 fn cbor_array_init_borrow
   (pm: perm) (x: cbor_raw)
-  (r1 r2: R.ref (IT.mixed_list cbor_raw))
+  (r1 r2: R.ref (IT.mixed_list U64.t cbor_raw))
   (#xh: Ghost.erased (r: raw_data_item { Array? r }))
-  (#w1 #w2: Ghost.erased (IT.mixed_list cbor_raw))
+  (#w1 #w2: Ghost.erased (IT.mixed_list U64.t cbor_raw))
 requires
-  cbor_match pm x (Ghost.reveal xh) ** R.pts_to r1 w1 ** R.pts_to r2 w2 **
-  pure (SZ.fits_u64)
-returns ml: IT.mixed_list cbor_raw
+  cbor_match pm x (Ghost.reveal xh) ** R.pts_to r1 w1 ** R.pts_to r2 w2
+returns ml: IT.mixed_list U64.t cbor_raw
 ensures
-  I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)) **
+  I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)) **
   Trade.trade
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
     (cbor_match pm x (Ghost.reveal xh) **
      (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2))
 {
@@ -839,11 +857,11 @@ ensures
         (cbor_match pm (CBOR_Case_Array v) (Ghost.reveal xh));
       let ml = cbor_array_borrow_entries_inline pm v #xh;
       Trade.trans
-        (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+        (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
         (cbor_match pm (CBOR_Case_Array v) (Ghost.reveal xh))
         (cbor_match pm x (Ghost.reveal xh));
       Trade.weak_concl_r
-        (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+        (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
         (cbor_match pm x (Ghost.reveal xh))
         (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2);
       ml
@@ -854,11 +872,11 @@ ensures
         (cbor_match pm (CBOR_Case_Serialized_Array v) (Ghost.reveal xh));
       let ml = cbor_array_borrow_entries_serialized pm v #xh;
       Trade.trans
-        (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+        (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
         (cbor_match pm (CBOR_Case_Serialized_Array v) (Ghost.reveal xh))
         (cbor_match pm x (Ghost.reveal xh));
       Trade.weak_concl_r
-        (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+        (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
         (cbor_match pm x (Ghost.reveal xh))
         (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2);
       ml
@@ -883,11 +901,11 @@ ensures
       };
       I.mixed_list_match_weaken
         (cbor_match_bounded (Ghost.reveal xh) cbor_match) cbor_match
-        parse_raw_data_item (pm *. v.cbor_array_gen_perm) v.cbor_array_gen_ptr
+        IO.u64_ops parse_raw_data_item (pm *. v.cbor_array_gen_perm) v.cbor_array_gen_ptr
         (Array?.v (Ghost.reveal xh)) prf_fwd;
       (* trade back [MM at q] -> [cbor_match_mixed_list_array] (refold) *)
       Trade.intro_trade
-        (I.mixed_list_match cbor_match parse_raw_data_item (pm *. v.cbor_array_gen_perm)
+        (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item (pm *. v.cbor_array_gen_perm)
            v.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh)))
         (cbor_match_mixed_list_array pm v (Ghost.reveal xh) cbor_match)
         (pure (v.cbor_array_gen_length_size == (Array?.len (Ghost.reveal xh)).size))
@@ -905,24 +923,24 @@ ensures
           };
           I.mixed_list_match_weaken
             cbor_match (cbor_match_bounded (Ghost.reveal xh) cbor_match)
-            parse_raw_data_item (pm *. v.cbor_array_gen_perm) v.cbor_array_gen_ptr
+            IO.u64_ops parse_raw_data_item (pm *. v.cbor_array_gen_perm) v.cbor_array_gen_ptr
             (Array?.v (Ghost.reveal xh)) prf_bwd;
           fold (cbor_match_mixed_list_array pm v (Ghost.reveal xh) cbor_match);
         };
       Trade.trans
-        (I.mixed_list_match cbor_match parse_raw_data_item (pm *. v.cbor_array_gen_perm)
+        (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item (pm *. v.cbor_array_gen_perm)
            v.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh)))
         (cbor_match_mixed_list_array pm v (Ghost.reveal xh) cbor_match)
         (cbor_match pm x (Ghost.reveal xh));
       (* re-scale the fractional sub-list to ambient [1.0R], consuming r1/r2 *)
-      I.mixed_list_match_length cbor_match parse_raw_data_item (pm *. v.cbor_array_gen_perm)
+      I.mixed_list_match_length cbor_match IO.u64_ops parse_raw_data_item (pm *. v.cbor_array_gen_perm)
         v.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh));
       let ml_res =
-        Append.mixed_list_wrap_scaled cbor_match parse_raw_data_item
+        Append.mixed_list_wrap_scaled cbor_match IO.u64_ops parse_raw_data_item
           (pm *. v.cbor_array_gen_perm) v.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh)) r1 r2;
       Trade.trans_concl_l
-        (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml_res (Array?.v (Ghost.reveal xh)))
-        (I.mixed_list_match cbor_match parse_raw_data_item (pm *. v.cbor_array_gen_perm)
+        (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml_res (Array?.v (Ghost.reveal xh)))
+        (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item (pm *. v.cbor_array_gen_perm)
            v.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh)))
         (cbor_match pm x (Ghost.reveal xh))
         (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2);
@@ -939,12 +957,11 @@ ensures
 #push-options "--z3rlimit 20 --fuel 2 --ifuel 2"
 fn cbor_array_init
   (pm: perm) (x: cbor_raw)
-  (r1 r2: R.ref (IT.mixed_list cbor_raw))
+  (r1 r2: R.ref (IT.mixed_list U64.t cbor_raw))
   (#xh: Ghost.erased (r: raw_data_item { Array? r }))
-  (#w1 #w2: Ghost.erased (IT.mixed_list cbor_raw))
+  (#w1 #w2: Ghost.erased (IT.mixed_list U64.t cbor_raw))
 requires
-  cbor_match pm x (Ghost.reveal xh) ** R.pts_to r1 w1 ** R.pts_to r2 w2 **
-  pure (SZ.fits_u64)
+  cbor_match pm x (Ghost.reveal xh) ** R.pts_to r1 w1 ** R.pts_to r2 w2
 returns y: cbor_mixed_list_array
 ensures
   cbor_array_owned y (Array?.v (Ghost.reveal xh)) **
@@ -954,11 +971,11 @@ ensures
      (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2))
 {
   let ml = cbor_array_init_borrow pm x r1 r2 #xh #w1 #w2;
-  I.mixed_list_match_length cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh));
+  I.mixed_list_match_length cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh));
   let y = cbor_array_of_ml ml #(Ghost.hide (Array?.v (Ghost.reveal xh)));
   Trade.trans
     (cbor_array_owned y (Array?.v (Ghost.reveal xh)))
-    (I.mixed_list_match cbor_match parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
+    (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R ml (Array?.v (Ghost.reveal xh)))
     (cbor_match pm x (Ghost.reveal xh) **
      (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2));
   y

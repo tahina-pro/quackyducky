@@ -3,9 +3,10 @@ module CBOR.Pulse.Raw.EverParse.Det.ArrayBuilder
 friend CBOR.Pulse.API.Det.Type
 friend CBOR.Pulse.API.Det.Common
 (* Needed so the abstract cell type [cbor_det_array_append_cell_t] (declared in
-   the relocated raw/ interface) is transparently [IT.mixed_list cbor_raw] here:
+   the relocated raw/ interface) is transparently [IT.mixed_list U64.t cbor_raw]
+   here:
      cbor_det_array_append_cell_t == ML.cbor_raw_mixed_list cbor_raw  (friend Det.Type)
-                                   == IT.mixed_list cbor_raw          (friend MixedList) *)
+                                   == IT.mixed_list U64.t cbor_raw     (friend MixedList) *)
 friend CBOR.Pulse.Raw.Format.MixedList
 
 open Pulse.Lib.Pervasives
@@ -132,12 +133,11 @@ ensures cbor_det_array_owned x l ** pure (FStar.UInt.fits (L.length (Ghost.revea
 (* ================================================================ *)
 (* Append two owned arrays                                           *)
 (*                                                                  *)
-(* NOTE (deviation): like the underlying raw [cbor_array_append],    *)
-(* this requires [pure SZ.fits_u64] (the platform size_t is at least *)
-(* 64-bit).  Forming the underlying [Append] node needs              *)
-(* [SZ.fits (len1 + len2)], which -- when the u64 sum does not       *)
-(* overflow -- is only obtainable from [SZ.fits_u64], and no free    *)
-(* axiom for it exists (it is otherwise decided by a runtime check). *)
+(* NOTE: element counts are now [U64.t] (the CBOR wire count type),  *)
+(* so forming the underlying [Append] node's [fits (len1 + len2)]     *)
+(* obligation is exactly the plain u64 non-overflow test performed at *)
+(* runtime by the raw [cbor_array_append]; no unsound [size_t]-width  *)
+(* platform assumption is required.                                   *)
 (* ================================================================ *)
 
 #push-options "--z3rlimit 10 --fuel 2 --ifuel 2"
@@ -145,13 +145,12 @@ ensures cbor_det_array_owned x l ** pure (FStar.UInt.fits (L.length (Ghost.revea
 inline_for_extraction
 fn cbor_det_array_append
   (x1 x2: cbor_mixed_list_array)
-  (r_before r_after: R.ref (IT.mixed_list cbor_raw))
+  (r_before r_after: R.ref (IT.mixed_list U64.t cbor_raw))
   (#l1 #l2: Ghost.erased (list Spec.cbor))
-  (#vb0 #va0: Ghost.erased (IT.mixed_list cbor_raw))
+  (#vb0 #va0: Ghost.erased (IT.mixed_list U64.t cbor_raw))
 requires
   cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
-  R.pts_to r_before vb0 ** R.pts_to r_after va0 **
-  pure (SZ.fits_u64)
+  R.pts_to r_before vb0 ** R.pts_to r_after va0
 returns res: option cbor_mixed_list_array
 ensures
   (match res with
@@ -327,11 +326,11 @@ ensures
 
 inline_for_extraction
 fn cbor_det_array_init
-  (x: cbor_raw) (r1 r2: R.ref (IT.mixed_list cbor_raw))
-  (#p: perm) (#l: Ghost.erased Spec.cbor) (#w1 #w2: Ghost.erased (IT.mixed_list cbor_raw))
+  (x: cbor_raw) (r1 r2: R.ref (IT.mixed_list U64.t cbor_raw))
+  (#p: perm) (#l: Ghost.erased Spec.cbor) (#w1 #w2: Ghost.erased (IT.mixed_list U64.t cbor_raw))
 requires
   Det.cbor_det_match p x l ** R.pts_to r1 w1 ** R.pts_to r2 w2 **
-  pure (Spec.CArray? (Spec.unpack l) /\ SZ.fits_u64)
+  pure (Spec.CArray? (Spec.unpack l))
 returns y: cbor_mixed_list_array
 ensures
   exists* (l': list Spec.cbor).

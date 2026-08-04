@@ -14,6 +14,7 @@ module U64 = FStar.UInt64
 module R = Pulse.Lib.Reference
 module DEP = CBOR.Pulse.Raw.Format.Match.Depth
 module MLI = LowParse.PulseParse.Iterator
+module IO = LowParse.PulseParse.Iterator.IntOps
 module LI = LowParse.Pulse.Iterator
 module VC = LowParse.Spec.VCList
 module LSC = LowParse.Spec.Combinators
@@ -68,17 +69,17 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (cbor_match_bounded (Ghost.reveal xh0) (depth_cb n (Ghost.reveal xh0))) (DEP.depth_match n)
-    parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_fwd;
-  MLI.mixed_list_match_length (DEP.depth_match n) parse_raw_data_item
+    IO.u64_ops parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_fwd;
+  MLI.mixed_list_match_length (DEP.depth_match n) IO.u64_ops parse_raw_data_item
     (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0));
   let count_rt = ML.cbor_raw_mixed_list_length a.cbor_array_gen_ptr;
-  fold (LI.mixed_list_match_for_l2r (DEP.depth_match n) parse_raw_data_item
-    (pp *. a.cbor_array_gen_perm) (SZ.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
-  let res = LI.l2r_write_mixed_list (DEP.depth_match n) serialize_raw_data_item w
+  fold (LI.mixed_list_match_for_l2r (DEP.depth_match n) IO.u64_ops parse_raw_data_item
+    (pp *. a.cbor_array_gen_perm) (U64.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
+  let res = LI.l2r_write_mixed_list (DEP.depth_match n) IO.u64_ops serialize_raw_data_item w
     (jump_raw_data_item ()) (DEP.depth_match_share n) (DEP.depth_match_gather n)
     (pp *. a.cbor_array_gen_perm) count_rt a.cbor_array_gen_ptr out offset;
-  unfold (LI.mixed_list_match_for_l2r (DEP.depth_match n) parse_raw_data_item
-    (pp *. a.cbor_array_gen_perm) (SZ.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
+  unfold (LI.mixed_list_match_for_l2r (DEP.depth_match n) IO.u64_ops parse_raw_data_item
+    (pp *. a.cbor_array_gen_perm) (U64.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
   ghost
   fn prf_bwd (x1: cbor_raw) (pm0: perm) (y: raw_data_item { List.Tot.memP y (Array?.v (Ghost.reveal xh0)) })
     requires DEP.depth_match n pm0 x1 y
@@ -92,7 +93,7 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (DEP.depth_match n) (cbor_match_bounded (Ghost.reveal xh0) (depth_cb n (Ghost.reveal xh0)))
-    parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_bwd;
+    IO.u64_ops parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_bwd;
   fold (cbor_match_mixed_list_array pp a xh0 (depth_cb n xh0));
   res
 }
@@ -138,17 +139,17 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (cbor_match_bounded (Ghost.reveal xh0) (depth_cb n (Ghost.reveal xh0))) (DEP.depth_match n)
-    parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_fwd;
-  MLI.mixed_list_match_length (DEP.depth_match n) parse_raw_data_item
+    IO.u64_ops parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_fwd;
+  MLI.mixed_list_match_length (DEP.depth_match n) IO.u64_ops parse_raw_data_item
     (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0));
   let count_rt = ML.cbor_raw_mixed_list_length a.cbor_array_gen_ptr;
-  fold (LI.mixed_list_match_for_l2r (DEP.depth_match n) parse_raw_data_item
-    (pp *. a.cbor_array_gen_perm) (SZ.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
-  let res = LI.compute_remaining_size_mixed_list (DEP.depth_match n) serialize_raw_data_item cr
+  fold (LI.mixed_list_match_for_l2r (DEP.depth_match n) IO.u64_ops parse_raw_data_item
+    (pp *. a.cbor_array_gen_perm) (U64.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
+  let res = LI.compute_remaining_size_mixed_list (DEP.depth_match n) IO.u64_ops serialize_raw_data_item cr
     (jump_raw_data_item ()) (DEP.depth_match_share n) (DEP.depth_match_gather n)
     (pp *. a.cbor_array_gen_perm) count_rt a.cbor_array_gen_ptr out;
-  unfold (LI.mixed_list_match_for_l2r (DEP.depth_match n) parse_raw_data_item
-    (pp *. a.cbor_array_gen_perm) (SZ.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
+  unfold (LI.mixed_list_match_for_l2r (DEP.depth_match n) IO.u64_ops parse_raw_data_item
+    (pp *. a.cbor_array_gen_perm) (U64.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
   ghost
   fn prf_bwd (x1: cbor_raw) (pm0: perm) (y: raw_data_item { List.Tot.memP y (Array?.v (Ghost.reveal xh0)) })
     requires DEP.depth_match n pm0 x1 y
@@ -162,7 +163,7 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (DEP.depth_match n) (cbor_match_bounded (Ghost.reveal xh0) (depth_cb n (Ghost.reveal xh0)))
-    parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_bwd;
+    IO.u64_ops parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_bwd;
   fold (cbor_match_mixed_list_array pp a xh0 (depth_cb n xh0));
   res
 }
@@ -251,18 +252,18 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (cbor_match_map_entry_bounded (Ghost.reveal xh0) (depth_cb n (Ghost.reveal xh0))) (DEP.depth_match_pair n)
-    (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_fwd;
-  MLI.mixed_list_match_length (DEP.depth_match_pair n) (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_fwd;
+  MLI.mixed_list_match_length (DEP.depth_match_pair n) IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
     (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0));
   let count_rt = ML.cbor_raw_mixed_list_length a.cbor_map_gen_ptr;
-  fold (LI.mixed_list_match_for_l2r (DEP.depth_match_pair n) (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
-    (pp *. a.cbor_map_gen_perm) (SZ.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
-  let res = LI.l2r_write_mixed_list (DEP.depth_match_pair n) (LSC.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)
+  fold (LI.mixed_list_match_for_l2r (DEP.depth_match_pair n) IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    (pp *. a.cbor_map_gen_perm) (U64.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
+  let res = LI.l2r_write_mixed_list (DEP.depth_match_pair n) IO.u64_ops (LSC.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)
     (w_map_pair n w)
     (LP.jump_nondep_then (jump_raw_data_item ()) (jump_raw_data_item ())) (DEP.depth_match_pair_share n) (DEP.depth_match_pair_gather n)
     (pp *. a.cbor_map_gen_perm) count_rt a.cbor_map_gen_ptr out offset;
-  unfold (LI.mixed_list_match_for_l2r (DEP.depth_match_pair n) (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
-    (pp *. a.cbor_map_gen_perm) (SZ.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
+  unfold (LI.mixed_list_match_for_l2r (DEP.depth_match_pair n) IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    (pp *. a.cbor_map_gen_perm) (U64.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
   ghost
   fn prf_bwd (x1: cbor_map_entry) (pm0: perm) (y: (raw_data_item & raw_data_item) { List.Tot.memP y (Map?.v (Ghost.reveal xh0)) })
     requires DEP.depth_match_pair n pm0 x1 y
@@ -280,7 +281,7 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (DEP.depth_match_pair n) (cbor_match_map_entry_bounded (Ghost.reveal xh0) (depth_cb n (Ghost.reveal xh0)))
-    (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_bwd;
+    IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_bwd;
   fold (cbor_match_mixed_list_map pp a xh0 (depth_cb n xh0));
   res
 }
@@ -326,18 +327,18 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (cbor_match_map_entry_bounded (Ghost.reveal xh0) (depth_cb n (Ghost.reveal xh0))) (DEP.depth_match_pair n)
-    (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_fwd;
-  MLI.mixed_list_match_length (DEP.depth_match_pair n) (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_fwd;
+  MLI.mixed_list_match_length (DEP.depth_match_pair n) IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
     (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0));
   let count_rt = ML.cbor_raw_mixed_list_length a.cbor_map_gen_ptr;
-  fold (LI.mixed_list_match_for_l2r (DEP.depth_match_pair n) (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
-    (pp *. a.cbor_map_gen_perm) (SZ.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
-  let res = LI.compute_remaining_size_mixed_list (DEP.depth_match_pair n) (LSC.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)
+  fold (LI.mixed_list_match_for_l2r (DEP.depth_match_pair n) IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    (pp *. a.cbor_map_gen_perm) (U64.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
+  let res = LI.compute_remaining_size_mixed_list (DEP.depth_match_pair n) IO.u64_ops (LSC.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)
     (cr_map_pair n cr)
     (LP.jump_nondep_then (jump_raw_data_item ()) (jump_raw_data_item ())) (DEP.depth_match_pair_share n) (DEP.depth_match_pair_gather n)
     (pp *. a.cbor_map_gen_perm) count_rt a.cbor_map_gen_ptr out;
-  unfold (LI.mixed_list_match_for_l2r (DEP.depth_match_pair n) (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
-    (pp *. a.cbor_map_gen_perm) (SZ.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
+  unfold (LI.mixed_list_match_for_l2r (DEP.depth_match_pair n) IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    (pp *. a.cbor_map_gen_perm) (U64.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
   ghost
   fn prf_bwd (x1: cbor_map_entry) (pm0: perm) (y: (raw_data_item & raw_data_item) { List.Tot.memP y (Map?.v (Ghost.reveal xh0)) })
     requires DEP.depth_match_pair n pm0 x1 y
@@ -355,7 +356,7 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (DEP.depth_match_pair n) (cbor_match_map_entry_bounded (Ghost.reveal xh0) (depth_cb n (Ghost.reveal xh0)))
-    (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_bwd;
+    IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_bwd;
   fold (cbor_match_mixed_list_map pp a xh0 (depth_cb n xh0));
   res
 }
@@ -420,17 +421,17 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (cbor_match_bounded (Ghost.reveal xh0) cbor_match) cbor_match
-    parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_fwd;
-  MLI.mixed_list_match_length cbor_match parse_raw_data_item
+    IO.u64_ops parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_fwd;
+  MLI.mixed_list_match_length cbor_match IO.u64_ops parse_raw_data_item
     (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0));
   let count_rt = ML.cbor_raw_mixed_list_length a.cbor_array_gen_ptr;
-  fold (LI.mixed_list_match_for_l2r cbor_match parse_raw_data_item
-    (pp *. a.cbor_array_gen_perm) (SZ.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
-  let res = LI.l2r_write_mixed_list cbor_match serialize_raw_data_item w
+  fold (LI.mixed_list_match_for_l2r cbor_match IO.u64_ops parse_raw_data_item
+    (pp *. a.cbor_array_gen_perm) (U64.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
+  let res = LI.l2r_write_mixed_list cbor_match IO.u64_ops serialize_raw_data_item w
     (jump_raw_data_item ()) cbor_match_share_t cbor_match_gather_t
     (pp *. a.cbor_array_gen_perm) count_rt a.cbor_array_gen_ptr out offset;
-  unfold (LI.mixed_list_match_for_l2r cbor_match parse_raw_data_item
-    (pp *. a.cbor_array_gen_perm) (SZ.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
+  unfold (LI.mixed_list_match_for_l2r cbor_match IO.u64_ops parse_raw_data_item
+    (pp *. a.cbor_array_gen_perm) (U64.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
   ghost
   fn prf_bwd (x1: cbor_raw) (pm0: perm) (y: raw_data_item { List.Tot.memP y (Array?.v (Ghost.reveal xh0)) })
     requires cbor_match pm0 x1 y
@@ -442,7 +443,7 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     cbor_match (cbor_match_bounded (Ghost.reveal xh0) cbor_match)
-    parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_bwd;
+    IO.u64_ops parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_bwd;
   fold (cbor_match_mixed_list_array pp a xh0 cbor_match);
   res
 }
@@ -480,17 +481,17 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (cbor_match_bounded (Ghost.reveal xh0) cbor_match) cbor_match
-    parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_fwd;
-  MLI.mixed_list_match_length cbor_match parse_raw_data_item
+    IO.u64_ops parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_fwd;
+  MLI.mixed_list_match_length cbor_match IO.u64_ops parse_raw_data_item
     (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0));
   let count_rt = ML.cbor_raw_mixed_list_length a.cbor_array_gen_ptr;
-  fold (LI.mixed_list_match_for_l2r cbor_match parse_raw_data_item
-    (pp *. a.cbor_array_gen_perm) (SZ.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
-  let res = LI.compute_remaining_size_mixed_list cbor_match serialize_raw_data_item cr
+  fold (LI.mixed_list_match_for_l2r cbor_match IO.u64_ops parse_raw_data_item
+    (pp *. a.cbor_array_gen_perm) (U64.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
+  let res = LI.compute_remaining_size_mixed_list cbor_match IO.u64_ops serialize_raw_data_item cr
     (jump_raw_data_item ()) cbor_match_share_t cbor_match_gather_t
     (pp *. a.cbor_array_gen_perm) count_rt a.cbor_array_gen_ptr out;
-  unfold (LI.mixed_list_match_for_l2r cbor_match parse_raw_data_item
-    (pp *. a.cbor_array_gen_perm) (SZ.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
+  unfold (LI.mixed_list_match_for_l2r cbor_match IO.u64_ops parse_raw_data_item
+    (pp *. a.cbor_array_gen_perm) (U64.v count_rt) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)));
   ghost
   fn prf_bwd (x1: cbor_raw) (pm0: perm) (y: raw_data_item { List.Tot.memP y (Array?.v (Ghost.reveal xh0)) })
     requires cbor_match pm0 x1 y
@@ -502,7 +503,7 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     cbor_match (cbor_match_bounded (Ghost.reveal xh0) cbor_match)
-    parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_bwd;
+    IO.u64_ops parse_raw_data_item (pp *. a.cbor_array_gen_perm) a.cbor_array_gen_ptr (Array?.v (Ghost.reveal xh0)) prf_bwd;
   fold (cbor_match_mixed_list_array pp a xh0 cbor_match);
   res
 }
@@ -613,18 +614,18 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (cbor_match_map_entry_bounded (Ghost.reveal xh0) cbor_match) cbor_match_map_entry
-    (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_fwd;
-  MLI.mixed_list_match_length cbor_match_map_entry (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_fwd;
+  MLI.mixed_list_match_length cbor_match_map_entry IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
     (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0));
   let count_rt = ML.cbor_raw_mixed_list_length a.cbor_map_gen_ptr;
-  fold (LI.mixed_list_match_for_l2r cbor_match_map_entry (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
-    (pp *. a.cbor_map_gen_perm) (SZ.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
-  let res = LI.l2r_write_mixed_list cbor_match_map_entry (LSC.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)
+  fold (LI.mixed_list_match_for_l2r cbor_match_map_entry IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    (pp *. a.cbor_map_gen_perm) (U64.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
+  let res = LI.l2r_write_mixed_list cbor_match_map_entry IO.u64_ops (LSC.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)
     (w_map_pair_nd w)
     (LP.jump_nondep_then (jump_raw_data_item ()) (jump_raw_data_item ())) cbor_match_map_entry_share_t cbor_match_map_entry_gather_t
     (pp *. a.cbor_map_gen_perm) count_rt a.cbor_map_gen_ptr out offset;
-  unfold (LI.mixed_list_match_for_l2r cbor_match_map_entry (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
-    (pp *. a.cbor_map_gen_perm) (SZ.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
+  unfold (LI.mixed_list_match_for_l2r cbor_match_map_entry IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    (pp *. a.cbor_map_gen_perm) (U64.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
   ghost
   fn prf_bwd (x1: cbor_map_entry) (pm0: perm) (y: (raw_data_item & raw_data_item) { List.Tot.memP y (Map?.v (Ghost.reveal xh0)) })
     requires cbor_match_map_entry pm0 x1 y
@@ -638,7 +639,7 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     cbor_match_map_entry (cbor_match_map_entry_bounded (Ghost.reveal xh0) cbor_match)
-    (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_bwd;
+    IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_bwd;
   fold (cbor_match_mixed_list_map pp a xh0 cbor_match);
   res
 }
@@ -678,18 +679,18 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     (cbor_match_map_entry_bounded (Ghost.reveal xh0) cbor_match) cbor_match_map_entry
-    (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_fwd;
-  MLI.mixed_list_match_length cbor_match_map_entry (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_fwd;
+  MLI.mixed_list_match_length cbor_match_map_entry IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
     (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0));
   let count_rt = ML.cbor_raw_mixed_list_length a.cbor_map_gen_ptr;
-  fold (LI.mixed_list_match_for_l2r cbor_match_map_entry (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
-    (pp *. a.cbor_map_gen_perm) (SZ.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
-  let res = LI.compute_remaining_size_mixed_list cbor_match_map_entry (LSC.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)
+  fold (LI.mixed_list_match_for_l2r cbor_match_map_entry IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    (pp *. a.cbor_map_gen_perm) (U64.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
+  let res = LI.compute_remaining_size_mixed_list cbor_match_map_entry IO.u64_ops (LSC.serialize_nondep_then serialize_raw_data_item serialize_raw_data_item)
     (cr_map_pair_nd cr)
     (LP.jump_nondep_then (jump_raw_data_item ()) (jump_raw_data_item ())) cbor_match_map_entry_share_t cbor_match_map_entry_gather_t
     (pp *. a.cbor_map_gen_perm) count_rt a.cbor_map_gen_ptr out;
-  unfold (LI.mixed_list_match_for_l2r cbor_match_map_entry (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
-    (pp *. a.cbor_map_gen_perm) (SZ.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
+  unfold (LI.mixed_list_match_for_l2r cbor_match_map_entry IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item)
+    (pp *. a.cbor_map_gen_perm) (U64.v count_rt) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)));
   ghost
   fn prf_bwd (x1: cbor_map_entry) (pm0: perm) (y: (raw_data_item & raw_data_item) { List.Tot.memP y (Map?.v (Ghost.reveal xh0)) })
     requires cbor_match_map_entry pm0 x1 y
@@ -703,7 +704,7 @@ ensures exists* v'.
   };
   MLI.mixed_list_match_weaken
     cbor_match_map_entry (cbor_match_map_entry_bounded (Ghost.reveal xh0) cbor_match)
-    (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_bwd;
+    IO.u64_ops (LSC.nondep_then parse_raw_data_item parse_raw_data_item) (pp *. a.cbor_map_gen_perm) a.cbor_map_gen_ptr (Map?.v (Ghost.reveal xh0)) prf_bwd;
   fold (cbor_match_mixed_list_map pp a xh0 cbor_match);
   res
 }

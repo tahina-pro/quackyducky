@@ -185,7 +185,7 @@ val cbor_match_mixed_list_array_length
     (cbor_match_mixed_list_array p c r cbor_match)
     (fun _ -> cbor_match_mixed_list_array p c r cbor_match ** pure (
       c.cbor_array_gen_length_size == (Array?.len r).size /\
-      SZ.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_array_gen_ptr) == U64.v (Array?.len r).value
+      U64.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_array_gen_ptr) == U64.v (Array?.len r).value
     ))
 
 val cbor_match_mixed_list_map_length
@@ -197,7 +197,7 @@ val cbor_match_mixed_list_map_length
     (cbor_match_mixed_list_map p c r cbor_match)
     (fun _ -> cbor_match_mixed_list_map p c r cbor_match ** pure (
       c.cbor_map_gen_length_size == (Map?.len r).size /\
-      SZ.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_map_gen_ptr) == U64.v (Map?.len r).value
+      U64.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_map_gen_ptr) == U64.v (Map?.len r).value
     ))
 
 val cbor_match_mixed_list_array_weaken

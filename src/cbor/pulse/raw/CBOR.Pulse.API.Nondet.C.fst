@@ -19,13 +19,12 @@ module RawT = CBOR.Pulse.Raw.Type
      cbor_nondet_map_entry_t            == cbor_map_entry. *)
 friend CBOR.Pulse.API.Nondet.Type
 
-(* PLATFORM AXIOM: [FStar.SizeT.fits_u64].  Per the FStar.SizeT docs it can only
-   be introduced via a stateful primitive (Steel.ST.HigherArray.intro_fits_u64,
-   extracted to a C static_assert), which is ABSENT from this Pulse-only F*
-   install.  We materialize the same axiom here; it is the ONLY assume in this
-   module, used solely to discharge the [SZ.fits_u64] preconditions of the
-   structural array-append / array-init / map-entry-insert adapters. *)
-let fits_u64_axiom () : squash SZ.fits_u64 = assume (SZ.fits_u64)
+(* NOTE: This module previously materialized an [FStar.SizeT.fits_u64]
+   platform axiom to discharge [SZ.fits_u64] preconditions of the array /
+   map-entry-insert adapters.  That is no longer needed: the lowparse
+   mixed_list element counts are now [U64.t], so the relevant obligations
+   are plain u64 facts ([U64.v _ < pow2 64]) and exact u64 overflow checks.
+   The axiom has been ELIMINATED. *)
 
 let cbor_nondet_reset_perm () = Rust.cbor_nondet_reset_perm ()
 
@@ -98,8 +97,8 @@ let cbor_nondet_array_t = CBOR.Pulse.Raw.Type.cbor_mixed_list_array
 [@@pulse_unfold]
 let cbor_nondet_array_owned = ANondet.cbor_nondet_array_owned
 
-(* [init] needs [SZ.fits_u64] (platform); the public interface does not expose
-   it, so this thin wrapper materializes it before delegating to the adapter. *)
+(* [init] delegates to the structural adapter.  (Formerly needed a
+   [SZ.fits_u64] platform assumption; no longer — counts are [U64.t].) *)
 fn cbor_nondet_array_init
   (x: cbor_nondet_t)
   (r1 r2: R.ref cbor_nondet_array_append_cell_t)
@@ -117,14 +116,13 @@ ensures
       (cbor_nondet_match p x l ** (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2)) **
     pure (Spec.CArray? (Spec.unpack l) /\ l' == Spec.CArray?.v (Spec.unpack l)))
 {
-  let f64 = fits_u64_axiom ();
   ANondet.cbor_nondet_array_init x r1 r2
 }
 
 let cbor_nondet_array_empty = ANondet.cbor_nondet_array_empty
 let cbor_nondet_array_singleton = ANondet.cbor_nondet_array_singleton
 
-(* [append] needs [SZ.fits_u64] (platform); same treatment as [init]. *)
+(* [append] delegates to the structural adapter (no [SZ.fits_u64] needed). *)
 fn cbor_nondet_array_append
   (x1 x2: cbor_nondet_array_t)
   (r_before r_after: R.ref cbor_nondet_array_append_cell_t)
@@ -147,7 +145,6 @@ ensures
        (cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
         (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
 {
-  let f64 = fits_u64_axiom ();
   ANondet.cbor_nondet_array_append x1 x2 r_before r_after
 }
 
@@ -527,9 +524,8 @@ ensures (match res with
   let mt = cbor_nondet_major_type () x;
   if (mt = cbor_major_type_map) {
     cmap_of_major_type_nondet y;
-    let f64 = fits_u64_axiom ();
     unfold (cbor_nondet_map_entry_insert_refs r1 r2 ry);
-    let res = NMIS.cbor_nondet_map_entry_insert_spec f64 x key value r1 r2 ry;
+    let res = NMIS.cbor_nondet_map_entry_insert_spec x key value r1 r2 ry;
     match res {
       None -> {
         fold (cbor_nondet_map_entry_insert_refs r1 r2 ry);

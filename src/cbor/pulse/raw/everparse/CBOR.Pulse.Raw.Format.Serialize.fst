@@ -623,7 +623,7 @@ ensures cbor_match_with_depth depth p c v ** pure (Array? v /\ res == Array?.len
       rewrite (cbor_match_with_depth depth p c v) as (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v);
       cbor_match_with_depth_array_gen_elim depth p a v;
       FM.cbor_match_mixed_list_array_length p a v _;
-      let res : raw_uint64 = { size = a.cbor_array_gen_length_size; value = SZ.sizet_to_uint64 (ML.cbor_raw_mixed_list_length a.cbor_array_gen_ptr) };
+      let res : raw_uint64 = { size = a.cbor_array_gen_length_size; value = ML.cbor_raw_mixed_list_length a.cbor_array_gen_ptr };
       Trade.elim _ (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v);
       rewrite (cbor_match_with_depth depth p (CBOR_Case_Array_Gen a) v) as (cbor_match_with_depth depth p c v);
       res
@@ -660,7 +660,7 @@ ensures cbor_match_with_depth depth p c v ** pure (Map? v /\ res == Map?.len v)
       rewrite (cbor_match_with_depth depth p c v) as (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v);
       cbor_match_with_depth_map_gen_elim depth p a v;
       FM.cbor_match_mixed_list_map_length p a v _;
-      let res : raw_uint64 = { size = a.cbor_map_gen_length_size; value = SZ.sizet_to_uint64 (ML.cbor_raw_mixed_list_length a.cbor_map_gen_ptr) };
+      let res : raw_uint64 = { size = a.cbor_map_gen_length_size; value = ML.cbor_raw_mixed_list_length a.cbor_map_gen_ptr };
       Trade.elim _ (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v);
       rewrite (cbor_match_with_depth depth p (CBOR_Case_Map_Gen a) v) as (cbor_match_with_depth depth p c v);
       res

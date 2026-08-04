@@ -29,6 +29,20 @@ module Optimal = CBOR.Spec.Raw.Optimal
 module Append = LowParse.PulseParse.Iterator.Append
 module MapPrepend = CBOR.Spec.Raw.MapPrepend
 module NondetCompare = CBOR.Pulse.Raw.Nondet.Compare
+module IO = LowParse.PulseParse.Iterator.IntOps
+
+(* Bridge the lowparse dictionary views [IO.u64_ops.v]/[IO.u64_ops.fits] to  *)
+(* the concrete [U64.v]/[< pow2 64]: both hold by computation, and expose    *)
+(* the u64 count/overflow facts to SMT.                                       *)
+let u64_ops_v_eq (x: U64.t)
+  : Lemma (IO.u64_ops.v x == U64.v x)
+    [SMTPat (IO.u64_ops.v x)]
+= ()
+
+let u64_ops_fits_eq (n: nat)
+  : Lemma (IO.u64_ops.fits n == (n < pow2 64 <: prop))
+    [SMTPat (IO.u64_ops.fits n)]
+= ()
 
 (* ============================================================
    Pure specification-level helpers.
@@ -159,15 +173,14 @@ ensures
 #push-options "--fuel 2 --ifuel 2 --z3rlimit 48"
 
 fn cbor_raw_nondet_map_key_present
-  (f64: squash FStar.SizeT.fits_u64)
   (key: cbor_raw)
-  (ml: IT.mixed_list cbor_map_entry)
+  (ml: IT.mixed_list U64.t cbor_map_entry)
   (#pm: perm)
   (#l: Ghost.erased (list (raw_data_item & raw_data_item)))
   (#pk: perm)
   (#vk: Ghost.erased raw_data_item)
 requires
-  I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l **
+  I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l **
   cbor_match pk key vk **
   pure (
     Valid.valid_raw_data_item (Ghost.reveal vk) == true /\
@@ -175,21 +188,21 @@ requires
   )
 returns res: bool
 ensures
-  I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l **
+  I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l **
   cbor_match pk key vk **
   pure (res == true <==> L.existsb (Valid.raw_equiv (Ghost.reveal vk)) (L.map fst (Ghost.reveal l)))
 {
   let it0 = I.iterator_start
-    cbor_match_map_entry
+    cbor_match_map_entry IO.u64_ops
     (nondep_then parse_raw_data_item parse_raw_data_item)
     (LPC.jump_nondep_then (Fmt.jump_raw_data_item ()) (Fmt.jump_raw_data_item ()))
     pm ml l
     cbor_match_map_entry_share cbor_match_map_entry_gather;
   with pm0. assert (
-    I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 it0 l **
+    I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 it0 l **
     Trade.trade
-      (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 it0 l)
-      (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l)
+      (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 it0 l)
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l)
   );
   let empt0 = IM.iter_is_empty cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) it0;
   let mut r_it = it0;
@@ -203,10 +216,10 @@ ensures
     R.pts_to r_found found **
     R.pts_to r_cont cont **
     cbor_match pk key vk **
-    I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining **
+    I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining **
     Trade.trade
-      (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
-      (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l) **
+      (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l) **
     pure (
       L.for_all Valid.valid_raw_data_item (L.map fst remaining) == true /\
       (found == true ==> L.existsb (Valid.raw_equiv (Ghost.reveal vk)) (L.map fst (Ghost.reveal l))) /\
@@ -221,27 +234,27 @@ ensures
       R.pts_to r_found found **
       R.pts_to r_cont cont **
       cbor_match pk key vk **
-      I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining **
+      I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining **
       Trade.trade
-        (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
-        (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l)
+        (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
+        (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l)
     );
     let entry = I.iterator_next
-      cbor_match_map_entry
+      cbor_match_map_entry IO.u64_ops
       (nondep_then parse_raw_data_item parse_raw_data_item)
       (LPC.jump_nondep_then (Fmt.jump_raw_data_item ()) (Fmt.jump_raw_data_item ()))
       p_cur r_it cur_it remaining
       cbor_match_map_entry_share cbor_match_map_entry_gather
       cbor_read_map_entry_np;
-    unfold (I.iterator_next_post cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) p_cur r_it cur_it remaining entry);
+    unfold (I.iterator_next_post cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p_cur r_it cur_it remaining entry);
     with pm_v hd_val tl_l it' pm'. assert (
       cbor_match_map_entry pm_v entry hd_val **
       R.pts_to r_it it' **
-      I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l **
+      I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l **
       Trade.trade
         (cbor_match_map_entry pm_v entry hd_val **
-         I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l)
-        (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
+         I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l)
+        (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
     );
     // remaining = hd_val :: tl_l, so map fst remaining = fst hd_val :: map fst tl_l,
     // and the head key (fst hd_val) is valid (it is in map fst remaining).
@@ -260,22 +273,22 @@ ensures
     ));
     Trade.elim_hyp_l
       (cbor_match_map_entry pm_v entry hd_val)
-      (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l)
-      (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining);
+      (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l)
+      (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining);
     Trade.trans
-      (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l)
-      (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
-      (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l);
+      (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l)
+      (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l);
     if found_here {
       r_found := true;
       r_cont := false;
     } else {
       let cur2 = !r_it;
-      rewrite (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l)
-           as (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm' cur2 tl_l);
+      rewrite (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l)
+           as (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm' cur2 tl_l);
       let empt = IM.iter_is_empty cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) cur2;
-      rewrite (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm' cur2 tl_l)
-           as (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l);
+      rewrite (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm' cur2 tl_l)
+           as (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm' it' tl_l);
       r_cont := (not empt);
     }
   };
@@ -284,14 +297,14 @@ ensures
     R.pts_to r_found found **
     R.pts_to r_cont cont **
     cbor_match pk key vk **
-    I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining **
+    I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining **
     Trade.trade
-      (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
-      (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l)
+      (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l)
   );
   Trade.elim
-    (I.iterator_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
-    (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l);
+    (I.iterator_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p_cur cur_it remaining)
+    (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml l);
   let res = !r_found;
   res
 }
@@ -305,10 +318,9 @@ ensures
 #push-options "--fuel 2 --ifuel 2 --z3rlimit 48"
 
 fn cbor_raw_nondet_map_entry_insert
-  (f64: squash FStar.SizeT.fits_u64)
   (x: cbor_raw)
   (key value: cbor_raw)
-  (r1 r2: R.ref (IT.mixed_list cbor_map_entry))
+  (r1 r2: R.ref (IT.mixed_list U64.t cbor_map_entry))
   (ry: R.ref cbor_map_entry)
   (#pm: perm) (#xh: Ghost.erased raw_data_item)
   (#pkv: perm) (#vk: Ghost.erased raw_data_item) (#vv: Ghost.erased raw_data_item)
@@ -347,40 +359,40 @@ ensures (match res with
   rewrite (cbor_match pm x (Ghost.reveal xh)) as (cbor_match pm x (Ghost.reveal xhm));
   let ml0 = MB.cbor_map_borrow_entries pm x #xhm;
   with pm0. assert (
-    I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Map?.v (Ghost.reveal xhm)) **
+    I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Map?.v (Ghost.reveal xhm)) **
     Trade.trade
-      (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Map?.v (Ghost.reveal xhm)))
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Map?.v (Ghost.reveal xhm)))
       (cbor_match pm x (Ghost.reveal xhm))
   );
-  rewrite (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Map?.v (Ghost.reveal xhm)))
-    as (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw));
+  rewrite (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Map?.v (Ghost.reveal xhm)))
+    as (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw));
   rewrite (Trade.trade
-      (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Map?.v (Ghost.reveal xhm)))
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Map?.v (Ghost.reveal xhm)))
       (cbor_match pm x (Ghost.reveal xhm)))
     as (Trade.trade
-      (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw))
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw))
       (cbor_match pm x (Ghost.reveal xh)));
-  I.mixed_list_match_length cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw);
+  I.mixed_list_match_length cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw);
   assert (pure (L.length (Ghost.reveal l_raw) == U64.v (Map?.len (Ghost.reveal xhm)).value));
   assert (pure (map_payload (Ghost.reveal xh) == Ghost.reveal l_raw));
-  let total_len = IT.mixed_list_length ml0;
-  assert (pure (SZ.v total_len == L.length (Ghost.reveal l_raw)));
-  let la64 = SZ.sizet_to_uint64 total_len;
-  assert (pure (U64.v la64 == SZ.v total_len));
+  let total_len = IT.mixed_list_length IO.u64_ops ml0;
+  assert (pure (U64.v total_len == L.length (Ghost.reveal l_raw)));
+  let la64 = total_len;
+  assert (pure (U64.v la64 == U64.v total_len));
   let limit = U64.sub 0xffffffffffffffffuL 1uL;
   if (U64.lte la64 limit) {
     // Surface validity of all map keys, needed by the dup-check.
     Valid.valid_eq Valid.basic_data_model (Ghost.reveal xh);
     assert (pure (L.for_all Valid.valid_raw_data_item (L.map fst (Ghost.reveal l_raw)) == true));
-    let present = cbor_raw_nondet_map_key_present f64 key ml0 #pm0 #l_raw #pkv #vk;
+    let present = cbor_raw_nondet_map_key_present key ml0 #pm0 #l_raw #pkv #vk;
     if present {
       Trade.elim
-        (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw))
+        (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw))
         (cbor_match pm x (Ghost.reveal xh));
       None #cbor_raw
     } else {
       // Key absent: build the new entry and PREPEND it.
-      SZ.fits_u64_implies_fits (SZ.v total_len + 1);
+      assert (pure (U64.v total_len + 1 < pow2 64));
       let y_elem : cbor_map_entry = { cbor_map_entry_key = key; cbor_map_entry_value = value };
       let y_pair : Ghost.erased (raw_data_item & raw_data_item) =
         Ghost.hide (Ghost.reveal vk, Ghost.reveal vv);
@@ -389,41 +401,41 @@ ensures (match res with
         (cbor_match_map_entry pkv y_elem (Ghost.reveal y_pair));
       // Build a singleton mixed_list at ambient permission pm0.
       let sing_ml = Append.mixed_list_singleton_gen
-        cbor_match_map_entry
+        cbor_match_map_entry IO.u64_ops
         (nondep_then parse_raw_data_item parse_raw_data_item)
         pm0 pkv y_elem y_pair ry
         cbor_match_map_entry_gather;
       // Prepend: singleton BEFORE the borrowed entries.
       let res_ml = Append.mixed_list_append
-        cbor_match_map_entry
+        cbor_match_map_entry IO.u64_ops
         (nondep_then parse_raw_data_item parse_raw_data_item)
         pm0 sing_ml (Ghost.hide [Ghost.reveal y_pair]) ml0 l_raw r1 r2;
       let l_result : Ghost.erased (list (raw_data_item & raw_data_item)) =
         Ghost.hide (Ghost.reveal y_pair :: Ghost.reveal l_raw);
-      rewrite (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml
+      rewrite (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml
                 (List.Tot.append [Ghost.reveal y_pair] (Ghost.reveal l_raw)))
-        as (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result));
+        as (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result));
       rewrite (Trade.trade
-                 (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml
+                 (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml
                    (List.Tot.append [Ghost.reveal y_pair] (Ghost.reveal l_raw)))
-                 (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair] **
-                  I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw) **
+                 (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair] **
+                  I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw) **
                   (exists* vb va. R.pts_to r1 vb ** R.pts_to r2 va)))
         as (Trade.trade
-              (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result))
-              (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair] **
-               I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw) **
+              (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result))
+              (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair] **
+               I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw) **
                (exists* vb va. R.pts_to r1 vb ** R.pts_to r2 va)));
       // Rebuild a CBOR map value.
-      I.mixed_list_match_length cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result);
-      assert (pure (FStar.UInt.fits (SZ.v (IT.mixed_list_length res_ml)) 64));
+      I.mixed_list_match_length cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result);
+      assert (pure (FStar.UInt.fits (U64.v (IT.mixed_list_length IO.u64_ops res_ml)) 64));
       let m = MB.cbor_mk_map_full pm0 res_ml #l_result;
       unfold (MB.cbor_map_finalized pm0 res_ml m (Ghost.reveal l_result));
       with len. assert (
         cbor_match 1.0R m (Map len (Ghost.reveal l_result)) **
         Trade.trade
           (cbor_match 1.0R m (Map len (Ghost.reveal l_result)))
-          (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result))
+          (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result))
       );
       // The rebuilt length field is the minimal (canonical) encoding.
       assert (pure (U64.v len.value == L.length (Ghost.reveal l_result)));
@@ -446,40 +458,40 @@ ensures (match res with
          (exists* w1 w2 wy. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to ry wy))
         (Trade.trade
            (cbor_match 1.0R m (Map len (Ghost.reveal l_result)))
-           (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result)) **
+           (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result)) **
          Trade.trade
-           (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result))
-           (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair] **
-            I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw) **
+           (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result))
+           (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair] **
+            I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw) **
             (exists* vb va. R.pts_to r1 vb ** R.pts_to r2 va)) **
          Trade.trade
-           (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair])
+           (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair])
            (cbor_match_map_entry pkv y_elem (Ghost.reveal y_pair) **
             (exists* vy. R.pts_to ry vy)) **
          Trade.trade
            (cbor_match_map_entry pkv y_elem (Ghost.reveal y_pair))
            (cbor_match pkv key (Ghost.reveal vk) ** cbor_match pkv value (Ghost.reveal vv)) **
          Trade.trade
-           (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw))
+           (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw))
            (cbor_match pm x (Ghost.reveal xh)))
         fn _ {
           Trade.elim
             (cbor_match 1.0R m (Map len (Ghost.reveal l_result)))
-            (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result));
+            (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result));
           Trade.elim
-            (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result))
-            (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair] **
-             I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw) **
+            (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 res_ml (Ghost.reveal l_result))
+            (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair] **
+             I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw) **
              (exists* vb va. R.pts_to r1 vb ** R.pts_to r2 va));
           Trade.elim
-            (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair])
+            (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 sing_ml [Ghost.reveal y_pair])
             (cbor_match_map_entry pkv y_elem (Ghost.reveal y_pair) **
              (exists* vy. R.pts_to ry vy));
           Trade.elim
             (cbor_match_map_entry pkv y_elem (Ghost.reveal y_pair))
             (cbor_match pkv key (Ghost.reveal vk) ** cbor_match pkv value (Ghost.reveal vv));
           Trade.elim
-            (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw))
+            (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw))
             (cbor_match pm x (Ghost.reveal xh));
         };
       Some #cbor_raw m
@@ -488,7 +500,7 @@ ensures (match res with
     // total_len == 2^64 - 1: total_len + 1 does not fit in u64.
     length_succ_overflow la64 (L.length (Ghost.reveal l_raw));
     Trade.elim
-      (I.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw))
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm0 ml0 (Ghost.reveal l_raw))
       (cbor_match pm x (Ghost.reveal xh));
     None #cbor_raw
   }

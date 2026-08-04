@@ -15,10 +15,20 @@ open CBOR.Pulse.Raw.EverParse.Serialized.Base
 module Trade = Pulse.Lib.Trade.Util
 module Iter = LowParse.PulseParse.Iterator
 module IT = LowParse.PulseParse.Iterator.Type
+module IO = LowParse.PulseParse.Iterator.IntOps
 module PP = LowParse.PulseParse.Base
 module ML = CBOR.Pulse.Raw.Format.MixedList
 module Perm = CBOR.Pulse.Raw.Match.Perm
 module MD = CBOR.Pulse.Raw.Format.Match.Depth
+
+(* Bridge the lowparse dictionary view [io.v] (here [IO.u64_ops.v]) to the
+   concrete [U64.v]: [u64_ops.v] is definitionally [fun x -> U64.v x], so this
+   is proved by computation. Lets length-facts connect
+   [io.v (mixed_list_length io ..)] to the [U64.v] of the parsed header count. *)
+let u64_ops_v_eq (x: FStar.UInt64.t)
+  : Lemma (IO.u64_ops.v x == FStar.UInt64.v x)
+    [SMTPat (IO.u64_ops.v x)]
+= ()
 
 ghost
 fn cbor_match_serialized_tagged_elim
@@ -594,8 +604,8 @@ let mixed_iter_match
   (#k: parser_kind) (p: parser k u)
   (pp: perm) (c: ML.cbor_raw_mixed_iterator t) (l: list u)
 : slprop
-= Iter.iterator_match vmatch p (pp *. c.mi_perm) c.mi_iterator l **
-  pure (SZ.fits (List.Tot.length l) /\ FStar.UInt.fits (List.Tot.length l) 64)
+= Iter.iterator_match vmatch IO.u64_ops p (pp *. c.mi_perm) c.mi_iterator l **
+  pure (FStar.UInt.fits (List.Tot.length l) 64)
 
 inline_for_extraction
 fn mixed_iter_is_empty
@@ -616,8 +626,7 @@ fn mixed_iter_length
 : cbor_raw_mixed_iterator_length_t #t #u (mixed_iter_match vmatch p)
 = (c: _) (#pm: _) (#r: _) {
     unfold (mixed_iter_match vmatch p pm c r);
-    let res_sz = iter_length vmatch p c.mi_iterator;
-    let res = SZ.sizet_to_uint64 res_sz;
+    let res = iter_length vmatch p c.mi_iterator;
     fold (mixed_iter_match vmatch p pm c r);
     res
   }
@@ -631,10 +640,10 @@ fn mixed_iter_share
 = (c: _) (#pm: _) (#r: _) {
     unfold (mixed_iter_match vmatch p pm c r);
     iter_share vmatch p vmatch_share c.mi_iterator;
-    rewrite (Iter.iterator_match vmatch p ((pm *. c.mi_perm) /. 2.0R) c.mi_iterator r)
-      as (Iter.iterator_match vmatch p ((pm /. 2.0R) *. c.mi_perm) c.mi_iterator r);
-    rewrite (Iter.iterator_match vmatch p ((pm *. c.mi_perm) /. 2.0R) c.mi_iterator r)
-      as (Iter.iterator_match vmatch p ((pm /. 2.0R) *. c.mi_perm) c.mi_iterator r);
+    rewrite (Iter.iterator_match vmatch IO.u64_ops p ((pm *. c.mi_perm) /. 2.0R) c.mi_iterator r)
+      as (Iter.iterator_match vmatch IO.u64_ops p ((pm /. 2.0R) *. c.mi_perm) c.mi_iterator r);
+    rewrite (Iter.iterator_match vmatch IO.u64_ops p ((pm *. c.mi_perm) /. 2.0R) c.mi_iterator r)
+      as (Iter.iterator_match vmatch IO.u64_ops p ((pm /. 2.0R) *. c.mi_perm) c.mi_iterator r);
     fold (mixed_iter_match vmatch p (pm /. 2.0R) c r);
     fold (mixed_iter_match vmatch p (pm /. 2.0R) c r);
   }
@@ -649,8 +658,8 @@ fn mixed_iter_gather
     unfold (mixed_iter_match vmatch p pm1 c r1);
     unfold (mixed_iter_match vmatch p pm2 c r2);
     iter_gather vmatch p vmatch_gather c.mi_iterator #(pm1 *. c.mi_perm) #r1 #(pm2 *. c.mi_perm) #r2;
-    rewrite (Iter.iterator_match vmatch p ((pm1 *. c.mi_perm) +. (pm2 *. c.mi_perm)) c.mi_iterator r1)
-      as (Iter.iterator_match vmatch p ((pm1 +. pm2) *. c.mi_perm) c.mi_iterator r1);
+    rewrite (Iter.iterator_match vmatch IO.u64_ops p ((pm1 *. c.mi_perm) +. (pm2 *. c.mi_perm)) c.mi_iterator r1)
+      as (Iter.iterator_match vmatch IO.u64_ops p ((pm1 +. pm2) *. c.mi_perm) c.mi_iterator r1);
     fold (mixed_iter_match vmatch p (pm1 +. pm2) c r1);
   }
 
@@ -664,23 +673,21 @@ fn mixed_iter_truncate
 : cbor_raw_mixed_iterator_truncate_t #t #u (mixed_iter_match vmatch p)
 = (c: _) (len: U64.t) (#pm: _) (#r: _) {
     unfold (mixed_iter_match vmatch p pm c r);
-    SZ.fits_lte (U64.v len) (List.Tot.length r);
-    let len_sz = SZ.uint64_to_sizet len;
-    let res0 = iter_truncate vmatch p j vmatch_share vmatch_gather c.mi_iterator len_sz;
-    with pm' . assert (Iter.iterator_match vmatch p pm' res0 (fst (List.Tot.splitAt (SZ.v len_sz) r)));
+    let res0 = iter_truncate vmatch p j vmatch_share vmatch_gather c.mi_iterator len;
+    with pm' . assert (Iter.iterator_match vmatch IO.u64_ops p pm' res0 (fst (List.Tot.splitAt (U64.v len) r)));
     let res : ML.cbor_raw_mixed_iterator t = { mi_iterator = res0; mi_perm = pm' };
     FStar.List.Pure.Properties.splitAt_length (U64.v len) r;
-    rewrite (Iter.iterator_match vmatch p pm' res0 (fst (List.Tot.splitAt (SZ.v len_sz) r)))
-      as (Iter.iterator_match vmatch p (1.0R *. res.mi_perm) res.mi_iterator (fst (List.Tot.splitAt (U64.v len) r)));
+    rewrite (Iter.iterator_match vmatch IO.u64_ops p pm' res0 (fst (List.Tot.splitAt (U64.v len) r)))
+      as (Iter.iterator_match vmatch IO.u64_ops p (1.0R *. res.mi_perm) res.mi_iterator (fst (List.Tot.splitAt (U64.v len) r)));
     fold (mixed_iter_match vmatch p 1.0R res (fst (List.Tot.splitAt (U64.v len) r)));
     intro (mixed_iter_match vmatch p 1.0R res (fst (List.Tot.splitAt (U64.v len) r)) @==>
            mixed_iter_match vmatch p pm c r)
-      #(Trade.trade (Iter.iterator_match vmatch p pm' res0 (fst (List.Tot.splitAt (SZ.v len_sz) r)))
-                    (Iter.iterator_match vmatch p (pm *. c.mi_perm) c.mi_iterator r))
+      #(Trade.trade (Iter.iterator_match vmatch IO.u64_ops p pm' res0 (fst (List.Tot.splitAt (U64.v len) r)))
+                    (Iter.iterator_match vmatch IO.u64_ops p (pm *. c.mi_perm) c.mi_iterator r))
       fn _ {
         unfold (mixed_iter_match vmatch p 1.0R res (fst (List.Tot.splitAt (U64.v len) r)));
-        rewrite (Iter.iterator_match vmatch p (1.0R *. res.mi_perm) res.mi_iterator (fst (List.Tot.splitAt (U64.v len) r)))
-          as (Iter.iterator_match vmatch p pm' res0 (fst (List.Tot.splitAt (SZ.v len_sz) r)));
+        rewrite (Iter.iterator_match vmatch IO.u64_ops p (1.0R *. res.mi_perm) res.mi_iterator (fst (List.Tot.splitAt (U64.v len) r)))
+          as (Iter.iterator_match vmatch IO.u64_ops p pm' res0 (fst (List.Tot.splitAt (U64.v len) r)));
         elim_trade _ _;
         fold (mixed_iter_match vmatch p pm c r);
       };
@@ -694,30 +701,30 @@ fn mixed_iter_init
   (#k: parser_kind) (p: parser k u)
   (j: LowParse.Pulse.Base.jumper p)
   (vmatch_share: PP.share_t vmatch) (vmatch_gather: PP.gather_t vmatch)
-  (ml: IT.mixed_list t)
+  (ml: IT.mixed_list U64.t t)
   (#pm: perm) (#l: Ghost.erased (list u))
 requires
-  Iter.mixed_list_match vmatch p pm ml l **
-  pure (SZ.fits (List.Tot.length l) /\ FStar.UInt.fits (List.Tot.length l) 64)
+  Iter.mixed_list_match vmatch IO.u64_ops p pm ml l **
+  pure (FStar.UInt.fits (List.Tot.length l) 64)
 returns res: ML.cbor_raw_mixed_iterator t
 ensures
   mixed_iter_match vmatch p 1.0R res l **
   Trade.trade
     (mixed_iter_match vmatch p 1.0R res l)
-    (Iter.mixed_list_match vmatch p pm ml l)
+    (Iter.mixed_list_match vmatch IO.u64_ops p pm ml l)
 {
-  let it = Iter.iterator_start vmatch p j pm ml l vmatch_share vmatch_gather;
-  with pm' . assert (Iter.iterator_match vmatch p pm' it l);
+  let it = Iter.iterator_start vmatch IO.u64_ops p j pm ml l vmatch_share vmatch_gather;
+  with pm' . assert (Iter.iterator_match vmatch IO.u64_ops p pm' it l);
   let res : ML.cbor_raw_mixed_iterator t = { mi_iterator = it; mi_perm = pm' };
-  rewrite (Iter.iterator_match vmatch p pm' it l)
-    as (Iter.iterator_match vmatch p (1.0R *. res.mi_perm) res.mi_iterator l);
+  rewrite (Iter.iterator_match vmatch IO.u64_ops p pm' it l)
+    as (Iter.iterator_match vmatch IO.u64_ops p (1.0R *. res.mi_perm) res.mi_iterator l);
   fold (mixed_iter_match vmatch p 1.0R res l);
-  intro (mixed_iter_match vmatch p 1.0R res l @==> Iter.mixed_list_match vmatch p pm ml l)
-    #(Trade.trade (Iter.iterator_match vmatch p pm' it l) (Iter.mixed_list_match vmatch p pm ml l))
+  intro (mixed_iter_match vmatch p 1.0R res l @==> Iter.mixed_list_match vmatch IO.u64_ops p pm ml l)
+    #(Trade.trade (Iter.iterator_match vmatch IO.u64_ops p pm' it l) (Iter.mixed_list_match vmatch IO.u64_ops p pm ml l))
     fn _ {
       unfold (mixed_iter_match vmatch p 1.0R res l);
-      rewrite (Iter.iterator_match vmatch p (1.0R *. res.mi_perm) res.mi_iterator l)
-        as (Iter.iterator_match vmatch p pm' it l);
+      rewrite (Iter.iterator_match vmatch IO.u64_ops p (1.0R *. res.mi_perm) res.mi_iterator l)
+        as (Iter.iterator_match vmatch IO.u64_ops p pm' it l);
       elim_trade _ _;
     };
   res
@@ -735,31 +742,30 @@ fn mixed_iter_next
 = (pi: _) (#pm: _) (i: _) (#l: _) {
     unfold (mixed_iter_match vmatch p pm i l);
     let mut rr = i.mi_iterator;
-    let res = Iter.iterator_next vmatch p j (pm *. i.mi_perm) rr i.mi_iterator l vmatch_share vmatch_gather zcp;
-    unfold (Iter.iterator_next_post vmatch p (pm *. i.mi_perm) rr i.mi_iterator l res);
+    let res = Iter.iterator_next vmatch IO.u64_ops p j (pm *. i.mi_perm) rr i.mi_iterator l vmatch_share vmatch_gather zcp;
+    unfold (Iter.iterator_next_post vmatch IO.u64_ops p (pm *. i.mi_perm) rr i.mi_iterator l res);
     with pm_v hd tl it' pm' . assert (
       vmatch pm_v res hd **
       R.pts_to rr it' **
-      Iter.iterator_match vmatch p pm' it' tl **
-      Trade.trade (vmatch pm_v res hd ** Iter.iterator_match vmatch p pm' it' tl)
-            (Iter.iterator_match vmatch p (pm *. i.mi_perm) i.mi_iterator l) **
+      Iter.iterator_match vmatch IO.u64_ops p pm' it' tl **
+      Trade.trade (vmatch pm_v res hd ** Iter.iterator_match vmatch IO.u64_ops p pm' it' tl)
+            (Iter.iterator_match vmatch IO.u64_ops p (pm *. i.mi_perm) i.mi_iterator l) **
       pure (Ghost.reveal l == hd :: tl)
     );
     let it2 = !rr;
     let res_it : ML.cbor_raw_mixed_iterator t = { mi_iterator = it2; mi_perm = pm' /. pm };
     pi := CBOR_Raw_Iterator_Mixed res_it;
-    SZ.fits_lte (List.Tot.length tl) (List.Tot.length l);
     assert (pure (pm *. res_it.mi_perm == pm'));
-    rewrite (Iter.iterator_match vmatch p pm' it' tl)
-      as (Iter.iterator_match vmatch p (pm *. res_it.mi_perm) res_it.mi_iterator tl);
+    rewrite (Iter.iterator_match vmatch IO.u64_ops p pm' it' tl)
+      as (Iter.iterator_match vmatch IO.u64_ops p (pm *. res_it.mi_perm) res_it.mi_iterator tl);
     fold (mixed_iter_match vmatch p pm res_it tl);
     intro (vmatch pm_v res hd ** mixed_iter_match vmatch p pm res_it tl @==> mixed_iter_match vmatch p pm i l)
-      #(Trade.trade (vmatch pm_v res hd ** Iter.iterator_match vmatch p pm' it' tl)
-                    (Iter.iterator_match vmatch p (pm *. i.mi_perm) i.mi_iterator l))
+      #(Trade.trade (vmatch pm_v res hd ** Iter.iterator_match vmatch IO.u64_ops p pm' it' tl)
+                    (Iter.iterator_match vmatch IO.u64_ops p (pm *. i.mi_perm) i.mi_iterator l))
       fn _ {
         unfold (mixed_iter_match vmatch p pm res_it tl);
-        rewrite (Iter.iterator_match vmatch p (pm *. res_it.mi_perm) res_it.mi_iterator tl)
-          as (Iter.iterator_match vmatch p pm' it' tl);
+        rewrite (Iter.iterator_match vmatch IO.u64_ops p (pm *. res_it.mi_perm) res_it.mi_iterator tl)
+          as (Iter.iterator_match vmatch IO.u64_ops p pm' it' tl);
         elim_trade _ _;
         fold (mixed_iter_match vmatch p pm i l);
       };
@@ -781,13 +787,12 @@ requires
 ensures
   cbor_match_mixed_list_array pm c r cbor_match **
   pure (List.Tot.length (Array?.v r) == U64.v (Array?.len r).value /\
-        FStar.SizeT.fits (List.Tot.length (Array?.v r)) /\
         FStar.UInt.fits (List.Tot.length (Array?.v r)) 64)
 {
   cbor_match_mixed_list_array_length pm c r cbor_match;
   unfold (cbor_match_mixed_list_array pm c r cbor_match);
-  Iter.mixed_list_match_length (cbor_match_bounded r cbor_match) parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r);
-  assert (pure (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_array_gen_ptr == LowParse.PulseParse.Iterator.Type.mixed_list_length c.cbor_array_gen_ptr));
+  Iter.mixed_list_match_length (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r);
+  assert (pure (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_array_gen_ptr == LowParse.PulseParse.Iterator.Type.mixed_list_length IO.u64_ops c.cbor_array_gen_ptr));
   fold (cbor_match_mixed_list_array pm c r cbor_match);
 }
 
@@ -797,11 +802,11 @@ fn array_to_unbounded
 requires
   cbor_match_mixed_list_array pm c r cbor_match
 ensures
-  Iter.mixed_list_match cbor_match parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) **
+  Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) **
   Trade.trade
-    (Iter.mixed_list_match cbor_match parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
     (cbor_match_mixed_list_array pm c r cbor_match) **
-  pure (FStar.SizeT.fits (List.Tot.length (Array?.v r)) /\ FStar.UInt.fits (List.Tot.length (Array?.v r)) 64)
+  pure (FStar.UInt.fits (List.Tot.length (Array?.v r)) 64)
 {
   mixed_array_length_facts pm c r;
   unfold (cbor_match_mixed_list_array pm c r cbor_match);
@@ -818,11 +823,11 @@ ensures
     rewrite (cbor_match_bounded r cbor_match pm0 x y) as (cbor_match pm0 x y);
   };
   Iter.mixed_list_match_weaken
-    (cbor_match_bounded r cbor_match) cbor_match parse_raw_data_item
+    (cbor_match_bounded r cbor_match) cbor_match IO.u64_ops parse_raw_data_item
     (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) prf_fwd;
   intro
-    (Iter.mixed_list_match cbor_match parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) @==>
-     Iter.mixed_list_match (cbor_match_bounded r cbor_match) parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) @==>
+     Iter.mixed_list_match (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
     #emp
     fn _
   {
@@ -839,11 +844,11 @@ ensures
       rewrite (cbor_match pm0 x y) as (cbor_match_bounded r cbor_match pm0 x y);
     };
     Iter.mixed_list_match_weaken
-      cbor_match (cbor_match_bounded r cbor_match) parse_raw_data_item
+      cbor_match (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item
       (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) prf_bwd;
   };
   intro
-    (Iter.mixed_list_match (cbor_match_bounded r cbor_match) parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) @==>
+    (Iter.mixed_list_match (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) @==>
      cbor_match_mixed_list_array pm c r cbor_match)
     #emp
     fn _
@@ -851,8 +856,8 @@ ensures
     fold (cbor_match_mixed_list_array pm c r cbor_match);
   };
   Trade.trans
-    (Iter.mixed_list_match cbor_match parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
-    (Iter.mixed_list_match (cbor_match_bounded r cbor_match) parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
     (cbor_match_mixed_list_array pm c r cbor_match);
 }
 
@@ -875,7 +880,7 @@ ensures exists* p .
     #(pm *. c.cbor_array_gen_perm) #(Array?.v r);
   Trade.trans
     (mixed_iter_match cbor_match parse_raw_data_item 1.0R res (Array?.v r))
-    (Iter.mixed_list_match cbor_match parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
     (cbor_match_mixed_list_array pm c r cbor_match);
   rewrite (mixed_iter_match cbor_match parse_raw_data_item 1.0R res (Array?.v r))
     as (cbor_mixed_array_iterator_match 1.0R res (Array?.v r));
@@ -933,25 +938,23 @@ ensures exists* p' y .
       )
 {
   array_to_unbounded pm c r;
-  Iter.mixed_list_match_length cbor_match parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r);
-  SZ.fits_lte (U64.v i) (List.Tot.length (Array?.v r));
-  let iu : SZ.t = SZ.uint64_to_sizet i;
-  assert_norm (SZ.v 1sz == 1);
-  unfold (Iter.mixed_list_match cbor_match parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r));
-  let ml_i = Iter.mixed_list_narrow_n cbor_match parse_raw_data_item (jump_raw_data_item ())
-    0 (SZ.v (IT.mixed_list_length c.cbor_array_gen_ptr)) (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)
-    iu 1sz cbor_match_share_ cbor_match_gather_;
+  Iter.mixed_list_match_length cbor_match IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r);
+  assert_norm (U64.v 1uL == 1);
+  unfold (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r));
+  let ml_i = Iter.mixed_list_narrow_n cbor_match IO.u64_ops parse_raw_data_item (jump_raw_data_item ())
+    0 (U64.v (IT.mixed_list_length IO.u64_ops c.cbor_array_gen_ptr)) (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)
+    i 1uL cbor_match_share_ cbor_match_gather_;
   Iter.list_narrow_length (Array?.v r) (U64.v i) 1;
   list_narrow_index_hd (Array?.v r) (U64.v i);
   singleton_of_len1 (Iter.list_narrow (Array?.v r) (U64.v i) 1);
-  rewrite (Iter.mixed_list_match cbor_match parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i (Iter.list_narrow (Array?.v r) (SZ.v iu - 0) (SZ.v 1sz)))
-    as (Iter.mixed_list_match cbor_match parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i [List.Tot.index (Array?.v r) (U64.v i)]);
+  rewrite (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i (Iter.list_narrow (Array?.v r) (U64.v i - 0) (U64.v 1uL)))
+    as (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i [List.Tot.index (Array?.v r) (U64.v i)]);
   rewrite (Trade.trade
-             (Iter.mixed_list_match cbor_match parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i (Iter.list_narrow (Array?.v r) (SZ.v iu - 0) (SZ.v 1sz)))
-             (Iter.mixed_list_match_n cbor_match parse_raw_data_item 0 (SZ.v (IT.mixed_list_length c.cbor_array_gen_ptr)) (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)))
+             (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i (Iter.list_narrow (Array?.v r) (U64.v i - 0) (U64.v 1uL)))
+             (Iter.mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item 0 (U64.v (IT.mixed_list_length IO.u64_ops c.cbor_array_gen_ptr)) (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)))
     as (Trade.trade
-             (Iter.mixed_list_match cbor_match parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i [List.Tot.index (Array?.v r) (U64.v i)])
-             (Iter.mixed_list_match_n cbor_match parse_raw_data_item 0 (SZ.v (IT.mixed_list_length c.cbor_array_gen_ptr)) (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)));
+             (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i [List.Tot.index (Array?.v r) (U64.v i)])
+             (Iter.mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item 0 (U64.v (IT.mixed_list_length IO.u64_ops c.cbor_array_gen_ptr)) (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)));
   let it = mixed_iter_init cbor_match parse_raw_data_item (jump_raw_data_item ())
     cbor_match_share_ cbor_match_gather_ ml_i;
   let mut pi = CBOR_Raw_Iterator_Mixed it;
@@ -972,20 +975,20 @@ ensures exists* p' y .
   Trade.trans
     (cbor_match p_v res a_v)
     (mixed_iter_match cbor_match parse_raw_data_item 1.0R it [List.Tot.index (Array?.v r) (U64.v i)])
-    (Iter.mixed_list_match cbor_match parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i [List.Tot.index (Array?.v r) (U64.v i)]);
+    (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i [List.Tot.index (Array?.v r) (U64.v i)]);
   Trade.trans
     (cbor_match p_v res a_v)
-    (Iter.mixed_list_match cbor_match parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i [List.Tot.index (Array?.v r) (U64.v i)])
-    (Iter.mixed_list_match_n cbor_match parse_raw_data_item 0 (SZ.v (IT.mixed_list_length c.cbor_array_gen_ptr)) (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r));
+    (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item ((pm *. c.cbor_array_gen_perm) /. 2.0R) ml_i [List.Tot.index (Array?.v r) (U64.v i)])
+    (Iter.mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item 0 (U64.v (IT.mixed_list_length IO.u64_ops c.cbor_array_gen_ptr)) (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r));
   rewrite (Trade.trade
              (cbor_match p_v res a_v)
-             (Iter.mixed_list_match_n cbor_match parse_raw_data_item 0 (SZ.v (IT.mixed_list_length c.cbor_array_gen_ptr)) (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)))
+             (Iter.mixed_list_match_n cbor_match IO.u64_ops parse_raw_data_item 0 (U64.v (IT.mixed_list_length IO.u64_ops c.cbor_array_gen_ptr)) (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)))
     as (Trade.trade
              (cbor_match p_v res a_v)
-             (Iter.mixed_list_match cbor_match parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)));
+             (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)));
   Trade.trans
     (cbor_match p_v res a_v)
-    (Iter.mixed_list_match cbor_match parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
     (cbor_match_mixed_list_array pm c r cbor_match);
   res
 }
@@ -1005,13 +1008,12 @@ requires
 ensures
   cbor_match_mixed_list_map pm c r cbor_match **
   pure (List.Tot.length (Map?.v r) == U64.v (Map?.len r).value /\
-        FStar.SizeT.fits (List.Tot.length (Map?.v r)) /\
         FStar.UInt.fits (List.Tot.length (Map?.v r)) 64)
 {
   cbor_match_mixed_list_map_length pm c r cbor_match;
   unfold (cbor_match_mixed_list_map pm c r cbor_match);
-  Iter.mixed_list_match_length (cbor_match_map_entry_bounded r cbor_match) (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r);
-  assert (pure (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_map_gen_ptr == LowParse.PulseParse.Iterator.Type.mixed_list_length c.cbor_map_gen_ptr));
+  Iter.mixed_list_match_length (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r);
+  assert (pure (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_map_gen_ptr == LowParse.PulseParse.Iterator.Type.mixed_list_length IO.u64_ops c.cbor_map_gen_ptr));
   fold (cbor_match_mixed_list_map pm c r cbor_match);
 }
 
@@ -1021,11 +1023,11 @@ fn map_to_unbounded
 requires
   cbor_match_mixed_list_map pm c r cbor_match
 ensures
-  Iter.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) **
+  Iter.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) **
   Trade.trade
-    (Iter.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
+    (Iter.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
     (cbor_match_mixed_list_map pm c r cbor_match) **
-  pure (FStar.SizeT.fits (List.Tot.length (Map?.v r)) /\ FStar.UInt.fits (List.Tot.length (Map?.v r)) 64)
+  pure (FStar.UInt.fits (List.Tot.length (Map?.v r)) 64)
 {
   mixed_map_length_facts pm c r;
   unfold (cbor_match_mixed_list_map pm c r cbor_match);
@@ -1044,11 +1046,11 @@ ensures
     fold (cbor_match_map_entry pm0 x y);
   };
   Iter.mixed_list_match_weaken
-    (cbor_match_map_entry_bounded r cbor_match) cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item)
+    (cbor_match_map_entry_bounded r cbor_match) cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item)
     (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) prf_fwd;
   intro
-    (Iter.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) @==>
-     Iter.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
+    (Iter.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) @==>
+     Iter.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
     #emp
     fn _
   {
@@ -1067,11 +1069,11 @@ ensures
         as (cbor_match_map_entry_bounded r cbor_match pm0 x y);
     };
     Iter.mixed_list_match_weaken
-      cbor_match_map_entry (cbor_match_map_entry_bounded r cbor_match) (nondep_then parse_raw_data_item parse_raw_data_item)
+      cbor_match_map_entry (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item)
       (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) prf_bwd;
   };
   intro
-    (Iter.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) @==>
+    (Iter.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) @==>
      cbor_match_mixed_list_map pm c r cbor_match)
     #emp
     fn _
@@ -1079,8 +1081,8 @@ ensures
     fold (cbor_match_mixed_list_map pm c r cbor_match);
   };
   Trade.trans
-    (Iter.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
-    (Iter.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
+    (Iter.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
+    (Iter.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
     (cbor_match_mixed_list_map pm c r cbor_match);
 }
 
@@ -1104,7 +1106,7 @@ ensures exists* p .
     #(pm *. c.cbor_map_gen_perm) #(Map?.v r);
   Trade.trans
     (mixed_iter_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) 1.0R res (Map?.v r))
-    (Iter.mixed_list_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
+    (Iter.mixed_list_match cbor_match_map_entry IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
     (cbor_match_mixed_list_map pm c r cbor_match);
   rewrite (mixed_iter_match cbor_match_map_entry (nondep_then parse_raw_data_item parse_raw_data_item) 1.0R res (Map?.v r))
     as (cbor_mixed_map_iterator_match 1.0R res (Map?.v r));
@@ -1220,7 +1222,7 @@ fn base_mixed_list_detonating_iso_n
   (off: nat)
   (n: nat)
   (pm: perm)
-  (i: IT.base_mixed_list t)
+  (i: IT.base_mixed_list U64.t t)
   (l: list u)
   (prf: (
     (x: t) -> (pm0: perm) -> (y: u { List.Tot.memP y l }) ->
@@ -1228,64 +1230,64 @@ fn base_mixed_list_detonating_iso_n
       (vmatch1 pm0 x y)
       (fun _ -> vmatch2 (pm0 /. 2.0R) x y ** Trade.trade (vmatch2 (pm0 /. 2.0R) x y) (vmatch1 pm0 x y))
   ))
-requires Iter.base_mixed_list_match_n vmatch1 p off n pm i l
+requires Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm i l
 ensures
-  Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) i l **
-  Trade.trade (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) i l) (Iter.base_mixed_list_match_n vmatch1 p off n pm i l)
+  Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) i l **
+  Trade.trade (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) i l) (Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm i l)
 {
   match i {
     IT.Empty -> {
-      unfold (Iter.base_mixed_list_match_n vmatch1 p off n pm (IT.Empty #t) l);
-      fold (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Empty #t) l);
-      intro (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Empty #t) l @==>
-             Iter.base_mixed_list_match_n vmatch1 p off n pm (IT.Empty #t) l)
+      unfold (Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Empty #U64.t #t) l);
+      fold (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Empty #U64.t #t) l);
+      intro (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Empty #U64.t #t) l @==>
+             Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Empty #U64.t #t) l)
         #(pure (Nil? l /\ n == 0 /\ off == 0))
         fn _ {
-          unfold (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Empty #t) l);
-          fold (Iter.base_mixed_list_match_n vmatch1 p off n pm (IT.Empty #t) l);
+          unfold (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Empty #U64.t #t) l);
+          fold (Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Empty #U64.t #t) l);
         };
-      rewrite each (IT.Empty #t) as i;
+      rewrite each (IT.Empty #U64.t #t) as i;
     }
     IT.Singleton sp sv s -> {
       if (n = 0) {
-        Iter.base_mixed_list_match_n_singleton_unfold_0 vmatch1 p off n pm sp sv s l ();
-        Iter.base_mixed_list_match_n_singleton_fold_0 vmatch2 p off n (pm /. 2.0R) sp sv s l ();
-        intro (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Singleton #t sp sv s) l @==>
-               Iter.base_mixed_list_match_n vmatch1 p off n pm (IT.Singleton #t sp sv s) l)
+        Iter.base_mixed_list_match_n_singleton_unfold_0 vmatch1 IO.u64_ops p off n pm sp sv s l ();
+        Iter.base_mixed_list_match_n_singleton_fold_0 vmatch2 IO.u64_ops p off n (pm /. 2.0R) sp sv s l ();
+        intro (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Singleton #U64.t #t sp sv s) l @==>
+               Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Singleton #U64.t #t sp sv s) l)
           #emp
           fn _ {
-            Iter.base_mixed_list_match_n_singleton_unfold_0 vmatch2 p off n (pm /. 2.0R) sp sv s l ();
-            Iter.base_mixed_list_match_n_singleton_fold_0 vmatch1 p off n pm sp sv s l ();
+            Iter.base_mixed_list_match_n_singleton_unfold_0 vmatch2 IO.u64_ops p off n (pm /. 2.0R) sp sv s l ();
+            Iter.base_mixed_list_match_n_singleton_fold_0 vmatch1 IO.u64_ops p off n pm sp sv s l ();
           };
-        rewrite each (IT.Singleton #t sp sv s) as i;
+        rewrite each (IT.Singleton #U64.t #t sp sv s) as i;
       } else {
-        Iter.base_mixed_list_match_n_singleton_unfold_pos vmatch1 p off n pm sp sv s l ();
+        Iter.base_mixed_list_match_n_singleton_unfold_pos vmatch1 IO.u64_ops p off n pm sp sv s l ();
         with x y. assert (R.pts_to s #(pm *. sp) x ** vmatch1 (pm *. sv) x y ** pure (l == [y] /\ off == 0 /\ n == 1));
         R.share s;
         rewrite (R.pts_to s #((pm *. sp) /. 2.0R) x) as (R.pts_to s #((pm /. 2.0R) *. sp) x);
         rewrite (R.pts_to s #((pm *. sp) /. 2.0R) x) as (R.pts_to s #((pm /. 2.0R) *. sp) x);
         prf x (pm *. sv) y;
         rewrite (vmatch2 ((pm *. sv) /. 2.0R) x y) as (vmatch2 ((pm /. 2.0R) *. sv) x y);
-        Iter.base_mixed_list_match_n_singleton_fold_pos vmatch2 p off n (pm /. 2.0R) sp sv s l ();
-        intro (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Singleton #t sp sv s) l @==>
-               Iter.base_mixed_list_match_n vmatch1 p off n pm (IT.Singleton #t sp sv s) l)
+        Iter.base_mixed_list_match_n_singleton_fold_pos vmatch2 IO.u64_ops p off n (pm /. 2.0R) sp sv s l ();
+        intro (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Singleton #U64.t #t sp sv s) l @==>
+               Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Singleton #U64.t #t sp sv s) l)
           #(R.pts_to s #((pm /. 2.0R) *. sp) x **
             Trade.trade (vmatch2 ((pm *. sv) /. 2.0R) x y) (vmatch1 (pm *. sv) x y))
           fn _ {
-            Iter.base_mixed_list_match_n_singleton_unfold_pos vmatch2 p off n (pm /. 2.0R) sp sv s l ();
+            Iter.base_mixed_list_match_n_singleton_unfold_pos vmatch2 IO.u64_ops p off n (pm /. 2.0R) sp sv s l ();
             with x2 y2. assert (R.pts_to s #((pm /. 2.0R) *. sp) x2 ** vmatch2 ((pm /. 2.0R) *. sv) x2 y2 ** pure (l == [y2] /\ off == 0 /\ n == 1));
             R.gather s;
             with xg. assert (R.pts_to s #((pm /. 2.0R) *. sp +. (pm /. 2.0R) *. sp) xg);
             rewrite (R.pts_to s #((pm /. 2.0R) *. sp +. (pm /. 2.0R) *. sp) xg) as (R.pts_to s #(pm *. sp) x);
             rewrite (vmatch2 ((pm /. 2.0R) *. sv) x2 y2) as (vmatch2 ((pm *. sv) /. 2.0R) x y);
             Trade.elim_trade (vmatch2 ((pm *. sv) /. 2.0R) x y) (vmatch1 (pm *. sv) x y);
-            Iter.base_mixed_list_match_n_singleton_fold_pos vmatch1 p off n pm sp sv s l ();
+            Iter.base_mixed_list_match_n_singleton_fold_pos vmatch1 IO.u64_ops p off n pm sp sv s l ();
           };
-        rewrite each (IT.Singleton #t sp sv s) as i;
+        rewrite each (IT.Singleton #U64.t #t sp sv s) as i;
       }
     }
-    IT.Slice sp sv s -> {
-      unfold (Iter.base_mixed_list_match_n vmatch1 p off n pm (IT.Slice #t sp sv s) l);
+    IT.Slice sp sv s scount -> {
+      unfold (Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Slice #U64.t #t sp sv s scount) l);
       with l' l1. assert (S.pts_to s #(pm *. sp) l' ** PM.seq_list_match l1 l (vmatch1 (pm *. sv)) ** pure (off + n <= Seq.length l' /\ l1 == Seq.slice l' off (off + n)));
       S.share s;
       rewrite (S.pts_to s #((pm *. sp) /. 2.0R) l') as (S.pts_to s #((pm /. 2.0R) *. sp) l');
@@ -1301,26 +1303,26 @@ ensures
              as (Trade.trade (vmatch2 ((pm /. 2.0R) *. sv) x y) (vmatch1 (pm *. sv) x y));
       };
       seq_list_detonating_iso (vmatch1 (pm *. sv)) (vmatch2 ((pm /. 2.0R) *. sv)) l1 l prf';
-      fold (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Slice #t sp sv s) l);
-      intro (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Slice #t sp sv s) l @==>
-             Iter.base_mixed_list_match_n vmatch1 p off n pm (IT.Slice #t sp sv s) l)
+      fold (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Slice #U64.t #t sp sv s scount) l);
+      intro (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Slice #U64.t #t sp sv s scount) l @==>
+             Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Slice #U64.t #t sp sv s scount) l)
         #(S.pts_to s #((pm /. 2.0R) *. sp) l' **
           Trade.trade (PM.seq_list_match l1 l (vmatch2 ((pm /. 2.0R) *. sv))) (PM.seq_list_match l1 l (vmatch1 (pm *. sv))) **
           pure (off + n <= Seq.length l' /\ l1 == Seq.slice l' off (off + n)))
         fn _ {
-          unfold (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Slice #t sp sv s) l);
+          unfold (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Slice #U64.t #t sp sv s scount) l);
           with l1_2. assert (PM.seq_list_match l1_2 l (vmatch2 ((pm /. 2.0R) *. sv)));
           S.gather s;
           with lg. assert (S.pts_to s #((pm /. 2.0R) *. sp +. (pm /. 2.0R) *. sp) lg);
           rewrite (S.pts_to s #((pm /. 2.0R) *. sp +. (pm /. 2.0R) *. sp) lg) as (S.pts_to s #(pm *. sp) l');
           rewrite (PM.seq_list_match l1_2 l (vmatch2 ((pm /. 2.0R) *. sv))) as (PM.seq_list_match l1 l (vmatch2 ((pm /. 2.0R) *. sv)));
           Trade.elim_trade (PM.seq_list_match l1 l (vmatch2 ((pm /. 2.0R) *. sv))) (PM.seq_list_match l1 l (vmatch1 (pm *. sv)));
-          fold (Iter.base_mixed_list_match_n vmatch1 p off n pm (IT.Slice #t sp sv s) l);
+          fold (Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Slice #U64.t #t sp sv s scount) l);
         };
-      rewrite each (IT.Slice #t sp sv s) as i;
+      rewrite each (IT.Slice #U64.t #t sp sv s scount) as i;
     }
     IT.Serialized sp count pl -> {
-      unfold (Iter.base_mixed_list_match_n vmatch1 p off n pm (IT.Serialized #t sp count pl) l);
+      unfold (Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Serialized #U64.t #t sp count pl) l);
       with l_all. assert (Iter.pts_to_parsed_strong_prefix (Iter.parse_nlist (off + n) p) pl #(pm *. sp) l_all);
       unfold (Iter.pts_to_parsed_strong_prefix (Iter.parse_nlist (off + n) p) pl #(pm *. sp) l_all);
       with v'. assert (S.pts_to pl #(pm *. sp) v');
@@ -1329,14 +1331,14 @@ ensures
       rewrite (S.pts_to pl #((pm *. sp) /. 2.0R) v') as (S.pts_to pl #((pm /. 2.0R) *. sp) v');
       rewrite (S.pts_to pl #((pm *. sp) /. 2.0R) v') as (S.pts_to pl #((pm /. 2.0R) *. sp) v');
       fold (Iter.pts_to_parsed_strong_prefix (Iter.parse_nlist (off + n) p) pl #((pm /. 2.0R) *. sp) l_all);
-      fold (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Serialized #t sp count pl) l);
-      intro (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Serialized #t sp count pl) l @==>
-             Iter.base_mixed_list_match_n vmatch1 p off n pm (IT.Serialized #t sp count pl) l)
+      fold (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Serialized #U64.t #t sp count pl) l);
+      intro (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Serialized #U64.t #t sp count pl) l @==>
+             Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Serialized #U64.t #t sp count pl) l)
         #(S.pts_to pl #((pm /. 2.0R) *. sp) v' **
           pure (PP.pts_to_parsed_strong_prefix_prop (Iter.parse_nlist (off + n) p) (reveal v') l_all /\
-                l == snd (List.Tot.splitAt off l_all) /\ off + n <= SZ.v count))
+                l == snd (List.Tot.splitAt off l_all) /\ off + n <= U64.v count))
         fn _ {
-          unfold (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Serialized #t sp count pl) l);
+          unfold (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Serialized #U64.t #t sp count pl) l);
           with lv2. assert (Iter.pts_to_parsed_strong_prefix (Iter.parse_nlist (off + n) p) pl #((pm /. 2.0R) *. sp) lv2);
           unfold (Iter.pts_to_parsed_strong_prefix (Iter.parse_nlist (off + n) p) pl #((pm /. 2.0R) *. sp) lv2);
           S.gather pl;
@@ -1344,9 +1346,9 @@ ensures
           with v'2. assert (S.pts_to pl #((pm /. 2.0R) *. sp +. (pm /. 2.0R) *. sp) v'2);
           rewrite (S.pts_to pl #((pm /. 2.0R) *. sp +. (pm /. 2.0R) *. sp) v'2) as (S.pts_to pl #(pm *. sp) v');
           fold (Iter.pts_to_parsed_strong_prefix (Iter.parse_nlist (off + n) p) pl #(pm *. sp) l_all);
-          fold (Iter.base_mixed_list_match_n vmatch1 p off n pm (IT.Serialized #t sp count pl) l);
+          fold (Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Serialized #U64.t #t sp count pl) l);
         };
-      rewrite each (IT.Serialized #t sp count pl) as i;
+      rewrite each (IT.Serialized #U64.t #t sp count pl) as i;
     }
   }
 }
@@ -1362,7 +1364,7 @@ fn rec mixed_list_detonating_iso_n
   (off: nat)
   (n: nat)
   (pm: perm)
-  (i: IT.mixed_list t)
+  (i: IT.mixed_list U64.t t)
   (l: list u)
   (prf: (
     (x: t) -> (pm0: perm) -> (y: u { List.Tot.memP y l }) ->
@@ -1370,44 +1372,44 @@ fn rec mixed_list_detonating_iso_n
       (vmatch1 pm0 x y)
       (fun _ -> vmatch2 (pm0 /. 2.0R) x y ** Trade.trade (vmatch2 (pm0 /. 2.0R) x y) (vmatch1 pm0 x y))
   ))
-requires Iter.mixed_list_match_n vmatch1 p off n pm i l
+requires Iter.mixed_list_match_n vmatch1 IO.u64_ops p off n pm i l
 ensures
-  Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) i l **
-  Trade.trade (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) i l) (Iter.mixed_list_match_n vmatch1 p off n pm i l)
+  Iter.mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) i l **
+  Trade.trade (Iter.mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) i l) (Iter.mixed_list_match_n vmatch1 IO.u64_ops p off n pm i l)
 decreases (Iter.mixed_list_depth i)
 {
   match i {
     IT.Base bi -> {
-      unfold (Iter.mixed_list_match_n vmatch1 p off n pm (IT.Base #t bi) l);
+      unfold (Iter.mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Base #U64.t #t bi) l);
       base_mixed_list_detonating_iso_n vmatch1 vmatch2 p off n pm bi l prf;
-      fold (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Base #t bi) l);
-      intro (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Base #t bi) l @==>
-             Iter.mixed_list_match_n vmatch1 p off n pm (IT.Base #t bi) l)
-        #(Trade.trade (Iter.base_mixed_list_match_n vmatch2 p off n (pm /. 2.0R) bi l)
-                      (Iter.base_mixed_list_match_n vmatch1 p off n pm bi l))
+      fold (Iter.mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Base #U64.t #t bi) l);
+      intro (Iter.mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Base #U64.t #t bi) l @==>
+             Iter.mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Base #U64.t #t bi) l)
+        #(Trade.trade (Iter.base_mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) bi l)
+                      (Iter.base_mixed_list_match_n vmatch1 IO.u64_ops p off n pm bi l))
         fn _ {
-          unfold (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Base #t bi) l);
+          unfold (Iter.mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Base #U64.t #t bi) l);
           Trade.elim_trade _ _;
-          fold (Iter.mixed_list_match_n vmatch1 p off n pm (IT.Base #t bi) l);
+          fold (Iter.mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Base #U64.t #t bi) l);
         };
-      rewrite each (IT.Base #t bi) as i;
+      rewrite each (IT.Base #U64.t #t bi) as i;
     }
-    IT.Append depth cb ca ob bp before oa ap after sc -> {
-      unfold (Iter.mixed_list_match_n vmatch1 p off n pm (IT.Append #t depth cb ca ob bp before oa ap after sc) l);
+    IT.Append depth cb ca tot ob bp before oa ap after sc -> {
+      unfold (Iter.mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Append #U64.t #t depth cb ca tot ob bp before oa ap after sc) l);
       with i_before i_after l1 l2 . assert (
         R.pts_to before #(pm *. bp) i_before **
-        Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1 **
+        Iter.mixed_list_match_n vmatch1 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) (pm *. sc) i_before l1 **
         R.pts_to after #(pm *. ap) i_after **
-        Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2
+        Iter.mixed_list_match_n vmatch1 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) (pm *. sc) i_after l2
       );
-      let off_b = Iter.append_off_before off (SZ.v ob) (SZ.v cb);
-      let n1 = Iter.append_n_before off n (SZ.v cb);
-      let off_a = Iter.append_off_after off (SZ.v oa) (SZ.v cb);
-      let na = Iter.append_n_after off n (SZ.v cb);
-      rewrite (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1)
-        as (Iter.mixed_list_match_n vmatch1 p off_b n1 (pm *. sc) i_before l1);
-      rewrite (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2)
-        as (Iter.mixed_list_match_n vmatch1 p off_a na (pm *. sc) i_after l2);
+      let off_b = Iter.append_off_before off (U64.v ob) (U64.v cb);
+      let n1 = Iter.append_n_before off n (U64.v cb);
+      let off_a = Iter.append_off_after off (U64.v oa) (U64.v cb);
+      let na = Iter.append_n_after off n (U64.v cb);
+      rewrite (Iter.mixed_list_match_n vmatch1 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) (pm *. sc) i_before l1)
+        as (Iter.mixed_list_match_n vmatch1 IO.u64_ops p off_b n1 (pm *. sc) i_before l1);
+      rewrite (Iter.mixed_list_match_n vmatch1 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) (pm *. sc) i_after l2)
+        as (Iter.mixed_list_match_n vmatch1 IO.u64_ops p off_a na (pm *. sc) i_after l2);
       List.Tot.Properties.append_memP_forall l1 l2;
       ghost fn prf1
         (x: t) (pm0: perm) (y: u { List.Tot.memP y l1 })
@@ -1434,31 +1436,31 @@ decreases (Iter.mixed_list_depth i)
       rewrite (R.pts_to after #((pm *. ap) /. 2.0R) i_after) as (R.pts_to after #((pm /. 2.0R) *. ap) i_after);
       rewrite (R.pts_to after #((pm *. ap) /. 2.0R) i_after) as (R.pts_to after #((pm /. 2.0R) *. ap) i_after);
       perm_mul_half pm sc;
-      rewrite (Iter.mixed_list_match_n vmatch2 p off_b n1 ((pm *. sc) /. 2.0R) i_before l1)
-        as (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1);
-      rewrite (Iter.mixed_list_match_n vmatch2 p off_a na ((pm *. sc) /. 2.0R) i_after l2)
-        as (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2);
-      rewrite (Trade.trade (Iter.mixed_list_match_n vmatch2 p off_b n1 ((pm *. sc) /. 2.0R) i_before l1)
-                           (Iter.mixed_list_match_n vmatch1 p off_b n1 (pm *. sc) i_before l1))
-        as (Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
-                        (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1));
-      rewrite (Trade.trade (Iter.mixed_list_match_n vmatch2 p off_a na ((pm *. sc) /. 2.0R) i_after l2)
-                           (Iter.mixed_list_match_n vmatch1 p off_a na (pm *. sc) i_after l2))
-        as (Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
-                        (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2));
-      fold (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Append #t depth cb ca ob bp before oa ap after sc) l);
-      intro (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Append #t depth cb ca ob bp before oa ap after sc) l @==>
-             Iter.mixed_list_match_n vmatch1 p off n pm (IT.Append #t depth cb ca ob bp before oa ap after sc) l)
-        #(Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
-                      (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1) **
+      rewrite (Iter.mixed_list_match_n vmatch2 IO.u64_ops p off_b n1 ((pm *. sc) /. 2.0R) i_before l1)
+        as (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_before l1);
+      rewrite (Iter.mixed_list_match_n vmatch2 IO.u64_ops p off_a na ((pm *. sc) /. 2.0R) i_after l2)
+        as (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_after l2);
+      rewrite (Trade.trade (Iter.mixed_list_match_n vmatch2 IO.u64_ops p off_b n1 ((pm *. sc) /. 2.0R) i_before l1)
+                           (Iter.mixed_list_match_n vmatch1 IO.u64_ops p off_b n1 (pm *. sc) i_before l1))
+        as (Trade.trade (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
+                        (Iter.mixed_list_match_n vmatch1 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) (pm *. sc) i_before l1));
+      rewrite (Trade.trade (Iter.mixed_list_match_n vmatch2 IO.u64_ops p off_a na ((pm *. sc) /. 2.0R) i_after l2)
+                           (Iter.mixed_list_match_n vmatch1 IO.u64_ops p off_a na (pm *. sc) i_after l2))
+        as (Trade.trade (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
+                        (Iter.mixed_list_match_n vmatch1 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) (pm *. sc) i_after l2));
+      fold (Iter.mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Append #U64.t #t depth cb ca tot ob bp before oa ap after sc) l);
+      intro (Iter.mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Append #U64.t #t depth cb ca tot ob bp before oa ap after sc) l @==>
+             Iter.mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Append #U64.t #t depth cb ca tot ob bp before oa ap after sc) l)
+        #(Trade.trade (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
+                      (Iter.mixed_list_match_n vmatch1 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) (pm *. sc) i_before l1) **
           R.pts_to before #((pm /. 2.0R) *. bp) i_before **
-          Trade.trade (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
-                      (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2) **
+          Trade.trade (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
+                      (Iter.mixed_list_match_n vmatch1 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) (pm *. sc) i_after l2) **
           R.pts_to after #((pm /. 2.0R) *. ap) i_after **
           pure (
-            off + n <= SZ.v cb + SZ.v ca /\
-            SZ.v ob + SZ.v cb <= SZ.v (IT.mixed_list_length i_before) /\
-            SZ.v oa + SZ.v ca <= SZ.v (IT.mixed_list_length i_after) /\
+            off + n <= U64.v cb + U64.v ca /\
+            U64.v ob + U64.v cb <= U64.v (IT.mixed_list_length IO.u64_ops i_before) /\
+            U64.v oa + U64.v ca <= U64.v (IT.mixed_list_length IO.u64_ops i_after) /\
             List.Tot.length l1 == n1 /\
             List.Tot.length l2 == na /\
             l == List.Tot.append l1 l2 /\
@@ -1466,12 +1468,12 @@ decreases (Iter.mixed_list_depth i)
             Iter.mixed_list_depth i_after < Ghost.reveal depth
           ))
         fn _ {
-          unfold (Iter.mixed_list_match_n vmatch2 p off n (pm /. 2.0R) (IT.Append #t depth cb ca ob bp before oa ap after sc) l);
+          unfold (Iter.mixed_list_match_n vmatch2 IO.u64_ops p off n (pm /. 2.0R) (IT.Append #U64.t #t depth cb ca tot ob bp before oa ap after sc) l);
           with ib_u ia_u l1_u l2_u . assert (
             R.pts_to before #((pm /. 2.0R) *. bp) ib_u **
-            Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_u l1_u **
+            Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) ((pm /. 2.0R) *. sc) ib_u l1_u **
             R.pts_to after #((pm /. 2.0R) *. ap) ia_u **
-            Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_u l2_u
+            Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) ((pm /. 2.0R) *. sc) ia_u l2_u
           );
           R.gather before;
           perm_mul_half2 pm bp;
@@ -1483,34 +1485,34 @@ decreases (Iter.mixed_list_depth i)
           drop_ (pure (reveal i_after == reveal ia_u));
           rewrite (R.pts_to after #((pm /. 2.0R) *. ap +. (pm /. 2.0R) *. ap) i_after)
             as (R.pts_to after #(pm *. ap) i_after);
-          Iter.mixed_list_match_n_length vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_u l1_u;
-          Iter.mixed_list_match_n_length vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_u l2_u;
+          Iter.mixed_list_match_n_length vmatch2 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) ((pm /. 2.0R) *. sc) ib_u l1_u;
+          Iter.mixed_list_match_n_length vmatch2 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) ((pm /. 2.0R) *. sc) ia_u l2_u;
           List.Tot.Properties.append_injective l1_u l1 l2_u l2;
-          with ib_x . assert (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u);
+          with ib_x . assert (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u);
           slprop_rw
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u)
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
+            (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u)
+            (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
             (Pulse.Lib.Core.slprop_equiv_ext'
-              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u)
-              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
+              (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) ((pm /. 2.0R) *. sc) ib_x l1_u)
+              (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
               ());
           Trade.elim_trade
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
-            (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_before off (SZ.v ob) (SZ.v cb)) (Iter.append_n_before off n (SZ.v cb)) (pm *. sc) i_before l1);
-          with ia_x . assert (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u);
+            (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_before l1)
+            (Iter.mixed_list_match_n vmatch1 IO.u64_ops p (Iter.append_off_before off (U64.v ob) (U64.v cb)) (Iter.append_n_before off n (U64.v cb)) (pm *. sc) i_before l1);
+          with ia_x . assert (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u);
           slprop_rw
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u)
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
+            (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u)
+            (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
             (Pulse.Lib.Core.slprop_equiv_ext'
-              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u)
-              (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
+              (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) ((pm /. 2.0R) *. sc) ia_x l2_u)
+              (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
               ());
           Trade.elim_trade
-            (Iter.mixed_list_match_n vmatch2 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
-            (Iter.mixed_list_match_n vmatch1 p (Iter.append_off_after off (SZ.v oa) (SZ.v cb)) (Iter.append_n_after off n (SZ.v cb)) (pm *. sc) i_after l2);
-          fold (Iter.mixed_list_match_n vmatch1 p off n pm (IT.Append #t depth cb ca ob bp before oa ap after sc) l);
+            (Iter.mixed_list_match_n vmatch2 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) ((pm /. 2.0R) *. sc) i_after l2)
+            (Iter.mixed_list_match_n vmatch1 IO.u64_ops p (Iter.append_off_after off (U64.v oa) (U64.v cb)) (Iter.append_n_after off n (U64.v cb)) (pm *. sc) i_after l2);
+          fold (Iter.mixed_list_match_n vmatch1 IO.u64_ops p off n pm (IT.Append #U64.t #t depth cb ca tot ob bp before oa ap after sc) l);
         };
-      rewrite each (IT.Append #t depth cb ca ob bp before oa ap after sc) as i;
+      rewrite each (IT.Append #U64.t #t depth cb ca tot ob bp before oa ap after sc) as i;
     }
   }
 }
@@ -1522,15 +1524,15 @@ fn mixed_list_detonating_iso
   (#t #u: Type0)
   (vmatch1 vmatch2: perm -> t -> u -> slprop)
   (#k: parser_kind) (p: parser k u)
-  (pm: perm) (i: IT.mixed_list t) (l: list u)
+  (pm: perm) (i: IT.mixed_list U64.t t) (l: list u)
   (prf_false: (
     (x: t) -> (pm0: perm) -> (y: u { List.Tot.memP y l }) ->
     stt_ghost unit emp_inames (vmatch1 pm0 x y) (fun _ -> pure False)
   ))
-requires Iter.mixed_list_match vmatch1 p pm i l
+requires Iter.mixed_list_match vmatch1 IO.u64_ops p pm i l
 ensures exists* pm'.
-  Iter.mixed_list_match vmatch2 p pm' i l **
-  Trade.trade (Iter.mixed_list_match vmatch2 p pm' i l) (Iter.mixed_list_match vmatch1 p pm i l)
+  Iter.mixed_list_match vmatch2 IO.u64_ops p pm' i l **
+  Trade.trade (Iter.mixed_list_match vmatch2 IO.u64_ops p pm' i l) (Iter.mixed_list_match vmatch1 IO.u64_ops p pm i l)
 {
   ghost fn prf
     (x: t) (pm0: perm) (y: u { List.Tot.memP y l })
@@ -1540,13 +1542,13 @@ ensures exists* pm'.
     prf_false x pm0 y;
     unreachable ()
   };
-  unfold (Iter.mixed_list_match vmatch1 p pm i l);
-  mixed_list_detonating_iso_n vmatch1 vmatch2 p 0 (SZ.v (IT.mixed_list_length i)) pm i l prf;
-  fold (Iter.mixed_list_match vmatch2 p (pm /. 2.0R) i l);
-  rewrite (Trade.trade (Iter.mixed_list_match_n vmatch2 p 0 (SZ.v (IT.mixed_list_length i)) (pm /. 2.0R) i l)
-                       (Iter.mixed_list_match_n vmatch1 p 0 (SZ.v (IT.mixed_list_length i)) pm i l))
-    as (Trade.trade (Iter.mixed_list_match vmatch2 p (pm /. 2.0R) i l)
-                    (Iter.mixed_list_match vmatch1 p pm i l));
+  unfold (Iter.mixed_list_match vmatch1 IO.u64_ops p pm i l);
+  mixed_list_detonating_iso_n vmatch1 vmatch2 p 0 (U64.v (IT.mixed_list_length IO.u64_ops i)) pm i l prf;
+  fold (Iter.mixed_list_match vmatch2 IO.u64_ops p (pm /. 2.0R) i l);
+  rewrite (Trade.trade (Iter.mixed_list_match_n vmatch2 IO.u64_ops p 0 (U64.v (IT.mixed_list_length IO.u64_ops i)) (pm /. 2.0R) i l)
+                       (Iter.mixed_list_match_n vmatch1 IO.u64_ops p 0 (U64.v (IT.mixed_list_length IO.u64_ops i)) pm i l))
+    as (Trade.trade (Iter.mixed_list_match vmatch2 IO.u64_ops p (pm /. 2.0R) i l)
+                    (Iter.mixed_list_match vmatch1 IO.u64_ops p pm i l));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1563,13 +1565,12 @@ requires
 ensures
   cbor_match_mixed_list_array pm c r (depth_cb depth r) **
   pure (List.Tot.length (Array?.v r) == U64.v (Array?.len r).value /\
-        FStar.SizeT.fits (List.Tot.length (Array?.v r)) /\
         FStar.UInt.fits (List.Tot.length (Array?.v r)) 64)
 {
   cbor_match_mixed_list_array_length pm c r (depth_cb depth r);
   unfold (cbor_match_mixed_list_array pm c r (depth_cb depth r));
-  Iter.mixed_list_match_length (cbor_match_bounded r (depth_cb depth r)) parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r);
-  assert (pure (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_array_gen_ptr == LowParse.PulseParse.Iterator.Type.mixed_list_length c.cbor_array_gen_ptr));
+  Iter.mixed_list_match_length (cbor_match_bounded r (depth_cb depth r)) IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r);
+  assert (pure (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_array_gen_ptr == LowParse.PulseParse.Iterator.Type.mixed_list_length IO.u64_ops c.cbor_array_gen_ptr));
   fold (cbor_match_mixed_list_array pm c r (depth_cb depth r));
 }
 
@@ -1581,12 +1582,12 @@ ghost
 fn array_convert_element_vmatch
   (depth: nat) (pm: perm) (c: cbor_mixed_list_array) (r: raw_data_item { Array? r })
 requires
-  Iter.mixed_list_match (cbor_match_bounded r (depth_cb depth r)) parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)
+  Iter.mixed_list_match (cbor_match_bounded r (depth_cb depth r)) IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r)
 ensures exists* p'.
-  Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r) **
+  Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) IO.u64_ops parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r) **
   Trade.trade
-    (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r))
-    (Iter.mixed_list_match (cbor_match_bounded r (depth_cb depth r)) parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) IO.u64_ops parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match (cbor_match_bounded r (depth_cb depth r)) IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
 {
   if (depth = 0) {
     ghost
@@ -1623,11 +1624,11 @@ ensures exists* p'.
       rewrite (depth_cb depth r pm0 x y) as (cbor_match_with_depth (nat_pred depth) pm0 x y);
     };
     Iter.mixed_list_match_weaken
-      (cbor_match_bounded r (depth_cb depth r)) (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item
+      (cbor_match_bounded r (depth_cb depth r)) (cbor_match_with_depth (nat_pred depth)) IO.u64_ops parse_raw_data_item
       (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) prf_fwd;
     intro
-      (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) @==>
-       Iter.mixed_list_match (cbor_match_bounded r (depth_cb depth r)) parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
+      (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) @==>
+       Iter.mixed_list_match (cbor_match_bounded r (depth_cb depth r)) IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
       #emp
       fn _
     {
@@ -1647,7 +1648,7 @@ ensures exists* p'.
         rewrite (depth_cb depth r pm0 x y) as (cbor_match_bounded r (depth_cb depth r) pm0 x y);
       };
       Iter.mixed_list_match_weaken
-        (cbor_match_with_depth (nat_pred depth)) (cbor_match_bounded r (depth_cb depth r)) parse_raw_data_item
+        (cbor_match_with_depth (nat_pred depth)) (cbor_match_bounded r (depth_cb depth r)) IO.u64_ops parse_raw_data_item
         (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) prf_bwd;
     };
   }
@@ -1659,18 +1660,18 @@ fn array_to_unbounded_with_depth
 requires
   cbor_match_mixed_list_array pm c r (depth_cb depth r)
 ensures exists* p'.
-  Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r) **
+  Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) IO.u64_ops parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r) **
   Trade.trade
-    (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) IO.u64_ops parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r))
     (cbor_match_mixed_list_array pm c r (depth_cb depth r)) **
-  pure (FStar.SizeT.fits (List.Tot.length (Array?.v r)) /\ FStar.UInt.fits (List.Tot.length (Array?.v r)) 64)
+  pure (FStar.UInt.fits (List.Tot.length (Array?.v r)) 64)
 {
   mixed_array_length_facts_depth depth pm c r;
   unfold (cbor_match_mixed_list_array pm c r (depth_cb depth r));
   array_convert_element_vmatch depth pm c r;
-  with p'. assert (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r));
+  with p'. assert (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) IO.u64_ops parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r));
   intro
-    (Iter.mixed_list_match (cbor_match_bounded r (depth_cb depth r)) parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) @==>
+    (Iter.mixed_list_match (cbor_match_bounded r (depth_cb depth r)) IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) @==>
      cbor_match_mixed_list_array pm c r (depth_cb depth r))
     #emp
     fn _
@@ -1678,8 +1679,8 @@ ensures exists* p'.
     fold (cbor_match_mixed_list_array pm c r (depth_cb depth r));
   };
   Trade.trans
-    (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r))
-    (Iter.mixed_list_match (cbor_match_bounded r (depth_cb depth r)) parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) IO.u64_ops parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match (cbor_match_bounded r (depth_cb depth r)) IO.u64_ops parse_raw_data_item (pm *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r))
     (cbor_match_mixed_list_array pm c r (depth_cb depth r));
 }
 
@@ -1699,13 +1700,13 @@ ensures exists* p .
 {
   cbor_match_with_depth_array_gen_elim depth pm c r;
   array_to_unbounded_with_depth depth pm c r;
-  with p'. assert (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r));
+  with p'. assert (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) IO.u64_ops parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r));
   let res = mixed_iter_init (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item (jump_raw_data_item ())
     (cbor_match_with_depth_share_ (nat_pred depth)) (cbor_match_with_depth_gather_ (nat_pred depth)) c.cbor_array_gen_ptr
     #p' #(Array?.v r);
   Trade.trans
     (mixed_iter_match (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item 1.0R res (Array?.v r))
-    (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r))
+    (Iter.mixed_list_match (cbor_match_with_depth (nat_pred depth)) IO.u64_ops parse_raw_data_item p' c.cbor_array_gen_ptr (Array?.v r))
     (cbor_match_mixed_list_array pm c r (depth_cb depth r));
   Trade.trans
     (mixed_iter_match (cbor_match_with_depth (nat_pred depth)) parse_raw_data_item 1.0R res (Array?.v r))
@@ -1737,13 +1738,12 @@ requires
 ensures
   cbor_match_mixed_list_map pm c r (depth_cb depth r) **
   pure (List.Tot.length (Map?.v r) == U64.v (Map?.len r).value /\
-        FStar.SizeT.fits (List.Tot.length (Map?.v r)) /\
         FStar.UInt.fits (List.Tot.length (Map?.v r)) 64)
 {
   cbor_match_mixed_list_map_length pm c r (depth_cb depth r);
   unfold (cbor_match_mixed_list_map pm c r (depth_cb depth r));
-  Iter.mixed_list_match_length (cbor_match_map_entry_bounded r (depth_cb depth r)) (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r);
-  assert (pure (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_map_gen_ptr == LowParse.PulseParse.Iterator.Type.mixed_list_length c.cbor_map_gen_ptr));
+  Iter.mixed_list_match_length (cbor_match_map_entry_bounded r (depth_cb depth r)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r);
+  assert (pure (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_map_gen_ptr == LowParse.PulseParse.Iterator.Type.mixed_list_length IO.u64_ops c.cbor_map_gen_ptr));
   fold (cbor_match_mixed_list_map pm c r (depth_cb depth r));
 }
 
@@ -1751,12 +1751,12 @@ ghost
 fn map_convert_element_vmatch
   (depth: nat) (pm: perm) (c: cbor_mixed_list_map) (r: raw_data_item { Map? r })
 requires
-  Iter.mixed_list_match (cbor_match_map_entry_bounded r (depth_cb depth r)) (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r)
+  Iter.mixed_list_match (cbor_match_map_entry_bounded r (depth_cb depth r)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r)
 ensures exists* p'.
-  Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r) **
+  Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r) **
   Trade.trade
-    (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r))
-    (Iter.mixed_list_match (cbor_match_map_entry_bounded r (depth_cb depth r)) (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
+    (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r))
+    (Iter.mixed_list_match (cbor_match_map_entry_bounded r (depth_cb depth r)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
 {
   if (depth = 0) {
     ghost
@@ -1799,11 +1799,11 @@ ensures exists* p'.
       fold (cbor_match_map_entry_with_depth (nat_pred depth) pm0 x y);
     };
     Iter.mixed_list_match_weaken
-      (cbor_match_map_entry_bounded r (depth_cb depth r)) (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item)
+      (cbor_match_map_entry_bounded r (depth_cb depth r)) (cbor_match_map_entry_with_depth (nat_pred depth)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item)
       (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) prf_fwd;
     intro
-      (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) @==>
-       Iter.mixed_list_match (cbor_match_map_entry_bounded r (depth_cb depth r)) (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
+      (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) @==>
+       Iter.mixed_list_match (cbor_match_map_entry_bounded r (depth_cb depth r)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
       #emp
       fn _
     {
@@ -1827,7 +1827,7 @@ ensures exists* p'.
           as (cbor_match_map_entry_bounded r (depth_cb depth r) pm0 x y);
       };
       Iter.mixed_list_match_weaken
-        (cbor_match_map_entry_with_depth (nat_pred depth)) (cbor_match_map_entry_bounded r (depth_cb depth r)) (nondep_then parse_raw_data_item parse_raw_data_item)
+        (cbor_match_map_entry_with_depth (nat_pred depth)) (cbor_match_map_entry_bounded r (depth_cb depth r)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item)
         (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) prf_bwd;
     };
   }
@@ -1839,18 +1839,18 @@ fn map_to_unbounded_with_depth
 requires
   cbor_match_mixed_list_map pm c r (depth_cb depth r)
 ensures exists* p'.
-  Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r) **
+  Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r) **
   Trade.trade
-    (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r))
+    (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r))
     (cbor_match_mixed_list_map pm c r (depth_cb depth r)) **
-  pure (FStar.SizeT.fits (List.Tot.length (Map?.v r)) /\ FStar.UInt.fits (List.Tot.length (Map?.v r)) 64)
+  pure (FStar.UInt.fits (List.Tot.length (Map?.v r)) 64)
 {
   mixed_map_length_facts_depth depth pm c r;
   unfold (cbor_match_mixed_list_map pm c r (depth_cb depth r));
   map_convert_element_vmatch depth pm c r;
-  with p'. assert (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r));
+  with p'. assert (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r));
   intro
-    (Iter.mixed_list_match (cbor_match_map_entry_bounded r (depth_cb depth r)) (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) @==>
+    (Iter.mixed_list_match (cbor_match_map_entry_bounded r (depth_cb depth r)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) @==>
      cbor_match_mixed_list_map pm c r (depth_cb depth r))
     #emp
     fn _
@@ -1858,8 +1858,8 @@ ensures exists* p'.
     fold (cbor_match_mixed_list_map pm c r (depth_cb depth r));
   };
   Trade.trans
-    (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r))
-    (Iter.mixed_list_match (cbor_match_map_entry_bounded r (depth_cb depth r)) (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
+    (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r))
+    (Iter.mixed_list_match (cbor_match_map_entry_bounded r (depth_cb depth r)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) (pm *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r))
     (cbor_match_mixed_list_map pm c r (depth_cb depth r));
 }
 
@@ -1879,14 +1879,14 @@ ensures exists* p .
 {
   cbor_match_with_depth_map_gen_elim depth pm c r;
   map_to_unbounded_with_depth depth pm c r;
-  with p'. assert (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r));
+  with p'. assert (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r));
   let res = mixed_iter_init (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item)
     (jump_nondep_then (jump_raw_data_item ()) (jump_raw_data_item ()))
     (cbor_match_map_entry_with_depth_share_ (nat_pred depth)) (cbor_match_map_entry_with_depth_gather_ (nat_pred depth)) c.cbor_map_gen_ptr
     #p' #(Map?.v r);
   Trade.trans
     (mixed_iter_match (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item) 1.0R res (Map?.v r))
-    (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r))
+    (Iter.mixed_list_match (cbor_match_map_entry_with_depth (nat_pred depth)) IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) p' c.cbor_map_gen_ptr (Map?.v r))
     (cbor_match_mixed_list_map pm c r (depth_cb depth r));
   Trade.trans
     (mixed_iter_match (cbor_match_map_entry_with_depth (nat_pred depth)) (nondep_then parse_raw_data_item parse_raw_data_item) 1.0R res (Map?.v r))

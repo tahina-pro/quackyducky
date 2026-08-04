@@ -926,7 +926,7 @@ ensures
       Trade.rewrite_with_trade (cbor_match p c v) (cbor_match_mixed_list_array p c' v cbor_match);
       cbor_match_mixed_list_array_length p c' v cbor_match;
       Trade.elim _ _;
-      ({ size = c'.cbor_array_gen_length_size; value = SZ.sizet_to_uint64 (ML.cbor_raw_mixed_list_length c'.cbor_array_gen_ptr) })
+      ({ size = c'.cbor_array_gen_length_size; value = ML.cbor_raw_mixed_list_length c'.cbor_array_gen_ptr })
     }
   }
 }
@@ -1040,7 +1040,7 @@ ensures
       Trade.rewrite_with_trade (cbor_match p c v) (cbor_match_mixed_list_map p c' v cbor_match);
       cbor_match_mixed_list_map_length p c' v cbor_match;
       Trade.elim _ _;
-      ({ size = c'.cbor_map_gen_length_size; value = SZ.sizet_to_uint64 (ML.cbor_raw_mixed_list_length c'.cbor_map_gen_ptr) })
+      ({ size = c'.cbor_map_gen_length_size; value = ML.cbor_raw_mixed_list_length c'.cbor_map_gen_ptr })
     }
   }
 }

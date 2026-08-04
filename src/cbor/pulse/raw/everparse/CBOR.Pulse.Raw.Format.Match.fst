@@ -6,6 +6,7 @@ open LowParse.Spec.VCList
 open LowParse.Pulse.Base
 
 module U64 = FStar.UInt64
+module IO = LowParse.PulseParse.Iterator.IntOps
 
 let cbor_match_serialized_payload_array
   c p r
@@ -330,11 +331,11 @@ let cbor_match_map_entry_bounded
   else pure False
 
 let cbor_match_mixed_list_array p c r cbor_match =
-    LowParse.PulseParse.Iterator.mixed_list_match (cbor_match_bounded r cbor_match) parse_raw_data_item (p *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) **
+    LowParse.PulseParse.Iterator.mixed_list_match (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item (p *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) **
     pure (c.cbor_array_gen_length_size == (Array?.len r).size)
 
 let cbor_match_mixed_list_map p c r cbor_match =
-    LowParse.PulseParse.Iterator.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) **
+    LowParse.PulseParse.Iterator.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) **
     pure (c.cbor_map_gen_length_size == (Map?.len r).size)
 
 (* ==== Phase B: abstract mixed-list operations for the _Gen cases ==== *)
@@ -396,11 +397,11 @@ requires
 ensures
   cbor_match_mixed_list_array p c r cbor_match ** pure (
     c.cbor_array_gen_length_size == (Array?.len r).size /\
-    (SZ.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_array_gen_ptr) <: (x: Prims.int { FStar.UInt.size x FStar.UInt64.n \/ x >= 0 })) == U64.v (Array?.len r).value
+    U64.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_array_gen_ptr) == U64.v (Array?.len r).value
   )
 {
   unfold (cbor_match_mixed_list_array p c r cbor_match);
-  I.mixed_list_match_length (cbor_match_bounded r cbor_match) parse_raw_data_item (p *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r);
+  I.mixed_list_match_length (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item (p *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r);
   fold (cbor_match_mixed_list_array p c r cbor_match);
 }
 
@@ -415,11 +416,11 @@ requires
 ensures
   cbor_match_mixed_list_map p c r cbor_match ** pure (
     c.cbor_map_gen_length_size == (Map?.len r).size /\
-    (SZ.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_map_gen_ptr) <: (x: Prims.int { FStar.UInt.size x FStar.UInt64.n \/ x >= 0 })) == U64.v (Map?.len r).value
+    U64.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length c.cbor_map_gen_ptr) == U64.v (Map?.len r).value
   )
 {
   unfold (cbor_match_mixed_list_map p c r cbor_match);
-  I.mixed_list_match_length (cbor_match_map_entry_bounded r cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r);
+  I.mixed_list_match_length (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r);
   fold (cbor_match_mixed_list_map p c r cbor_match);
 }
 
@@ -456,7 +457,7 @@ ensures
     cbor_match_bounded_eq r cm2 pm0 x y;
     rewrite (cm2 pm0 x y) as (cbor_match_bounded r cm2 pm0 x y);
   };
-  I.mixed_list_match_weaken (cbor_match_bounded r cm1) (cbor_match_bounded r cm2) parse_raw_data_item (p *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) prf';
+  I.mixed_list_match_weaken (cbor_match_bounded r cm1) (cbor_match_bounded r cm2) IO.u64_ops parse_raw_data_item (p *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) prf';
   fold (cbor_match_mixed_list_array p c r cm2);
 }
 
@@ -497,7 +498,7 @@ ensures
     rewrite (cm2 pm0 x.cbor_map_entry_key (fst y) ** cm2 pm0 x.cbor_map_entry_value (snd y))
       as (cbor_match_map_entry_bounded r cm2 pm0 x y);
   };
-  I.mixed_list_match_weaken (cbor_match_map_entry_bounded r cm1) (cbor_match_map_entry_bounded r cm2) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) prf';
+  I.mixed_list_match_weaken (cbor_match_map_entry_bounded r cm1) (cbor_match_map_entry_bounded r cm2) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) prf';
   fold (cbor_match_mixed_list_map p c r cm2);
 }
 
@@ -616,12 +617,12 @@ ensures
   cbor_match_mixed_list_array (p /. 2.0R) c r cbor_match ** cbor_match_mixed_list_array (p /. 2.0R) c r cbor_match
 {
   unfold (cbor_match_mixed_list_array p c r cbor_match);
-  I.mixed_list_match_share (cbor_match_bounded r cbor_match) parse_raw_data_item (p *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) (vmatch_share_array r cbor_match cbor_match_share);
+  I.mixed_list_match_share (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item (p *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r) (vmatch_share_array r cbor_match cbor_match_share);
   perm_half_mul p c.cbor_array_gen_perm;
-  rewrite (I.mixed_list_match (cbor_match_bounded r cbor_match) parse_raw_data_item ((p *. c.cbor_array_gen_perm) /. 2.0R) c.cbor_array_gen_ptr (Array?.v r))
-       as (I.mixed_list_match (cbor_match_bounded r cbor_match) parse_raw_data_item ((p /. 2.0R) *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r));
-  rewrite (I.mixed_list_match (cbor_match_bounded r cbor_match) parse_raw_data_item ((p *. c.cbor_array_gen_perm) /. 2.0R) c.cbor_array_gen_ptr (Array?.v r))
-       as (I.mixed_list_match (cbor_match_bounded r cbor_match) parse_raw_data_item ((p /. 2.0R) *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r));
+  rewrite (I.mixed_list_match (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item ((p *. c.cbor_array_gen_perm) /. 2.0R) c.cbor_array_gen_ptr (Array?.v r))
+       as (I.mixed_list_match (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item ((p /. 2.0R) *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r));
+  rewrite (I.mixed_list_match (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item ((p *. c.cbor_array_gen_perm) /. 2.0R) c.cbor_array_gen_ptr (Array?.v r))
+       as (I.mixed_list_match (cbor_match_bounded r cbor_match) IO.u64_ops parse_raw_data_item ((p /. 2.0R) *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r));
   fold (cbor_match_mixed_list_array (p /. 2.0R) c r cbor_match);
   fold (cbor_match_mixed_list_array (p /. 2.0R) c r cbor_match);
 }
@@ -679,12 +680,12 @@ ensures
   cbor_match_mixed_list_map (p /. 2.0R) c r cbor_match ** cbor_match_mixed_list_map (p /. 2.0R) c r cbor_match
 {
   unfold (cbor_match_mixed_list_map p c r cbor_match);
-  I.mixed_list_match_share (cbor_match_map_entry_bounded r cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) (vmatch_share_map r cbor_match cbor_match_share);
+  I.mixed_list_match_share (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r) (vmatch_share_map r cbor_match cbor_match_share);
   perm_half_mul p c.cbor_map_gen_perm;
-  rewrite (I.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p *. c.cbor_map_gen_perm) /. 2.0R) c.cbor_map_gen_ptr (Map?.v r))
-       as (I.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p /. 2.0R) *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r));
-  rewrite (I.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p *. c.cbor_map_gen_perm) /. 2.0R) c.cbor_map_gen_ptr (Map?.v r))
-       as (I.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p /. 2.0R) *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r));
+  rewrite (I.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p *. c.cbor_map_gen_perm) /. 2.0R) c.cbor_map_gen_ptr (Map?.v r))
+       as (I.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p /. 2.0R) *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r));
+  rewrite (I.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p *. c.cbor_map_gen_perm) /. 2.0R) c.cbor_map_gen_ptr (Map?.v r))
+       as (I.mixed_list_match (cbor_match_map_entry_bounded r cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p /. 2.0R) *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r));
   fold (cbor_match_mixed_list_map (p /. 2.0R) c r cbor_match);
   fold (cbor_match_mixed_list_map (p /. 2.0R) c r cbor_match);
 }
@@ -725,7 +726,7 @@ ensures
     cbor_match_bounded_eq r1 cbor_match pm0 x y;
     rewrite (cbor_match_bounded r1 cbor_match pm0 x y) as (cbor_match pm0 x y);
   };
-  I.mixed_list_match_weaken (cbor_match_bounded r1 cbor_match) cbor_match parse_raw_data_item (p1 *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r1) prf1;
+  I.mixed_list_match_weaken (cbor_match_bounded r1 cbor_match) cbor_match IO.u64_ops parse_raw_data_item (p1 *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r1) prf1;
   ghost
   fn prf2
     (x: cbor_raw)
@@ -738,7 +739,7 @@ ensures
     cbor_match_bounded_eq r2 cbor_match pm0 x y;
     rewrite (cbor_match_bounded r2 cbor_match pm0 x y) as (cbor_match pm0 x y);
   };
-  I.mixed_list_match_weaken (cbor_match_bounded r2 cbor_match) cbor_match parse_raw_data_item (p2 *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r2) prf2;
+  I.mixed_list_match_weaken (cbor_match_bounded r2 cbor_match) cbor_match IO.u64_ops parse_raw_data_item (p2 *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r2) prf2;
   ghost
   fn vmatch_gather
     (x1: cbor_raw)
@@ -753,11 +754,11 @@ ensures
     cbor_match_gather pm0' x1 x2' pm0 x2;
     rewrite (cbor_match (pm0' +. pm0) x1 x2') as (cbor_match (pm0 +. pm0') x1 x2);
   };
-  I.mixed_list_match_gather_bound cbor_match parse_raw_data_item (p2 *. c.cbor_array_gen_perm) (p1 *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r2) (Array?.v r1) vmatch_gather;
+  I.mixed_list_match_gather_bound cbor_match IO.u64_ops parse_raw_data_item (p2 *. c.cbor_array_gen_perm) (p1 *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r2) (Array?.v r1) vmatch_gather;
   array_v_len_eq r1 r2;
   perm_add_mul p1 p2 c.cbor_array_gen_perm;
-  rewrite (I.mixed_list_match cbor_match parse_raw_data_item ((p2 *. c.cbor_array_gen_perm) +. (p1 *. c.cbor_array_gen_perm)) c.cbor_array_gen_ptr (Array?.v r2))
-       as (I.mixed_list_match cbor_match parse_raw_data_item ((p1 +. p2) *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r1));
+  rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item ((p2 *. c.cbor_array_gen_perm) +. (p1 *. c.cbor_array_gen_perm)) c.cbor_array_gen_ptr (Array?.v r2))
+       as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item ((p1 +. p2) *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r1));
   ghost
   fn prf3
     (x: cbor_raw)
@@ -770,7 +771,7 @@ ensures
     cbor_match_bounded_eq r1 cbor_match pm0 x y;
     rewrite (cbor_match pm0 x y) as (cbor_match_bounded r1 cbor_match pm0 x y);
   };
-  I.mixed_list_match_weaken cbor_match (cbor_match_bounded r1 cbor_match) parse_raw_data_item ((p1 +. p2) *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r1) prf3;
+  I.mixed_list_match_weaken cbor_match (cbor_match_bounded r1 cbor_match) IO.u64_ops parse_raw_data_item ((p1 +. p2) *. c.cbor_array_gen_perm) c.cbor_array_gen_ptr (Array?.v r1) prf3;
   fold (cbor_match_mixed_list_array (p1 +. p2) c r1 cbor_match);
 }
 
@@ -808,7 +809,7 @@ ensures
     cbor_match_map_entry_bounded_eq r1 cbor_match pm0 x y;
     rewrite (cbor_match_map_entry_bounded r1 cbor_match pm0 x y) as (cbor_match_map_entry_unbounded cbor_match pm0 x y);
   };
-  I.mixed_list_match_weaken (cbor_match_map_entry_bounded r1 cbor_match) (cbor_match_map_entry_unbounded cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p1 *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r1) prf1;
+  I.mixed_list_match_weaken (cbor_match_map_entry_bounded r1 cbor_match) (cbor_match_map_entry_unbounded cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p1 *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r1) prf1;
   ghost
   fn prf2
     (x: cbor_map_entry)
@@ -821,7 +822,7 @@ ensures
     cbor_match_map_entry_bounded_eq r2 cbor_match pm0 x y;
     rewrite (cbor_match_map_entry_bounded r2 cbor_match pm0 x y) as (cbor_match_map_entry_unbounded cbor_match pm0 x y);
   };
-  I.mixed_list_match_weaken (cbor_match_map_entry_bounded r2 cbor_match) (cbor_match_map_entry_unbounded cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p2 *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r2) prf2;
+  I.mixed_list_match_weaken (cbor_match_map_entry_bounded r2 cbor_match) (cbor_match_map_entry_unbounded cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p2 *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r2) prf2;
   ghost
   fn vmatch_gather
     (x1: cbor_map_entry)
@@ -841,11 +842,11 @@ ensures
     rewrite (cbor_match (pm0' +. pm0) x1.cbor_map_entry_value (snd x2')) as (cbor_match (pm0 +. pm0') x1.cbor_map_entry_value (snd x2));
     fold (cbor_match_map_entry_unbounded cbor_match (pm0 +. pm0') x1 x2);
   };
-  I.mixed_list_match_gather_bound (cbor_match_map_entry_unbounded cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p2 *. c.cbor_map_gen_perm) (p1 *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r2) (Map?.v r1) vmatch_gather;
+  I.mixed_list_match_gather_bound (cbor_match_map_entry_unbounded cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) (p2 *. c.cbor_map_gen_perm) (p1 *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r2) (Map?.v r1) vmatch_gather;
   map_v_len_eq r1 r2;
   perm_add_mul p1 p2 c.cbor_map_gen_perm;
-  rewrite (I.mixed_list_match (cbor_match_map_entry_unbounded cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p2 *. c.cbor_map_gen_perm) +. (p1 *. c.cbor_map_gen_perm)) c.cbor_map_gen_ptr (Map?.v r2))
-       as (I.mixed_list_match (cbor_match_map_entry_unbounded cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p1 +. p2) *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r1));
+  rewrite (I.mixed_list_match (cbor_match_map_entry_unbounded cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p2 *. c.cbor_map_gen_perm) +. (p1 *. c.cbor_map_gen_perm)) c.cbor_map_gen_ptr (Map?.v r2))
+       as (I.mixed_list_match (cbor_match_map_entry_unbounded cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p1 +. p2) *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r1));
   ghost
   fn prf3
     (x: cbor_map_entry)
@@ -858,6 +859,6 @@ ensures
     cbor_match_map_entry_bounded_eq r1 cbor_match pm0 x y;
     rewrite (cbor_match_map_entry_unbounded cbor_match pm0 x y) as (cbor_match_map_entry_bounded r1 cbor_match pm0 x y);
   };
-  I.mixed_list_match_weaken (cbor_match_map_entry_unbounded cbor_match) (cbor_match_map_entry_bounded r1 cbor_match) (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p1 +. p2) *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r1) prf3;
+  I.mixed_list_match_weaken (cbor_match_map_entry_unbounded cbor_match) (cbor_match_map_entry_bounded r1 cbor_match) IO.u64_ops (LowParse.Spec.Combinators.nondep_then parse_raw_data_item parse_raw_data_item) ((p1 +. p2) *. c.cbor_map_gen_perm) c.cbor_map_gen_ptr (Map?.v r1) prf3;
   fold (cbor_match_mixed_list_map (p1 +. p2) c r1 cbor_match);
 }

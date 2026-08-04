@@ -451,7 +451,9 @@ ensures
 (* _owned a l] pins [a.array] to the injection [Inj.array_gen arec]  *)
 (* of the adapter record [arec], and threads [ANondet.._owned].      *)
 (* ================================================================ *)
-let fits_u64_axiom () : squash SZ.fits_u64 = assume (SZ.fits_u64)
+(* NOTE: the [FStar.SizeT.fits_u64] platform axiom formerly declared here has
+   been ELIMINATED: mixed_list counts are now [U64.t], so array/map-insert
+   obligations are plain u64 facts and exact u64 overflow checks. *)
 
 let cbor_nondet_array_append_cell_t = Nondet.cbor_nondet_array_append_cell_t
 
@@ -574,7 +576,6 @@ ensures
   with garec2. assert (ANondet.cbor_nondet_array_owned garec2 l2);
   let arec2 = Inj.array_gen_recover x2.array garec2;
   rewrite (ANondet.cbor_nondet_array_owned garec2 l2) as (ANondet.cbor_nondet_array_owned arec2 l2);
-  fits_u64_axiom ();
   let o = ANondet.cbor_nondet_array_append arec1 arec2 r_before r_after;
   match o {
     None -> {
@@ -830,9 +831,8 @@ ensures
                Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv)))
 {
   cbor_nondet_map_match_elim x;
-  let f64 = fits_u64_axiom ();
   unfold (cbor_nondet_map_entry_insert_refs r1 r2 ry);
-  let res = NMIS.cbor_nondet_map_entry_insert_spec f64 x.map key value r1 r2 ry;
+  let res = NMIS.cbor_nondet_map_entry_insert_spec x.map key value r1 r2 ry;
   match res {
     None -> {
       fold (cbor_nondet_map_entry_insert_refs r1 r2 ry);

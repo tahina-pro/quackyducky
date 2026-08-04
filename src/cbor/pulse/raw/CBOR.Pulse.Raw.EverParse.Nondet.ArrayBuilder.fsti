@@ -62,10 +62,10 @@ ensures
 
 (* Append two owned arrays.
 
-   NOTE (deviation): like the underlying raw [cbor_array_append], this requires
-   [pure SZ.fits_u64] (the platform size_t is at least 64-bit): forming the
-   underlying [Append] node needs [SZ.fits (len1 + len2)], only obtainable from
-   [SZ.fits_u64] once the u64 sum is known not to overflow. *)
+   The element counts are now [U64.t] values, so forming the underlying
+   [Append] node no longer needs any assumption about the platform integer
+   width: once the [U64.t] length sum is known not to overflow, that bound
+   directly discharges the iterator's overflow obligation. *)
 fn cbor_nondet_array_append
   (x1 x2: cbor_mixed_list_array)
   (r_before r_after: R.ref cbor_nondet_array_append_cell_t)
@@ -73,8 +73,7 @@ fn cbor_nondet_array_append
   (#vb0 #va0: Ghost.erased cbor_nondet_array_append_cell_t)
 requires
   cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
-  R.pts_to r_before vb0 ** R.pts_to r_after va0 **
-  pure (SZ.fits_u64)
+  R.pts_to r_before vb0 ** R.pts_to r_after va0
 returns res: option cbor_mixed_list_array
 ensures
   (match res with
@@ -107,13 +106,14 @@ ensures
 (* Init: view an existing nondeterministic-CBOR ARRAY object as an owned-array
    handle (the reverse of [cbor_nondet_array_finalize]).
 
-   NOTE (deviation): requires [pure SZ.fits_u64] (see [cbor_nondet_array_append]). *)
+   The element counts are now [U64.t], so this needs no platform integer-width
+   assumption (see [cbor_nondet_array_append]). *)
 fn cbor_nondet_array_init
   (x: cbor_nondet_t) (r1 r2: R.ref cbor_nondet_array_append_cell_t)
   (#p: perm) (#l: Ghost.erased Spec.cbor) (#w1 #w2: Ghost.erased cbor_nondet_array_append_cell_t)
 requires
   Nondet.cbor_nondet_match p x l ** R.pts_to r1 w1 ** R.pts_to r2 w2 **
-  pure (Spec.CArray? (Spec.unpack l) /\ SZ.fits_u64)
+  pure (Spec.CArray? (Spec.unpack l))
 returns y: cbor_mixed_list_array
 ensures
   exists* (l': list Spec.cbor).

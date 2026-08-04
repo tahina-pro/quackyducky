@@ -508,11 +508,11 @@ ensures
 (* [cbor_det_map_length].                                            *)
 (* ================================================================ *)
 
-(* PLATFORM AXIOM: [FStar.SizeT.fits_u64] -- the platform size_t is at least
-   64-bit.  Used identically in CBOR.Pulse.API.Det.C (matches PR #291).  The
-   ONLY [assume] in this module; discharges the [SZ.fits_u64] precondition of
-   the structural array-append adapter [ADet.cbor_det_array_append]. *)
-let fits_u64_axiom () : squash SZ.fits_u64 = assume (SZ.fits_u64)
+(* NOTE: This module previously materialized an [FStar.SizeT.fits_u64]
+   platform axiom to discharge the [SZ.fits_u64] precondition of the
+   structural array-append adapter.  That is no longer needed: the lowparse
+   mixed_list element counts are now [U64.t], so the obligation is a plain
+   u64 fact.  The axiom has been ELIMINATED. *)
 
 let cbor_det_array_append_cell_t = Det.cbor_det_array_append_cell_t
 
@@ -635,7 +635,6 @@ ensures
   with garec2. assert (ADet.cbor_det_array_owned garec2 l2);
   let arec2 = Inj.array_gen_recover x2.array garec2;
   rewrite (ADet.cbor_det_array_owned garec2 l2) as (ADet.cbor_det_array_owned arec2 l2);
-  fits_u64_axiom ();
   let o = ADet.cbor_det_array_append arec1 arec2 r_before r_after;
   match o {
     None -> {
@@ -897,9 +896,8 @@ ensures
                Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv)))
 {
   cbor_det_map_match_elim x;
-  let f64 = fits_u64_axiom ();
   unfold (cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry);
-  let res = DMIS.cbor_det_map_entry_insert_spec f64 x.map key value r1 r2 r3 r4 ry;
+  let res = DMIS.cbor_det_map_entry_insert_spec x.map key value r1 r2 r3 r4 ry;
   match res {
     None -> {
       fold (cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry);

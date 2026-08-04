@@ -36,7 +36,6 @@ module SZ = FStar.SizeT
    [CMap?.c (unpack vres)] equals the union map. *)
 inline_for_extraction
 fn cbor_nondet_map_entry_insert_spec
-  (f64: squash SZ.fits_u64)
   (x key value: cbor_nondet_t)
   (r1 r2: R.ref cbor_nondet_map_entry_insert_cell_t)
   (ry: R.ref cbor_nondet_map_entry_t)

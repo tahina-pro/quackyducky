@@ -4,7 +4,7 @@ friend CBOR.Pulse.Raw.Nondet
 friend CBOR.Pulse.API.Nondet.Type
 (* Needed so that the abstract [cbor_nondet_map_entry_insert_cell_t] declared in
    the raw/-relocated .fsti unfolds (via Nondet.Type -> ML.cbor_raw_mixed_list,
-   then MixedList -> IT.mixed_list) to the concrete [IT.mixed_list cbor_map_entry]
+   then MixedList -> IT.mixed_list) to the concrete [IT.mixed_list U64.t cbor_map_entry]
    used in the ref types below.  Ref types unchanged. *)
 friend CBOR.Pulse.Raw.Format.MixedList
 
@@ -126,9 +126,8 @@ let none_bridge
 
 inline_for_extraction
 fn cbor_nondet_map_entry_insert_spec
-  (f64: squash SZ.fits_u64)
   (x key value: cbor_nondet_t)
-  (r1 r2: R.ref (IT.mixed_list cbor_map_entry))
+  (r1 r2: R.ref (IT.mixed_list U64.t cbor_map_entry))
   (ry: R.ref cbor_map_entry)
   (#p: perm) (#y: Ghost.erased (v: Spec.cbor { Spec.CMap? (Spec.unpack v) }))
   (#pkv: perm) (#vk #vv: Ghost.erased Spec.cbor)
@@ -166,7 +165,7 @@ ensures (match res with
   SpecRaw.mk_cbor_eq (Ghost.reveal xh);
   assert (pure (SpecRawBase.Map? (Ghost.reveal xh)));
   (* Run the verified raw core (implicits inferred from the raw matches). *)
-  let res = MI.cbor_raw_nondet_map_entry_insert f64 x key value r1 r2 ry;
+  let res = MI.cbor_raw_nondet_map_entry_insert x key value r1 r2 ry;
   match res {
     None -> {
       none_bridge (Ghost.reveal xh) (Ghost.reveal vkr) (Ghost.reveal y) (Ghost.reveal vk);

@@ -77,7 +77,7 @@ and cbor_map = {
 and cbor_mixed_list_array = {
   cbor_array_gen_length_size: integer_size;
   cbor_array_gen_ptr: (ml: CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list cbor_raw {
-    let len = SZ.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length ml) in
+    let len = U64.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length ml) in
     FStar.UInt.fits len 64 /\
     raw_uint64_size_prop cbor_array_gen_length_size (U64.uint_to_t len)
   });
@@ -87,7 +87,7 @@ and cbor_mixed_list_array = {
 and cbor_mixed_list_map = {
   cbor_map_gen_length_size: integer_size;
   cbor_map_gen_ptr: (ml: CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list cbor_map_entry {
-    let len = SZ.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length ml) in
+    let len = U64.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length ml) in
     FStar.UInt.fits len 64 /\
     raw_uint64_size_prop cbor_map_gen_length_size (U64.uint_to_t len)
   });

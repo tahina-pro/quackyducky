@@ -4,7 +4,7 @@ friend CBOR.Pulse.API.Det.Type
 friend CBOR.Pulse.API.Det.Common
 (* Needed so the abstract cell/entry types (declared in the relocated raw/
    interface) are transparent here:
-     cbor_det_map_entry_insert_cell_t == IT.mixed_list cbor_map_entry
+     cbor_det_map_entry_insert_cell_t == IT.mixed_list U64.t cbor_map_entry
      cbor_det_map_entry_t             == cbor_map_entry *)
 friend CBOR.Pulse.Raw.Format.MixedList
 
@@ -52,9 +52,8 @@ let order0_eq ()
 
 inline_for_extraction
 fn cbor_det_map_entry_insert_spec
-  (f64: squash SZ.fits_u64)
   (x key value: cbor_det_t)
-  (r1 r2 r3 r4: R.ref (IT.mixed_list cbor_map_entry))
+  (r1 r2 r3 r4: R.ref (IT.mixed_list U64.t cbor_map_entry))
   (ry: R.ref cbor_map_entry)
   (#p: perm) (#y: Ghost.erased (v: Spec.cbor { Spec.CMap? (Spec.unpack v) }))
   (#pkv: perm) (#vk #vv: Ghost.erased Spec.cbor)
@@ -101,7 +100,7 @@ ensures (match res with
   unfold (cbor_det_match pkv value vv);
   (* Run the verified raw core.  Implicits are inferred from the unfolded
      cbor_det_match (#xh = mk_det_raw_cbor y, #vk = mk_det_raw_cbor vk, ...). *)
-  let res = MI.cbor_raw_det_map_entry_insert f64 x key value r1 r2 r3 r4 ry;
+  let res = MI.cbor_raw_det_map_entry_insert x key value r1 r2 r3 r4 ry;
   match res {
     None -> {
       (* Bridge the raw None-disjunction to the Spec level. *)

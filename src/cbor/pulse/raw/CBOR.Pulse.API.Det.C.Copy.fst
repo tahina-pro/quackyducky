@@ -17,7 +17,7 @@ let freeable = Copy.freeable
 let cbor_get_from_freeable x = Copy.Mkcbor_freeable?.cbor x
 
   fn cbor_copy (_: unit)
-: cbor_copy_t u#0 u#0 #_ #_ cbor_det_match freeable cbor_get_from_freeable
+: cbor_det_copy_t
 =
   (c: _)
   (#p: _)

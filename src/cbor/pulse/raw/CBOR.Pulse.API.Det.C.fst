@@ -203,16 +203,13 @@ let cbor_det_mk_array_from_array (_: unit) =
 (* order 157-235) so [cbor_det_array_t] precedes [cbor_det_map_entry_match]. *)
 (* ================================================================ *)
 
-(* PLATFORM AXIOM: [FStar.SizeT.fits_u64].  Per the FStar.SizeT docs it
-   "can only be introduced through a stateful function (currently in
-   Steel.ST.HigherArray), which will be extracted to a static_assert by
-   krml".  That module is ABSENT from this Pulse-only F* install, so we
-   materialize the same axiom here.  It is the ONLY assume in this module,
-   used solely to discharge the [SZ.fits_u64] preconditions of the
-   structural array-append / array-init / map-entry-insert adapters (the
-   platform size_t being at least 64-bit).  Both the provided reference
-   (PR #291) and upstream Steel introduce it the same way. *)
-let fits_u64_axiom () : squash SZ.fits_u64 = assume (SZ.fits_u64)
+(* NOTE: This module previously materialized an [FStar.SizeT.fits_u64]
+   platform axiom to discharge [SZ.fits_u64] preconditions of the array /
+   map-entry-insert adapters.  That is no longer needed: the lowparse
+   mixed_list element counts are now [U64.t], so the relevant obligations
+   are plain u64 facts ([U64.v _ < pow2 64]) and exact u64 overflow checks.
+   The axiom has been ELIMINATED. *)
+
 
 (* Realize the public abstract array-handle type. *)
 let cbor_det_array_t = CBOR.Pulse.Raw.Type.cbor_mixed_list_array
@@ -220,8 +217,8 @@ let cbor_det_array_t = CBOR.Pulse.Raw.Type.cbor_mixed_list_array
 [@@pulse_unfold]
 let cbor_det_array_owned = ADet.cbor_det_array_owned
 
-(* [init] needs [SZ.fits_u64] (platform); the public interface does not expose
-   it, so this thin wrapper materializes it before delegating to the adapter. *)
+(* [init] delegates to the structural adapter.  (Formerly needed a
+   [SZ.fits_u64] platform assumption; no longer — counts are [U64.t].) *)
 fn cbor_det_array_init
   (x: cbor_det_t)
   (r1 r2: R.ref cbor_det_array_append_cell_t)
@@ -239,14 +236,13 @@ ensures
       (cbor_det_match p x l ** (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2)) **
     pure (Spec.CArray? (Spec.unpack l) /\ l' == Spec.CArray?.v (Spec.unpack l)))
 {
-  let f64 = fits_u64_axiom ();
   ADet.cbor_det_array_init x r1 r2
 }
 
 let cbor_det_array_empty = ADet.cbor_det_array_empty
 let cbor_det_array_singleton = ADet.cbor_det_array_singleton
 
-(* [append] needs [SZ.fits_u64] (platform); same treatment as [init]. *)
+(* [append] delegates to the structural adapter (no [SZ.fits_u64] needed). *)
 fn cbor_det_array_append
   (x1 x2: cbor_det_array_t)
   (r_before r_after: R.ref cbor_det_array_append_cell_t)
@@ -269,7 +265,6 @@ ensures
        (cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
         (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
 {
-  let f64 = fits_u64_axiom ();
   ADet.cbor_det_array_append x1 x2 r_before r_after
 }
 
@@ -508,9 +503,8 @@ ensures (match res with
   let mt = cbor_det_major_type () x;
   if (mt = cbor_major_type_map) {
     cmap_of_major_type y;
-    let f64 = fits_u64_axiom ();
     unfold (cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry);
-    let res = DMIS.cbor_det_map_entry_insert_spec f64 x key value r1 r2 r3 r4 ry;
+    let res = DMIS.cbor_det_map_entry_insert_spec x key value r1 r2 r3 r4 ry;
     match res {
       None -> {
         fold (cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry);
