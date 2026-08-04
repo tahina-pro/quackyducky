@@ -98,12 +98,13 @@ serialize_bool(c: bool, out: &mut [u8]) ->
         <=
         crate::cbordetveraux::simple_value_true
         {
-            let _letpattern: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let _letpattern: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 crate::cbordetver::cbor_det_mk_simple_value(crate::cbordetveraux::simple_value_true);
             let x: crate::cbordetveraux::cbor_raw =
                 match _letpattern
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } =>
+                      res,
                     _ => panic!("Incomplete pattern matching")
                 };
             let ser: crate::cbordetver::option__size_t =
@@ -127,12 +128,12 @@ serialize_bool(c: bool, out: &mut [u8]) ->
     <=
     crate::cbordetveraux::simple_value_false
     {
-        let _letpattern: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+        let _letpattern: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
             crate::cbordetver::cbor_det_mk_simple_value(crate::cbordetveraux::simple_value_false);
         let x: crate::cbordetveraux::cbor_raw =
             match _letpattern
             {
-                crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
+                crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
                 _ => panic!("Incomplete pattern matching")
             };
         let ser: crate::cbordetver::option__size_t = crate::cbordetver::cbor_det_serialize(x, out);
@@ -414,12 +415,12 @@ serialize_undefined(c: undefined, out: &mut [u8]) ->
     usize
 {
     crate::lowstar::ignore::ignore::<undefined>(c);
-    let _letpattern: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let _letpattern: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         crate::cbordetver::cbor_det_mk_simple_value(23u8);
     let c1: crate::cbordetveraux::cbor_raw =
         match _letpattern
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
             _ => panic!("Incomplete pattern matching")
         };
     let res: crate::cbordetver::option__size_t = crate::cbordetver::cbor_det_serialize(c1, out);
@@ -521,12 +522,12 @@ serialize_nil(c: nil, out: &mut [u8]) ->
     usize
 {
     crate::lowstar::ignore::ignore::<nil>(c);
-    let _letpattern: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let _letpattern: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         crate::cbordetver::cbor_det_mk_simple_value(22u8);
     let c1: crate::cbordetveraux::cbor_raw =
         match _letpattern
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
             _ => panic!("Incomplete pattern matching")
         };
     let res: crate::cbordetver::option__size_t = crate::cbordetver::cbor_det_serialize(c1, out);
@@ -705,12 +706,12 @@ serialize_true(c: evercddl_true, out: &mut [u8]) ->
     usize
 {
     crate::lowstar::ignore::ignore::<evercddl_true>(c);
-    let _letpattern: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let _letpattern: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         crate::cbordetver::cbor_det_mk_simple_value(21u8);
     let c1: crate::cbordetveraux::cbor_raw =
         match _letpattern
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
             _ => panic!("Incomplete pattern matching")
         };
     let res: crate::cbordetver::option__size_t = crate::cbordetver::cbor_det_serialize(c1, out);
@@ -812,12 +813,12 @@ serialize_false(c: evercddl_false, out: &mut [u8]) ->
     usize
 {
     crate::lowstar::ignore::ignore::<evercddl_false>(c);
-    let _letpattern: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let _letpattern: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         crate::cbordetver::cbor_det_mk_simple_value(20u8);
     let c1: crate::cbordetveraux::cbor_raw =
         match _letpattern
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res } => res,
             _ => panic!("Incomplete pattern matching")
         };
     let res: crate::cbordetver::option__size_t = crate::cbordetver::cbor_det_serialize(c1, out);
@@ -933,13 +934,13 @@ serialize_tstr(c: &[u8], out: &mut [u8]) ->
                 { crate::cbordetver::cbor_det_string_kind::ByteString }
                 else
                 { crate::cbordetver::cbor_det_string_kind::TextString };
-            let res: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let res: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 crate::cbordetver::cbor_det_mk_string(mty, c·);
-            let _letpattern: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = res;
+            let _letpattern: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = res;
             let x: crate::cbordetveraux::cbor_raw =
                 match _letpattern
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: c1 } => c1,
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: c1 } => c1,
                     _ => panic!("Incomplete pattern matching")
                 };
             let ser: crate::cbordetver::option__size_t =
@@ -1051,13 +1052,13 @@ serialize_bstr(c: &[u8], out: &mut [u8]) ->
     {
         let mty: crate::cbordetver::cbor_det_string_kind =
             crate::cbordetver::cbor_det_string_kind::ByteString;
-        let res: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+        let res: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
             crate::cbordetver::cbor_det_mk_string(mty, c·);
-        let _letpattern: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = res;
+        let _letpattern: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = res;
         let x: crate::cbordetveraux::cbor_raw =
             match _letpattern
             {
-                crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: c1 } => c1,
+                crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: c1 } => c1,
                 _ => panic!("Incomplete pattern matching")
             };
         let ser: crate::cbordetver::option__size_t = crate::cbordetver::cbor_det_serialize(x, out);
@@ -3748,7 +3749,7 @@ pub fn validate_cose_key_generic(c: crate::cbordetveraux::cbor_raw) -> bool
         let c1: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty, 1u64);
         let x·: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
         let _letpattern0: crate::cbordetver::cbor_det_view = x·;
-        let mg: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+        let mg: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
             match _letpattern0
             {
                 crate::cbordetver::cbor_det_view::Map { _0: m1 } =>
@@ -3758,9 +3759,9 @@ pub fn validate_cose_key_generic(c: crate::cbordetveraux::cbor_raw) -> bool
         let res1: crate::cbordetveraux::impl_map_group_result =
             match mg
             {
-                crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                   crate::cbordetveraux::impl_map_group_result::MGFail,
-                crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+                crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
                   {
                       let test: bool = validate_tstr(cv);
                       let check_value: bool = if test { true } else { validate_int(cv) };
@@ -3789,7 +3790,7 @@ pub fn validate_cose_key_generic(c: crate::cbordetveraux::cbor_raw) -> bool
                       let x·0: crate::cbordetver::cbor_det_view =
                           crate::cbordetver::cbor_det_destruct(c);
                       let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-                      let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                      let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                           match _letpattern1
                           {
                               crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -3799,9 +3800,9 @@ pub fn validate_cose_key_generic(c: crate::cbordetveraux::cbor_raw) -> bool
                       let res11: crate::cbordetveraux::impl_map_group_result =
                           match mg0
                           {
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                                 crate::cbordetveraux::impl_map_group_result::MGFail,
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                               { v: cv }
                               =>
                                 {
@@ -3851,7 +3852,7 @@ pub fn validate_cose_key_generic(c: crate::cbordetveraux::cbor_raw) -> bool
                       let x·0: crate::cbordetver::cbor_det_view =
                           crate::cbordetver::cbor_det_destruct(c);
                       let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-                      let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                      let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                           match _letpattern1
                           {
                               crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -3861,9 +3862,9 @@ pub fn validate_cose_key_generic(c: crate::cbordetveraux::cbor_raw) -> bool
                       let res11: crate::cbordetveraux::impl_map_group_result =
                           match mg0
                           {
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                                 crate::cbordetveraux::impl_map_group_result::MGFail,
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                               { v: cv }
                               =>
                                 {
@@ -3915,7 +3916,7 @@ pub fn validate_cose_key_generic(c: crate::cbordetveraux::cbor_raw) -> bool
                       let x·0: crate::cbordetver::cbor_det_view =
                           crate::cbordetver::cbor_det_destruct(c);
                       let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-                      let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                      let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                           match _letpattern1
                           {
                               crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -3925,9 +3926,9 @@ pub fn validate_cose_key_generic(c: crate::cbordetveraux::cbor_raw) -> bool
                       let res110: crate::cbordetveraux::impl_map_group_result =
                           match mg0
                           {
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                                 crate::cbordetveraux::impl_map_group_result::MGFail,
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                               { v: cv }
                               =>
                                 {
@@ -4090,7 +4091,7 @@ pub fn validate_cose_key_generic(c: crate::cbordetveraux::cbor_raw) -> bool
                       let x·0: crate::cbordetver::cbor_det_view =
                           crate::cbordetver::cbor_det_destruct(c);
                       let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-                      let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                      let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                           match _letpattern1
                           {
                               crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -4100,9 +4101,9 @@ pub fn validate_cose_key_generic(c: crate::cbordetveraux::cbor_raw) -> bool
                       let res110: crate::cbordetveraux::impl_map_group_result =
                           match mg0
                           {
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                                 crate::cbordetveraux::impl_map_group_result::MGFail,
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                               { v: cv }
                               =>
                                 {
@@ -4725,18 +4726,18 @@ parse_cose_key_generic
     let c1: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty, 1u64);
     let x·: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern: crate::cbordetver::cbor_det_view = x·;
-    let ow: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let ow: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
               crate::cbordetver::cbor_det_map_get(m3, c1),
             _ => panic!("Incomplete pattern matching")
         };
-    let _letpattern0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
+    let _letpattern0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
     let w1: aux_env29_type_1_ugly =
         match _letpattern0
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
               {
                   let test: bool = validate_tstr(w);
                   if test
@@ -4758,7 +4759,7 @@ parse_cose_key_generic
     let c10: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty0, 2u64);
     let x·0: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-    let mg: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let mg: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern1
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -4768,9 +4769,9 @@ parse_cose_key_generic
     let test1: crate::cbordetveraux::impl_map_group_result =
         match mg
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
               crate::cbordetveraux::impl_map_group_result::MGFail,
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
               {
                   let check_value: bool = validate_bstr(cv);
                   if check_value
@@ -4789,18 +4790,18 @@ parse_cose_key_generic
                 crate::cbordetver::cbor_det_mk_int64(mty1, 2u64);
             let x·1: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern2: crate::cbordetver::cbor_det_view = x·1;
-            let ow0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let ow0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern2
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                       crate::cbordetver::cbor_det_map_get(m3, c11),
                     _ => panic!("Incomplete pattern matching")
                 };
-            let _letpattern3: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
+            let _letpattern3: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
             let w11: &[u8] =
                 match _letpattern3
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
                       parse_bstr(w),
                     _ => panic!("Incomplete pattern matching")
                 };
@@ -4815,7 +4816,7 @@ parse_cose_key_generic
     let c11: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty1, 3u64);
     let x·1: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern2: crate::cbordetver::cbor_det_view = x·1;
-    let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern2
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -4825,9 +4826,9 @@ parse_cose_key_generic
     let test10: crate::cbordetveraux::impl_map_group_result =
         match mg0
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
               crate::cbordetveraux::impl_map_group_result::MGFail,
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
               {
                   let test: bool = validate_tstr(cv);
                   let check_value: bool = if test { true } else { validate_int(cv) };
@@ -4847,18 +4848,18 @@ parse_cose_key_generic
                 crate::cbordetver::cbor_det_mk_int64(mty2, 3u64);
             let x·2: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern3: crate::cbordetver::cbor_det_view = x·2;
-            let ow0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let ow0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern3
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                       crate::cbordetver::cbor_det_map_get(m3, c12),
                     _ => panic!("Incomplete pattern matching")
                 };
-            let _letpattern4: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
+            let _letpattern4: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
             let w11: aux_env29_type_1_ugly =
                 match _letpattern4
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
                       {
                           let test: bool = validate_tstr(w);
                           if test
@@ -4889,7 +4890,7 @@ parse_cose_key_generic
     let c12: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty2, 4u64);
     let x·2: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern3: crate::cbordetver::cbor_det_view = x·2;
-    let mg1: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let mg1: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern3
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -4899,9 +4900,9 @@ parse_cose_key_generic
     let test11: crate::cbordetveraux::impl_map_group_result =
         match mg1
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
               crate::cbordetveraux::impl_map_group_result::MGFail,
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
               {
                   let ty: u8 = crate::cbordetver::cbor_det_major_type(cv);
                   let check_value: bool =
@@ -5015,21 +5016,21 @@ parse_cose_key_generic
                 crate::cbordetver::cbor_det_mk_int64(mty3, 4u64);
             let x·3: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern4: crate::cbordetver::cbor_det_view = x·3;
-            let ow0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let ow0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern4
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                       crate::cbordetver::cbor_det_map_get(m3, c13),
                     _ => panic!("Incomplete pattern matching")
                 };
-            let _letpattern5: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
+            let _letpattern5: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
             let
             w110:
             either__CDDL_Pulse_Types_slice__COSE_Format_aux_env29_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env29_type_1
             =
                 match _letpattern5
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
                       {
                           let v1: crate::cbordetver::cbor_det_view =
                               crate::cbordetver::cbor_det_destruct(w);
@@ -5084,7 +5085,7 @@ parse_cose_key_generic
     let c13: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty3, 5u64);
     let x·3: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern4: crate::cbordetver::cbor_det_view = x·3;
-    let mg2: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let mg2: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern4
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -5094,9 +5095,9 @@ parse_cose_key_generic
     let test12: crate::cbordetveraux::impl_map_group_result =
         match mg2
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
               crate::cbordetveraux::impl_map_group_result::MGFail,
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
               {
                   let check_value: bool = validate_bstr(cv);
                   if check_value
@@ -5115,18 +5116,18 @@ parse_cose_key_generic
                 crate::cbordetver::cbor_det_mk_int64(mty4, 5u64);
             let x·4: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern5: crate::cbordetver::cbor_det_view = x·4;
-            let ow0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let ow0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern5
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                       crate::cbordetver::cbor_det_map_get(m3, c14),
                     _ => panic!("Incomplete pattern matching")
                 };
-            let _letpattern6: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
+            let _letpattern6: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
             let w110: &[u8] =
                 match _letpattern6
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
                       parse_bstr(w),
                     _ => panic!("Incomplete pattern matching")
                 };
@@ -7515,7 +7516,7 @@ pub fn validate_cose_key_okp(c: crate::cbordetveraux::cbor_raw) -> bool
         let c1: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty, 1u64);
         let x·: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
         let _letpattern0: crate::cbordetver::cbor_det_view = x·;
-        let mg: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+        let mg: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
             match _letpattern0
             {
                 crate::cbordetver::cbor_det_view::Map { _0: m1 } =>
@@ -7525,9 +7526,9 @@ pub fn validate_cose_key_okp(c: crate::cbordetveraux::cbor_raw) -> bool
         let res1: crate::cbordetveraux::impl_map_group_result =
             match mg
             {
-                crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                   crate::cbordetveraux::impl_map_group_result::MGFail,
-                crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+                crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
                   {
                       let mt: u8 = crate::cbordetver::cbor_det_major_type(cv);
                       let is_uint: bool = mt == crate::cbordetveraux::cbor_major_type_uint64;
@@ -7578,7 +7579,7 @@ pub fn validate_cose_key_okp(c: crate::cbordetveraux::cbor_raw) -> bool
                       let x·0: crate::cbordetver::cbor_det_view =
                           crate::cbordetver::cbor_det_destruct(c);
                       let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-                      let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                      let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                           match _letpattern1
                           {
                               crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -7587,9 +7588,11 @@ pub fn validate_cose_key_okp(c: crate::cbordetveraux::cbor_raw) -> bool
                           };
                       match mg0
                       {
-                          crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                          crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                             crate::cbordetveraux::impl_map_group_result::MGFail,
-                          crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+                          crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                          { v: cv }
+                          =>
                             {
                                 let test: bool = validate_int(cv);
                                 let check_value: bool = if test { true } else { validate_tstr(cv) };
@@ -7631,7 +7634,7 @@ pub fn validate_cose_key_okp(c: crate::cbordetveraux::cbor_raw) -> bool
                       let x·0: crate::cbordetver::cbor_det_view =
                           crate::cbordetver::cbor_det_destruct(c);
                       let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-                      let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                      let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                           match _letpattern1
                           {
                               crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -7641,9 +7644,9 @@ pub fn validate_cose_key_okp(c: crate::cbordetveraux::cbor_raw) -> bool
                       let res11: crate::cbordetveraux::impl_map_group_result =
                           match mg0
                           {
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                                 crate::cbordetveraux::impl_map_group_result::MGFail,
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                               { v: cv }
                               =>
                                 {
@@ -7699,7 +7702,7 @@ pub fn validate_cose_key_okp(c: crate::cbordetveraux::cbor_raw) -> bool
                       let x·0: crate::cbordetver::cbor_det_view =
                           crate::cbordetver::cbor_det_destruct(c);
                       let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-                      let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                      let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                           match _letpattern1
                           {
                               crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -7709,9 +7712,9 @@ pub fn validate_cose_key_okp(c: crate::cbordetveraux::cbor_raw) -> bool
                       let res110: crate::cbordetveraux::impl_map_group_result =
                           match mg0
                           {
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                                 crate::cbordetveraux::impl_map_group_result::MGFail,
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                               { v: cv }
                               =>
                                 {
@@ -8073,17 +8076,17 @@ parse_cose_key_okp
     let c1: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty, 1u64);
     let x·: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern: crate::cbordetver::cbor_det_view = x·;
-    let ow: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let ow: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
               crate::cbordetver::cbor_det_map_get(m3, c1),
             _ => panic!("Incomplete pattern matching")
         };
-    let _letpattern0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
+    let _letpattern0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
     match _letpattern0
     {
-        crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { .. } => (),
+        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { .. } => (),
         _ => panic!("Incomplete pattern matching")
     };
     let mty0: crate::cbordetver::cbor_det_int_kind =
@@ -8097,18 +8100,18 @@ parse_cose_key_okp
     let c10: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty0, 0u64);
     let x·0: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-    let ow0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let ow0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern1
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
               crate::cbordetver::cbor_det_map_get(m3, c10),
             _ => panic!("Incomplete pattern matching")
         };
-    let _letpattern2: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
+    let _letpattern2: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
     let w2: evercddl_label_ugly =
         match _letpattern2
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
               {
                   let test: bool = validate_int(w);
                   if test
@@ -8138,7 +8141,7 @@ parse_cose_key_okp
     let c11: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty1, 1u64);
     let x·1: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern3: crate::cbordetver::cbor_det_view = x·1;
-    let mg: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let mg: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern3
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -8148,9 +8151,9 @@ parse_cose_key_okp
     let test1: crate::cbordetveraux::impl_map_group_result =
         match mg
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
               crate::cbordetveraux::impl_map_group_result::MGFail,
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
               {
                   let check_value: bool = validate_bstr(cv);
                   if check_value
@@ -8175,18 +8178,18 @@ parse_cose_key_okp
                 crate::cbordetver::cbor_det_mk_int64(mty2, 1u64);
             let x·2: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern4: crate::cbordetver::cbor_det_view = x·2;
-            let ow1: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let ow1: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern4
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                       crate::cbordetver::cbor_det_map_get(m3, c12),
                     _ => panic!("Incomplete pattern matching")
                 };
-            let _letpattern5: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow1;
+            let _letpattern5: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow1;
             let w11: &[u8] =
                 match _letpattern5
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
                       parse_bstr(w),
                     _ => panic!("Incomplete pattern matching")
                 };
@@ -8208,7 +8211,7 @@ parse_cose_key_okp
     let c12: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty2, 3u64);
     let x·2: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern4: crate::cbordetver::cbor_det_view = x·2;
-    let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern4
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -8218,9 +8221,9 @@ parse_cose_key_okp
     let test10: crate::cbordetveraux::impl_map_group_result =
         match mg0
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
               crate::cbordetveraux::impl_map_group_result::MGFail,
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
               {
                   let check_value: bool = validate_bstr(cv);
                   if check_value
@@ -8245,18 +8248,18 @@ parse_cose_key_okp
                 crate::cbordetver::cbor_det_mk_int64(mty3, 3u64);
             let x·3: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern5: crate::cbordetver::cbor_det_view = x·3;
-            let ow1: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let ow1: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern5
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                       crate::cbordetver::cbor_det_map_get(m3, c13),
                     _ => panic!("Incomplete pattern matching")
                 };
-            let _letpattern6: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow1;
+            let _letpattern6: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow1;
             let w11: &[u8] =
                 match _letpattern6
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
                       parse_bstr(w),
                     _ => panic!("Incomplete pattern matching")
                 };
@@ -9926,7 +9929,7 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
         let c1: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty, 1u64);
         let x·: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
         let _letpattern0: crate::cbordetver::cbor_det_view = x·;
-        let mg: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+        let mg: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
             match _letpattern0
             {
                 crate::cbordetver::cbor_det_view::Map { _0: m1 } =>
@@ -9936,9 +9939,9 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
         let res1: crate::cbordetveraux::impl_map_group_result =
             match mg
             {
-                crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                   crate::cbordetveraux::impl_map_group_result::MGFail,
-                crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+                crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
                   {
                       let test: bool = validate_int(cv);
                       let check_value: bool = if test { true } else { validate_tstr(cv) };
@@ -9981,7 +9984,7 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                       let x·0: crate::cbordetver::cbor_det_view =
                           crate::cbordetver::cbor_det_destruct(c);
                       let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-                      let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                      let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                           match _letpattern1
                           {
                               crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -9991,9 +9994,9 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                       let res11: crate::cbordetveraux::impl_map_group_result =
                           match mg0
                           {
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                                 crate::cbordetveraux::impl_map_group_result::MGFail,
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                               { v: cv }
                               =>
                                 {
@@ -10151,7 +10154,7 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                       let x·0: crate::cbordetver::cbor_det_view =
                           crate::cbordetver::cbor_det_destruct(c);
                       let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-                      let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                      let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                           match _letpattern1
                           {
                               crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -10161,9 +10164,9 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                       let res110: crate::cbordetveraux::impl_map_group_result =
                           match mg0
                           {
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                                 crate::cbordetveraux::impl_map_group_result::MGFail,
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                               { v: cv }
                               =>
                                 {
@@ -10215,7 +10218,7 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                       let x·0: crate::cbordetver::cbor_det_view =
                           crate::cbordetver::cbor_det_destruct(c);
                       let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-                      let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                      let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                           match _letpattern1
                           {
                               crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -10225,9 +10228,9 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                       let res110: crate::cbordetveraux::impl_map_group_result =
                           match mg0
                           {
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                                 crate::cbordetveraux::impl_map_group_result::MGFail,
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                               { v: cv }
                               =>
                                 {
@@ -10277,7 +10280,7 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                       let x·0: crate::cbordetver::cbor_det_view =
                           crate::cbordetver::cbor_det_destruct(c);
                       let _letpattern1: crate::cbordetver::cbor_det_view = x·0;
-                      let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                      let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                           match _letpattern1
                           {
                               crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -10287,9 +10290,9 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                       let res110: crate::cbordetveraux::impl_map_group_result =
                           match mg0
                           {
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                                 crate::cbordetveraux::impl_map_group_result::MGFail,
-                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                               { v: cv }
                               =>
                                 {
@@ -10320,7 +10323,7 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                                         crate::cbordetver::cbor_det_destruct(c);
                                     let _letpattern2: crate::cbordetver::cbor_det_view = x·1;
                                     let
-                                    mg1: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw
+                                    mg1: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
                                     =
                                         match _letpattern2
                                         {
@@ -10331,9 +10334,9 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                                     let res120: crate::cbordetveraux::impl_map_group_result =
                                         match mg1
                                         {
-                                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None
+                                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None
                                             => crate::cbordetveraux::impl_map_group_result::MGFail,
-                                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                             { v: cv }
                                             =>
                                               {
@@ -10391,7 +10394,9 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                                 let x·1: crate::cbordetver::cbor_det_view =
                                     crate::cbordetver::cbor_det_destruct(c);
                                 let _letpattern2: crate::cbordetver::cbor_det_view = x·1;
-                                let mg1: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                                let
+                                mg1: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
+                                =
                                     match _letpattern2
                                     {
                                         crate::cbordetver::cbor_det_view::Map { _0: m2 } =>
@@ -10401,9 +10406,9 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                                 let res120: crate::cbordetveraux::impl_map_group_result =
                                     match mg1
                                     {
-                                        crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None
+                                        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None
                                         => crate::cbordetveraux::impl_map_group_result::MGFail,
-                                        crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                         { v: cv }
                                         =>
                                           {
@@ -10438,7 +10443,7 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                                                   x·2;
                                               let
                                               mg2:
-                                              crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw
+                                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
                                               =
                                                   match _letpattern3
                                                   {
@@ -10453,10 +10458,10 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                                               =
                                                   match mg2
                                                   {
-                                                      crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None
+                                                      crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None
                                                       =>
                                                         crate::cbordetveraux::impl_map_group_result::MGFail,
-                                                      crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                                      crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                                       { v: cv }
                                                       =>
                                                         {
@@ -10522,7 +10527,7 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                                           let _letpattern3: crate::cbordetver::cbor_det_view = x·2;
                                           let
                                           mg2:
-                                          crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw
+                                          crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
                                           =
                                               match _letpattern3
                                               {
@@ -10534,10 +10539,10 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                                           let res130: crate::cbordetveraux::impl_map_group_result =
                                               match mg2
                                               {
-                                                  crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None
+                                                  crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None
                                                   =>
                                                     crate::cbordetveraux::impl_map_group_result::MGFail,
-                                                  crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                                  crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                                   { v: cv }
                                                   =>
                                                     {
@@ -10597,7 +10602,7 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                                                         x·3;
                                                     let
                                                     mg3:
-                                                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw
+                                                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
                                                     =
                                                         match _letpattern4
                                                         {
@@ -10617,10 +10622,10 @@ pub fn validate_header_map(c: crate::cbordetveraux::cbor_raw) -> bool
                                                     =
                                                         match mg3
                                                         {
-                                                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None
+                                                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None
                                                             =>
                                                               crate::cbordetveraux::impl_map_group_result::MGFail,
-                                                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                                             { v: cv }
                                                             =>
                                                               {
@@ -11316,7 +11321,7 @@ parse_header_map
     let c1: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty, 1u64);
     let x·: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern: crate::cbordetver::cbor_det_view = x·;
-    let mg: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let mg: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -11326,9 +11331,9 @@ parse_header_map
     let test1: crate::cbordetveraux::impl_map_group_result =
         match mg
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
               crate::cbordetveraux::impl_map_group_result::MGFail,
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
               {
                   let test: bool = validate_int(cv);
                   let check_value: bool = if test { true } else { validate_tstr(cv) };
@@ -11348,18 +11353,18 @@ parse_header_map
                 crate::cbordetver::cbor_det_mk_int64(mty0, 1u64);
             let x·0: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern0: crate::cbordetver::cbor_det_view = x·0;
-            let ow: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let ow: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern0
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                       crate::cbordetver::cbor_det_map_get(m3, c10),
                     _ => panic!("Incomplete pattern matching")
                 };
-            let _letpattern1: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
+            let _letpattern1: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
             let w1: evercddl_label_ugly =
                 match _letpattern1
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
                       {
                           let test: bool = validate_int(w);
                           if test
@@ -11385,7 +11390,7 @@ parse_header_map
     let c10: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty0, 2u64);
     let x·0: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern0: crate::cbordetver::cbor_det_view = x·0;
-    let mg0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let mg0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern0
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -11395,9 +11400,9 @@ parse_header_map
     let test10: crate::cbordetveraux::impl_map_group_result =
         match mg0
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
               crate::cbordetveraux::impl_map_group_result::MGFail,
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
               {
                   let ty: u8 = crate::cbordetver::cbor_det_major_type(cv);
                   let check_value: bool =
@@ -11509,21 +11514,21 @@ parse_header_map
                 crate::cbordetver::cbor_det_mk_int64(mty1, 2u64);
             let x·1: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern1: crate::cbordetver::cbor_det_view = x·1;
-            let ow: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let ow: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern1
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                       crate::cbordetver::cbor_det_map_get(m3, c11),
                     _ => panic!("Incomplete pattern matching")
                 };
-            let _letpattern2: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
+            let _letpattern2: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
             let
             w11:
             either__CDDL_Pulse_Types_slice__COSE_Format_aux_env34_type_1_CDDL_Pulse_Parse_ArrayGroup_array_iterator_t__CBOR_Pulse_Raw_Iterator_cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_raw_COSE_Format_aux_env34_type_1
             =
                 match _letpattern2
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
                       {
                           let v1: crate::cbordetver::cbor_det_view =
                               crate::cbordetver::cbor_det_destruct(w);
@@ -11578,7 +11583,7 @@ parse_header_map
     let c11: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty1, 3u64);
     let x·1: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern1: crate::cbordetver::cbor_det_view = x·1;
-    let mg1: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let mg1: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern1
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -11588,9 +11593,9 @@ parse_header_map
     let test11: crate::cbordetveraux::impl_map_group_result =
         match mg1
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
               crate::cbordetveraux::impl_map_group_result::MGFail,
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
               {
                   let test: bool = validate_tstr(cv);
                   let check_value: bool = if test { true } else { validate_int(cv) };
@@ -11610,18 +11615,18 @@ parse_header_map
                 crate::cbordetver::cbor_det_mk_int64(mty2, 3u64);
             let x·2: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern2: crate::cbordetver::cbor_det_view = x·2;
-            let ow: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let ow: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern2
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                       crate::cbordetver::cbor_det_map_get(m3, c12),
                     _ => panic!("Incomplete pattern matching")
                 };
-            let _letpattern3: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
+            let _letpattern3: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
             let w11: aux_env29_type_1_ugly =
                 match _letpattern3
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
                       {
                           let test: bool = validate_tstr(w);
                           if test
@@ -11654,7 +11659,7 @@ parse_header_map
     let c12: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty2, 4u64);
     let x·2: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern2: crate::cbordetver::cbor_det_view = x·2;
-    let mg2: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let mg2: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern2
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -11664,9 +11669,9 @@ parse_header_map
     let test12: crate::cbordetveraux::impl_map_group_result =
         match mg2
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
               crate::cbordetveraux::impl_map_group_result::MGFail,
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
               {
                   let check_value: bool = validate_bstr(cv);
                   if check_value
@@ -11685,18 +11690,18 @@ parse_header_map
                 crate::cbordetver::cbor_det_mk_int64(mty3, 4u64);
             let x·3: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern3: crate::cbordetver::cbor_det_view = x·3;
-            let ow: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let ow: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern3
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                       crate::cbordetver::cbor_det_map_get(m3, c13),
                     _ => panic!("Incomplete pattern matching")
                 };
-            let _letpattern4: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
+            let _letpattern4: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
             let w110: &[u8] =
                 match _letpattern4
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
                       parse_bstr(w),
                     _ => panic!("Incomplete pattern matching")
                 };
@@ -11717,7 +11722,7 @@ parse_header_map
     let c13: crate::cbordetveraux::cbor_raw = crate::cbordetver::cbor_det_mk_int64(mty3, 5u64);
     let x·3: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
     let _letpattern3: crate::cbordetver::cbor_det_view = x·3;
-    let mg3: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+    let mg3: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
         match _letpattern3
         {
             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -11727,9 +11732,9 @@ parse_header_map
     let res1: crate::cbordetveraux::impl_map_group_result =
         match mg3
         {
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
               crate::cbordetveraux::impl_map_group_result::MGFail,
-            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
               {
                   let check_value: bool = validate_bstr(cv);
                   if check_value
@@ -11752,7 +11757,7 @@ parse_header_map
                   let x·4: crate::cbordetver::cbor_det_view =
                       crate::cbordetver::cbor_det_destruct(c);
                   let _letpattern4: crate::cbordetver::cbor_det_view = x·4;
-                  let mg4: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                  let mg4: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                       match _letpattern4
                       {
                           crate::cbordetver::cbor_det_view::Map { _0: m4 } =>
@@ -11762,9 +11767,11 @@ parse_header_map
                   let res11: crate::cbordetveraux::impl_map_group_result =
                       match mg4
                       {
-                          crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                          crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                             crate::cbordetveraux::impl_map_group_result::MGFail,
-                          crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+                          crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                          { v: cv }
+                          =>
                             {
                                 let check_value: bool = validate_everparsenomatch(cv);
                                 if check_value
@@ -11806,18 +11813,18 @@ parse_header_map
                 crate::cbordetver::cbor_det_mk_int64(mty4, 5u64);
             let x·4: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern4: crate::cbordetver::cbor_det_view = x·4;
-            let ow: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let ow: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern4
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                       crate::cbordetver::cbor_det_map_get(m3, c14),
                     _ => panic!("Incomplete pattern matching")
                 };
-            let _letpattern5: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
+            let _letpattern5: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
             let w110: &[u8] =
                 match _letpattern5
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: w } =>
                       parse_bstr(w),
                     _ => panic!("Incomplete pattern matching")
                 };
@@ -11829,7 +11836,7 @@ parse_header_map
                 crate::cbordetver::cbor_det_mk_int64(mty5, 6u64);
             let x·5: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern6: crate::cbordetver::cbor_det_view = x·5;
-            let mg4: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let mg4: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern6
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -11839,9 +11846,9 @@ parse_header_map
             let test110: crate::cbordetveraux::impl_map_group_result =
                 match mg4
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                       crate::cbordetveraux::impl_map_group_result::MGFail,
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
                       {
                           let check_value: bool = validate_everparsenomatch(cv);
                           if check_value
@@ -11861,18 +11868,19 @@ parse_header_map
                     let x·6: crate::cbordetver::cbor_det_view =
                         crate::cbordetver::cbor_det_destruct(c);
                     let _letpattern7: crate::cbordetver::cbor_det_view = x·6;
-                    let ow0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                    let ow0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                         match _letpattern7
                         {
                             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                               crate::cbordetver::cbor_det_map_get(m3, c16),
                             _ => panic!("Incomplete pattern matching")
                         };
-                    let _letpattern8: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow0;
+                    let _letpattern8: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                        ow0;
                     let w120: everparsenomatch =
                         match _letpattern8
                         {
-                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                             { v: w }
                             => parse_everparsenomatch(w),
                             _ => panic!("Incomplete pattern matching")
@@ -11894,7 +11902,7 @@ parse_header_map
                 crate::cbordetver::cbor_det_mk_int64(mty4, 6u64);
             let x·4: crate::cbordetver::cbor_det_view = crate::cbordetver::cbor_det_destruct(c);
             let _letpattern4: crate::cbordetver::cbor_det_view = x·4;
-            let mg4: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+            let mg4: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                 match _letpattern4
                 {
                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -11904,9 +11912,9 @@ parse_header_map
             let res10: crate::cbordetveraux::impl_map_group_result =
                 match mg4
                 {
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                       crate::cbordetveraux::impl_map_group_result::MGFail,
-                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
+                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: cv } =>
                       {
                           let check_value: bool = validate_bstr(cv);
                           if check_value
@@ -11929,7 +11937,7 @@ parse_header_map
                           let x·5: crate::cbordetver::cbor_det_view =
                               crate::cbordetver::cbor_det_destruct(c);
                           let _letpattern5: crate::cbordetver::cbor_det_view = x·5;
-                          let mg5: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                          let mg5: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                               match _letpattern5
                               {
                                   crate::cbordetver::cbor_det_view::Map { _0: m4 } =>
@@ -11939,9 +11947,9 @@ parse_header_map
                           let res11: crate::cbordetveraux::impl_map_group_result =
                               match mg5
                               {
-                                  crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
-                                    crate::cbordetveraux::impl_map_group_result::MGFail,
-                                  crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                  crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None
+                                  => crate::cbordetveraux::impl_map_group_result::MGFail,
+                                  crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                   { v: cv }
                                   =>
                                     {
@@ -11986,18 +11994,19 @@ parse_header_map
                     let x·5: crate::cbordetver::cbor_det_view =
                         crate::cbordetver::cbor_det_destruct(c);
                     let _letpattern5: crate::cbordetver::cbor_det_view = x·5;
-                    let ow: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                    let ow: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                         match _letpattern5
                         {
                             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
                               crate::cbordetver::cbor_det_map_get(m3, c15),
                             _ => panic!("Incomplete pattern matching")
                         };
-                    let _letpattern6: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw = ow;
+                    let _letpattern6: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                        ow;
                     let w110: &[u8] =
                         match _letpattern6
                         {
-                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                             { v: w }
                             => parse_bstr(w),
                             _ => panic!("Incomplete pattern matching")
@@ -12011,7 +12020,7 @@ parse_header_map
                     let x·6: crate::cbordetver::cbor_det_view =
                         crate::cbordetver::cbor_det_destruct(c);
                     let _letpattern7: crate::cbordetver::cbor_det_view = x·6;
-                    let mg5: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                    let mg5: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                         match _letpattern7
                         {
                             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -12021,9 +12030,9 @@ parse_header_map
                     let test120: crate::cbordetveraux::impl_map_group_result =
                         match mg5
                         {
-                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                               crate::cbordetveraux::impl_map_group_result::MGFail,
-                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                             { v: cv }
                             =>
                               {
@@ -12045,7 +12054,7 @@ parse_header_map
                             let x·7: crate::cbordetver::cbor_det_view =
                                 crate::cbordetver::cbor_det_destruct(c);
                             let _letpattern8: crate::cbordetver::cbor_det_view = x·7;
-                            let ow0: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                            let ow0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                                 match _letpattern8
                                 {
                                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -12053,13 +12062,13 @@ parse_header_map
                                     _ => panic!("Incomplete pattern matching")
                                 };
                             let
-                            _letpattern9: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw
+                            _letpattern9: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
                             =
                                 ow0;
                             let w120: everparsenomatch =
                                 match _letpattern9
                                 {
-                                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                     { v: w }
                                     => parse_everparsenomatch(w),
                                     _ => panic!("Incomplete pattern matching")
@@ -12083,7 +12092,7 @@ parse_header_map
                     let x·5: crate::cbordetver::cbor_det_view =
                         crate::cbordetver::cbor_det_destruct(c);
                     let _letpattern5: crate::cbordetver::cbor_det_view = x·5;
-                    let mg5: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                    let mg5: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                         match _letpattern5
                         {
                             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -12093,9 +12102,9 @@ parse_header_map
                     let test120: crate::cbordetveraux::impl_map_group_result =
                         match mg5
                         {
-                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                               crate::cbordetveraux::impl_map_group_result::MGFail,
-                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                             { v: cv }
                             =>
                               {
@@ -12117,7 +12126,7 @@ parse_header_map
                             let x·6: crate::cbordetver::cbor_det_view =
                                 crate::cbordetver::cbor_det_destruct(c);
                             let _letpattern6: crate::cbordetver::cbor_det_view = x·6;
-                            let ow: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                            let ow: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                                 match _letpattern6
                                 {
                                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -12125,13 +12134,13 @@ parse_header_map
                                     _ => panic!("Incomplete pattern matching")
                                 };
                             let
-                            _letpattern7: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw
+                            _letpattern7: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
                             =
                                 ow;
                             let w110: everparsenomatch =
                                 match _letpattern7
                                 {
-                                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                     { v: w }
                                     => parse_everparsenomatch(w),
                                     _ => panic!("Incomplete pattern matching")
@@ -12149,7 +12158,7 @@ parse_header_map
                     let x·6: crate::cbordetver::cbor_det_view =
                         crate::cbordetver::cbor_det_destruct(c);
                     let _letpattern6: crate::cbordetver::cbor_det_view = x·6;
-                    let mg6: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                    let mg6: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                         match _letpattern6
                         {
                             crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -12159,9 +12168,9 @@ parse_header_map
                     let test121: crate::cbordetveraux::impl_map_group_result =
                         match mg6
                         {
-                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
                               crate::cbordetveraux::impl_map_group_result::MGFail,
-                            crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                             { v: cv }
                             =>
                               {
@@ -12183,7 +12192,7 @@ parse_header_map
                             let x·7: crate::cbordetver::cbor_det_view =
                                 crate::cbordetver::cbor_det_destruct(c);
                             let _letpattern7: crate::cbordetver::cbor_det_view = x·7;
-                            let ow: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                            let ow: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                                 match _letpattern7
                                 {
                                     crate::cbordetver::cbor_det_view::Map { _0: m3 } =>
@@ -12191,13 +12200,13 @@ parse_header_map
                                     _ => panic!("Incomplete pattern matching")
                                 };
                             let
-                            _letpattern8: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw
+                            _letpattern8: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
                             =
                                 ow;
                             let w120: everparsenomatch =
                                 match _letpattern8
                                 {
-                                    crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                     { v: w }
                                     => parse_everparsenomatch(w),
                                     _ => panic!("Incomplete pattern matching")
@@ -14745,14 +14754,16 @@ serialize_empty_or_serialized_map(c: empty_or_serialized_map, out: &mut [u8]) ->
                       {
                           let mty: crate::cbordetver::cbor_det_string_kind =
                               crate::cbordetver::cbor_det_string_kind::ByteString;
-                          let res: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                          let res: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                               crate::cbordetver::cbor_det_mk_string(mty, c2);
-                          let _letpattern: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                          let
+                          _letpattern: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
+                          =
                               res;
                           let x: crate::cbordetveraux::cbor_raw =
                               match _letpattern
                               {
-                                  crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                  crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                   { v: c1 }
                                   => c1,
                                   _ => panic!("Incomplete pattern matching")
@@ -14787,16 +14798,17 @@ serialize_empty_or_serialized_map(c: empty_or_serialized_map, out: &mut [u8]) ->
                                   { crate::cbordetver::cbor_det_string_kind::ByteString }
                                   else
                                   { crate::cbordetver::cbor_det_string_kind::TextString };
-                              let res: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                              let res: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
                                   crate::cbordetver::cbor_det_mk_string(mty, c2);
                               let
-                              _letpattern: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw
+                              _letpattern:
+                              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
                               =
                                   res;
                               let x: crate::cbordetveraux::cbor_raw =
                                   match _letpattern
                                   {
-                                      crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                      crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                       { v: c1 }
                                       => c1,
                                       _ => panic!("Incomplete pattern matching")
@@ -15842,17 +15854,19 @@ serialize_sig_structure(c: sig_structure, out: &mut [u8]) ->
                                       { crate::cbordetver::cbor_det_string_kind::ByteString }
                                       else
                                       { crate::cbordetver::cbor_det_string_kind::TextString };
-                                  let res: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                                  let
+                                  res: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
+                                  =
                                       crate::cbordetver::cbor_det_mk_string(mty, s);
                                   let
                                   _letpattern2:
-                                  crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw
+                                  crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
                                   =
                                       res;
                                   let c3: crate::cbordetveraux::cbor_raw =
                                       match _letpattern2
                                       {
-                                          crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                          crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                           { v: c3 }
                                           => c3,
                                           _ => panic!("Incomplete pattern matching")
@@ -15899,17 +15913,19 @@ serialize_sig_structure(c: sig_structure, out: &mut [u8]) ->
                                       { crate::cbordetver::cbor_det_string_kind::ByteString }
                                       else
                                       { crate::cbordetver::cbor_det_string_kind::TextString };
-                                  let res: crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw =
+                                  let
+                                  res: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
+                                  =
                                       crate::cbordetver::cbor_det_mk_string(mty, s);
                                   let
                                   _letpattern2:
-                                  crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw
+                                  crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
                                   =
                                       res;
                                   let c3: crate::cbordetveraux::cbor_raw =
                                       match _letpattern2
                                       {
-                                          crate::cbordetver::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
+                                          crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some
                                           { v: c3 }
                                           => c3,
                                           _ => panic!("Incomplete pattern matching")

@@ -141,8 +141,6 @@ bool cbor_det_mk_text_string_from_arrayptr(uint8_t *a, uint64_t len, cbor_raw *d
 
 cbor_raw cbor_det_mk_array_from_array(cbor_raw *a, uint64_t len);
 
-typedef cbor_mixed_list_array cbor_det_array_t;
-
 cbor_mixed_list_array
 cbor_det_array_init(
   cbor_raw x,

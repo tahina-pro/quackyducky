@@ -53,6 +53,37 @@ extern bool cbor_det_mk_text_string_from_arrayptr(uint8_t *x0, uint64_t x1, cbor
 
 extern cbor_det_t cbor_det_mk_array_from_array(cbor_det_t *x0, uint64_t x1);
 
+extern cbor_det_array_t
+cbor_det_array_init(
+  cbor_det_t x,
+  cbor_det_array_append_cell_t *r1,
+  cbor_det_array_append_cell_t *r2
+);
+
+extern cbor_det_array_t cbor_det_array_empty(void);
+
+extern cbor_det_array_t cbor_det_array_singleton(cbor_det_t x, cbor_det_t *ry);
+
+typedef enum { FStar_Pervasives_Native_None, FStar_Pervasives_Native_Some }
+FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_array_t_tags;
+
+typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_array_t_s
+{
+  FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_array_t_tags tag;
+  cbor_det_array_t v;
+}
+FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_array_t;
+
+extern FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_array_t
+cbor_det_array_append(
+  cbor_det_array_t x1,
+  cbor_det_array_t x2,
+  cbor_det_array_append_cell_t *r_before,
+  cbor_det_array_append_cell_t *r_after
+);
+
+extern cbor_det_t cbor_det_array_finalize(cbor_det_array_t x);
+
 extern cbor_det_map_entry_t cbor_det_mk_map_entry(cbor_det_t x0, cbor_det_t x1);
 
 extern cbor_det_t cbor_det_mk_map_from_array(cbor_det_map_entry_t *uu___, uint64_t x0);
@@ -105,6 +136,25 @@ extern cbor_det_t cbor_det_map_entry_value(cbor_det_map_entry_t x0);
 
 extern bool cbor_det_map_get(cbor_det_t x0, cbor_det_t x1, cbor_det_t *x2);
 
+typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_t_s
+{
+  FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_array_t_tags tag;
+  cbor_det_t v;
+}
+FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_t;
+
+extern FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_t
+cbor_det_map_entry_insert(
+  cbor_det_t x,
+  cbor_det_t key,
+  cbor_det_t value,
+  cbor_det_map_entry_insert_cell_t *r1,
+  cbor_det_map_entry_insert_cell_t *r2,
+  cbor_det_map_entry_insert_cell_t *r3,
+  cbor_det_map_entry_insert_cell_t *r4,
+  cbor_det_map_entry_t *ry
+);
+
 extern size_t cbor_det_serialize_tag_to_array(uint64_t x0, uint8_t *x1, size_t x2);
 
 extern size_t
@@ -119,6 +169,12 @@ cbor_det_serialize_map_insert_to_array(uint8_t *x0, size_t x1, size_t x2, size_t
 extern size_t cbor_det_serialize_map_to_array(uint64_t x0, uint8_t *x1, size_t x2, size_t x3);
 
 extern cbor_det_t dummy_cbor_det_t(void);
+
+extern cbor_det_array_append_cell_t dummy_cbor_det_array_append_cell(void);
+
+extern cbor_det_map_entry_insert_cell_t dummy_cbor_det_map_entry_insert_cell(void);
+
+extern cbor_det_map_entry_t dummy_cbor_det_map_entry(void);
 
 
 #define CBORDetAPI_H_DEFINED

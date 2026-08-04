@@ -33251,6 +33251,8 @@ mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw <'a>;
 pub type cbor_det_map_entry_insert_cell_t <'a> =
 mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>;
 
+pub type cbor_det_array_t <'a> = cbor_mixed_list_array <'a>;
+
 pub fn dummy_cbor_det_t <'a>() -> cbor_raw <'a> { cbor_raw::CBOR_Case_Simple { v: 0u8 } }
 
 pub fn dummy_cbor_det_array_append_cell <'a>() ->

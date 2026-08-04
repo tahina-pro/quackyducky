@@ -360,6 +360,8 @@ cbor_det_array_append_cell_t;
 typedef LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
 cbor_det_map_entry_insert_cell_t;
 
+typedef cbor_mixed_list_array cbor_det_array_t;
+
 #if defined(__cplusplus)
 }
 #endif

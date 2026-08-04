@@ -72,14 +72,9 @@ pub fn cbor_det_serialize(x: crate::cbordetveraux::cbor_raw, output: &mut [u8]) 
     { option__size_t::None }
 }
 
-#[derive(PartialEq, Clone, Copy)]
-pub enum option__CBOR_Pulse_Raw_Type_cbor_raw <'a>
-{
-    None,
-    Some { v: crate::cbordetveraux::cbor_raw <'a> }
-}
-
-pub fn cbor_det_mk_simple_value <'a>(v: u8) -> option__CBOR_Pulse_Raw_Type_cbor_raw <'a>
+pub fn cbor_det_mk_simple_value <'a>(v: u8) ->
+    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
+    <'a>
 {
     if
     v <= crate::cbordetveraux::max_simple_value_additional_info
@@ -88,10 +83,10 @@ pub fn cbor_det_mk_simple_value <'a>(v: u8) -> option__CBOR_Pulse_Raw_Type_cbor_
     {
         let res: crate::cbordetveraux::cbor_raw =
             crate::cbordetveraux::cbor_raw::CBOR_Case_Simple { v };
-        option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res }
+        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res }
     }
     else
-    { option__CBOR_Pulse_Raw_Type_cbor_raw::None }
+    { crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None }
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -129,7 +124,7 @@ pub enum cbor_det_string_kind
 pub fn cbor_impl_utf8_correct(s: &[u8]) -> bool { crate::cbordetveraux::impl_correct(s) }
 
 pub fn cbor_det_mk_string <'a>(ty: cbor_det_string_kind, s: &'a [u8]) ->
-    option__CBOR_Pulse_Raw_Type_cbor_raw
+    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
     <'a>
 {
     let q1: usize = s.len().wrapping_div(32768usize);
@@ -138,7 +133,7 @@ pub fn cbor_det_mk_string <'a>(ty: cbor_det_string_kind, s: &'a [u8]) ->
     let q4: usize = q3.wrapping_div(32768usize);
     let __anf0: bool = q4 < 16usize;
     if ! __anf0
-    { option__CBOR_Pulse_Raw_Type_cbor_raw::None }
+    { crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None }
     else
     {
         let correct: bool =
@@ -160,10 +155,10 @@ pub fn cbor_det_mk_string <'a>(ty: cbor_det_string_kind, s: &'a [u8]) ->
                 };
             let res: crate::cbordetveraux::cbor_raw =
                 crate::cbordetveraux::cbor_raw::CBOR_Case_String { v: ress };
-            option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res }
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res }
         }
         else
-        { option__CBOR_Pulse_Raw_Type_cbor_raw::None }
+        { crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None }
     }
 }
 
@@ -188,7 +183,7 @@ pub fn cbor_det_mk_map_entry <'a>(
 { crate::cbordetveraux::cbor_mk_map_entry(xk, xv) }
 
 pub fn cbor_det_mk_array <'a>(a: &'a [crate::cbordetveraux::cbor_raw <'a>]) ->
-    option__CBOR_Pulse_Raw_Type_cbor_raw
+    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
     <'a>
 {
     let q1: usize = a.len().wrapping_div(32768usize);
@@ -197,7 +192,7 @@ pub fn cbor_det_mk_array <'a>(a: &'a [crate::cbordetveraux::cbor_raw <'a>]) ->
     let q4: usize = q3.wrapping_div(32768usize);
     let __anf0: bool = q4 < 16usize;
     if ! __anf0
-    { option__CBOR_Pulse_Raw_Type_cbor_raw::None }
+    { crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None }
     else
     {
         let len64: crate::cbordetveraux::raw_uint64 =
@@ -207,16 +202,16 @@ pub fn cbor_det_mk_array <'a>(a: &'a [crate::cbordetveraux::cbor_raw <'a>]) ->
             { cbor_array_length_size: len64.size, cbor_array_ptr: a };
         let res: crate::cbordetveraux::cbor_raw =
             crate::cbordetveraux::cbor_raw::CBOR_Case_Array { v: res· };
-        option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res }
+        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res }
     }
 }
 
 pub fn cbor_det_mk_map <'a>(a: &'a mut [crate::cbordetveraux::cbor_map_entry <'a>]) ->
-    option__CBOR_Pulse_Raw_Type_cbor_raw
+    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
     <'a>
 {
     let mut dest: [crate::cbordetveraux::cbor_raw; 1] =
-        [crate::cbordetveraux::dummy_cbor_det_t(); 1usize];
+        [crate::cbordetveraux::cbor_raw::CBOR_Case_Simple { v: 0u8 }; 1usize];
     let q1: usize = a.len().wrapping_div(32768usize);
     let q2: usize = q1.wrapping_div(32768usize);
     let q3: usize = q2.wrapping_div(32768usize);
@@ -246,10 +241,10 @@ pub fn cbor_det_mk_map <'a>(a: &'a mut [crate::cbordetveraux::cbor_map_entry <'a
     if bres
     {
         let res: crate::cbordetveraux::cbor_raw = (&dest)[0];
-        option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res }
+        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res }
     }
     else
-    { option__CBOR_Pulse_Raw_Type_cbor_raw::None }
+    { crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None }
 }
 
 pub fn cbor_det_equal(x1: crate::cbordetveraux::cbor_raw, x2: crate::cbordetveraux::cbor_raw) ->
@@ -380,6 +375,15 @@ pub fn cbor_det_get_array_length(x: crate::cbordetveraux::cbor_raw) -> u64
               { size: c·.cbor_array_length_size, value: (c·.cbor_array_ptr).len() as u64 },
             crate::cbordetveraux::cbor_raw::CBOR_Case_Serialized_Array { v: c· } =>
               c·.cbor_serialized_header,
+            crate::cbordetveraux::cbor_raw::CBOR_Case_Array_Gen { v: c· } =>
+              crate::cbordetveraux::raw_uint64
+              {
+                  size: c·.cbor_array_gen_length_size,
+                  value:
+                  crate::cbordetveraux::cbor_raw_mixed_list_length__CBOR_Pulse_Raw_Type_cbor_raw(
+                      c·.cbor_array_gen_ptr
+                  )
+              },
             _ => panic!("Incomplete pattern matching")
         };
     res.value
@@ -421,17 +425,99 @@ pub fn cbor_det_array_iterator_truncate <'a>(
 { crate::cbordetveraux::cbor_array_iterator_truncate(x, len) }
 
 pub fn cbor_det_get_array_item <'a>(x: crate::cbordetveraux::cbor_raw <'a>, i: u64) ->
-    option__CBOR_Pulse_Raw_Type_cbor_raw
+    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
     <'a>
 {
     let len: u64 = cbor_det_get_array_length(x);
     if i >= len
-    { option__CBOR_Pulse_Raw_Type_cbor_raw::None }
+    { crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None }
     else
     {
         let res: crate::cbordetveraux::cbor_raw = crate::cbordetveraux::cbor_array_item(x, i);
-        option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res }
+        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res }
     }
+}
+
+pub type cbor_det_array_append_cell_t <'a> =
+crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw <'a>;
+
+pub fn cbor_det_array_empty <'a>() -> crate::cbordetveraux::cbor_raw <'a>
+{
+    let arec: crate::cbordetveraux::cbor_mixed_list_array =
+        crate::cbordetveraux::cbor_array_empty();
+    crate::cbordetveraux::array_gen(arec)
+}
+
+pub fn cbor_det_array_singleton <'a>(
+    x: crate::cbordetveraux::cbor_raw <'a>,
+    ry: &'a mut [crate::cbordetveraux::cbor_raw <'a>]
+) ->
+    crate::cbordetveraux::cbor_raw
+    <'a>
+{
+    let res: crate::cbordetveraux::cbor_mixed_list_array =
+        crate::cbordetveraux::cbor_array_singleton(x, ry);
+    let arec: crate::cbordetveraux::cbor_mixed_list_array = res;
+    crate::cbordetveraux::array_gen(arec)
+}
+
+#[derive(PartialEq, Clone, Copy)]
+pub enum option__CBOR_Pulse_API_Det_Rust_cbor_det_array <'a>
+{
+    None,
+    Some { v: crate::cbordetveraux::cbor_raw <'a> }
+}
+
+pub fn cbor_det_array_append <'a>(
+    x1: crate::cbordetveraux::cbor_raw <'a>,
+    x2: crate::cbordetveraux::cbor_raw <'a>,
+    r_before:
+    &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw <'a>],
+    r_after: &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw <'a>]
+) ->
+    option__CBOR_Pulse_API_Det_Rust_cbor_det_array
+    <'a>
+{
+    let arec1: crate::cbordetveraux::cbor_mixed_list_array =
+        crate::cbordetveraux::array_gen_recover(x1);
+    let arec2: crate::cbordetveraux::cbor_mixed_list_array =
+        crate::cbordetveraux::array_gen_recover(x2);
+    let res: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array =
+        crate::cbordetveraux::cbor_array_append(arec1, arec2, r_before, r_after);
+    let o: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array =
+        match res
+        {
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array::None =>
+              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array::None,
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array::Some
+            { v: r }
+            =>
+              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array::Some { v: r },
+            _ => panic!("Incomplete pattern matching")
+        };
+    match o
+    {
+        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array::None =>
+          option__CBOR_Pulse_API_Det_Rust_cbor_det_array::None,
+        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array::Some
+        { v: arec· }
+        =>
+          {
+              let res0: crate::cbordetveraux::cbor_raw = crate::cbordetveraux::array_gen(arec·);
+              option__CBOR_Pulse_API_Det_Rust_cbor_det_array::Some { v: res0 }
+          },
+        _ => panic!("Incomplete pattern matching")
+    }
+}
+
+pub fn cbor_det_array_to_cbor <'a>(a: crate::cbordetveraux::cbor_raw <'a>) ->
+    crate::cbordetveraux::cbor_raw
+    <'a>
+{
+    let arec: crate::cbordetveraux::cbor_mixed_list_array =
+        crate::cbordetveraux::array_gen_recover(a);
+    let y: crate::cbordetveraux::cbor_raw = crate::cbordetveraux::cbor_array_finalize(arec);
+    y
 }
 
 pub fn cbor_det_map_length(x: crate::cbordetveraux::cbor_raw) -> u64
@@ -444,6 +530,15 @@ pub fn cbor_det_map_length(x: crate::cbordetveraux::cbor_raw) -> u64
               { size: c·.cbor_map_length_size, value: (c·.cbor_map_ptr).len() as u64 },
             crate::cbordetveraux::cbor_raw::CBOR_Case_Serialized_Map { v: c· } =>
               c·.cbor_serialized_header,
+            crate::cbordetveraux::cbor_raw::CBOR_Case_Map_Gen { v: c· } =>
+              crate::cbordetveraux::raw_uint64
+              {
+                  size: c·.cbor_map_gen_length_size,
+                  value:
+                  crate::cbordetveraux::cbor_raw_mixed_list_length__CBOR_Pulse_Raw_Type_cbor_map_entry(
+                      c·.cbor_map_gen_ptr
+                  )
+              },
             _ => panic!("Incomplete pattern matching")
         };
     res.value
@@ -488,7 +583,7 @@ pub fn cbor_det_map_get <'a>(
     x: crate::cbordetveraux::cbor_raw <'a>,
     k: crate::cbordetveraux::cbor_raw <'a>
 ) ->
-    option__CBOR_Pulse_Raw_Type_cbor_raw
+    crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw
     <'a>
 {
     let mut dest: [crate::cbordetveraux::cbor_raw; 1] = [k; 1usize];
@@ -497,8 +592,8 @@ pub fn cbor_det_map_get <'a>(
     let i: crate::cbordetveraux::cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry = res;
     let mut pi: [crate::cbordetveraux::cbor_raw_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry; 1] =
         [i; 1usize];
-    let mut pres: [option__CBOR_Pulse_Raw_Type_cbor_raw; 1] =
-        [option__CBOR_Pulse_Raw_Type_cbor_raw::None; 1usize];
+    let mut pres: [crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw; 1] =
+        [crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None; 1usize];
     let i_is_empty: bool = crate::cbordetveraux::cbor_map_iterator_is_empty(i);
     let cont: bool = ! i_is_empty;
     let mut pcont: [bool; 1] = [cont; 1usize];
@@ -512,7 +607,8 @@ pub fn cbor_det_map_get <'a>(
         if comp == 0i16
         {
             let value: crate::cbordetveraux::cbor_raw = entry.cbor_map_entry_value;
-            (&mut pres)[0] = option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: value };
+            (&mut pres)[0] =
+                crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: value };
             (&mut pcont)[0] = false
         }
         else if comp > 0i16
@@ -526,12 +622,12 @@ pub fn cbor_det_map_get <'a>(
             (&mut pcont)[0] = cont1
         }
     };
-    let res0: option__CBOR_Pulse_Raw_Type_cbor_raw = (&pres)[0];
+    let res0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw = (&pres)[0];
     let bres: bool =
         match res0
         {
-            option__CBOR_Pulse_Raw_Type_cbor_raw::None => false,
-            option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: vres } =>
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None => false,
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: vres } =>
               {
                   (&mut dest)[0] = vres;
                   true
@@ -541,10 +637,61 @@ pub fn cbor_det_map_get <'a>(
     if bres
     {
         let res1: crate::cbordetveraux::cbor_raw = (&dest)[0];
-        option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res1 }
+        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: res1 }
     }
     else
-    { option__CBOR_Pulse_Raw_Type_cbor_raw::None }
+    { crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None }
+}
+
+pub type cbor_det_map_entry_insert_cell_t <'a> =
+crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>;
+
+#[derive(PartialEq, Clone, Copy)]
+pub enum option__CBOR_Pulse_API_Det_Rust_cbor_det_map <'a>
+{
+    None,
+    Some { v: crate::cbordetveraux::cbor_raw <'a> }
+}
+
+pub fn cbor_det_map_entry_insert <'a>(
+    x: crate::cbordetveraux::cbor_raw <'a>,
+    key: crate::cbordetveraux::cbor_raw <'a>,
+    value: crate::cbordetveraux::cbor_raw <'a>,
+    r1:
+    &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
+    r2:
+    &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
+    r3:
+    &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
+    r4:
+    &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
+    ry: &'a mut [crate::cbordetveraux::cbor_map_entry <'a>]
+) ->
+    option__CBOR_Pulse_API_Det_Rust_cbor_det_map
+    <'a>
+{
+    let res: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
+        crate::cbordetveraux::cbor_raw_det_map_entry_insert(x, key, value, r1, r2, r3, r4, ry);
+    let res0: crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw =
+        match res
+        {
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None,
+            crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: m } =>
+              crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: m },
+            _ => panic!("Incomplete pattern matching")
+        };
+    match res0
+    {
+        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::None =>
+          option__CBOR_Pulse_API_Det_Rust_cbor_det_map::None,
+        crate::cbordetveraux::option__CBOR_Pulse_Raw_Type_cbor_raw::Some { v: m } =>
+          {
+              let res_map: crate::cbordetveraux::cbor_raw = m;
+              option__CBOR_Pulse_API_Det_Rust_cbor_det_map::Some { v: res_map }
+          },
+        _ => panic!("Incomplete pattern matching")
+    }
 }
 
 pub fn cbor_det_serialize_string(ty: u8, off: u64, out: &mut [u8]) -> usize
@@ -576,4 +723,32 @@ pub fn cbor_det_serialize_map(len: u64, out: &mut [u8], off: usize) -> usize
 }
 
 pub fn dummy_cbor_det_t <'a>() -> crate::cbordetveraux::cbor_raw <'a>
-{ crate::cbordetveraux::dummy_cbor_det_t() }
+{ crate::cbordetveraux::cbor_raw::CBOR_Case_Simple { v: 0u8 } }
+
+pub fn dummy_cbor_det_array_append_cell <'a>() ->
+    crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
+    <'a>
+{
+    crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Base
+    { _0: crate::cbordetveraux::base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Empty }
+}
+
+pub fn dummy_cbor_det_map_entry_insert_cell <'a>() ->
+    crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+    <'a>
+{
+    crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry::Base
+    {
+        _0:
+        crate::cbordetveraux::base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry::Empty
+    }
+}
+
+pub fn dummy_cbor_det_map_entry <'a>() -> crate::cbordetveraux::cbor_map_entry <'a>
+{
+    crate::cbordetveraux::cbor_map_entry
+    {
+        cbor_map_entry_key: crate::cbordetveraux::cbor_raw::CBOR_Case_Simple { v: 0u8 },
+        cbor_map_entry_value: crate::cbordetveraux::cbor_raw::CBOR_Case_Simple { v: 0u8 }
+    }
+}
