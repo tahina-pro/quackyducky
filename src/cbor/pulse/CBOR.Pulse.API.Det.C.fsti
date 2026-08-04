@@ -154,8 +154,6 @@ let cbor_det_mk_array_from_array' = mk_array_from_array' (cbor_det_mk_array_from
    No heap allocation: the application provides the (fixed number of) scratch
    references the operations need. *)
 
-val cbor_det_array_t : Type0
-
 val cbor_det_array_owned (x: cbor_det_array_t) (l: list Spec.cbor) : slprop
 
 val cbor_det_array_init

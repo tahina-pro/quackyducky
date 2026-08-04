@@ -4,6 +4,12 @@ module CBOR.Pulse.API.Det.C
 (* NOTE: this .fst file does not need anything from the Raw namespace,
 but it has been moved here to be hidden from verified clients. *)
 
+(* See through the array-handle realization ([cbor_det_array_t =
+   cbor_mixed_list_array], now declared in Det.Type) so the thin builder
+   wrappers below can delegate to the everparse/ adapters, which are typed in
+   terms of [cbor_mixed_list_array]. *)
+friend CBOR.Pulse.API.Det.Type
+
 [@@pulse_unfold]
 let cbor_det_match = CBOR.Pulse.API.Det.Common.cbor_det_match
 
@@ -211,8 +217,8 @@ let cbor_det_mk_array_from_array (_: unit) =
    The axiom has been ELIMINATED. *)
 
 
-(* Realize the public abstract array-handle type. *)
-let cbor_det_array_t = CBOR.Pulse.Raw.Type.cbor_mixed_list_array
+(* [cbor_det_array_t] is now declared and realized in Det.Type (so it reaches
+   the shared type header); Det.C sees the realization via [friend] above. *)
 
 [@@pulse_unfold]
 let cbor_det_array_owned = ADet.cbor_det_array_owned
