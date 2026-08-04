@@ -98,8 +98,8 @@ typedef cbor_mixed_list_array cbor_nondet_array_t;
 cbor_mixed_list_array
 cbor_nondet_array_init(
   cbor_raw x,
-  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r1,
-  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r2
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r2
 );
 
 cbor_mixed_list_array cbor_nondet_array_empty(void);
@@ -110,8 +110,8 @@ FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array
 cbor_nondet_array_append(
   cbor_mixed_list_array x1,
   cbor_mixed_list_array x2,
-  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r_before,
-  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *r_after
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r_before,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r_after
 );
 
 extern cbor_raw (*cbor_nondet_array_finalize)(cbor_mixed_list_array x0);
@@ -168,7 +168,7 @@ cbor_nondet_map_get_multiple(
   size_t len
 );
 
-LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry
+LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
 dummy_cbor_nondet_map_entry_insert_cell(void);
 
 cbor_map_entry dummy_cbor_nondet_map_entry(void);
@@ -178,8 +178,8 @@ cbor_nondet_map_entry_insert(
   cbor_raw x,
   cbor_raw key,
   cbor_raw value,
-  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry *r1,
-  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry *r2,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r2,
   cbor_map_entry *ry
 );
 

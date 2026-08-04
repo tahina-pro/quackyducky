@@ -100,110 +100,130 @@ typedef struct cbor_raw_s cbor_raw;
 #define LowParse_PulseParse_Iterator_Type_Serialized 3
 
 typedef uint8_t
-LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw_tags;
+LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_tags;
 
 typedef struct
-LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw_s
+LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_s
 {
-  LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
+  LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_tags
+  tag;
   union {
     cbor_raw *case_Singleton;
-    Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw case_Slice;
     struct
     {
-      size_t count;
+      Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw ss;
+      uint64_t count;
+    }
+    case_Slice;
+    struct
+    {
+      uint64_t count;
       CBOR_Pulse_Raw_Slice_byte_slice payload;
     }
     case_Serialized;
   }
   ;
 }
-LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw;
+LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw;
 
-typedef struct LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw_s
-LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw;
+typedef struct
+LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_s
+LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw;
 
 #define LowParse_PulseParse_Iterator_Type_Base 0
 #define LowParse_PulseParse_Iterator_Type_Append 1
 
 typedef uint8_t
-LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw_tags;
+LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_tags;
 
-typedef struct LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw_s
+typedef struct
+LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_s
 {
-  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
   union {
-    LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw case_Base;
+    LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
+    case_Base;
     struct
     {
-      size_t cb;
-      size_t ca;
-      size_t ob;
-      LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *before;
-      size_t oa;
-      LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw *after;
+      uint64_t cb;
+      uint64_t ca;
+      uint64_t tot;
+      uint64_t ob;
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *before;
+      uint64_t oa;
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *after;
     }
     case_Append;
   }
   ;
 }
-LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw;
+LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw;
 
 typedef struct cbor_mixed_list_array_s
 {
   uint8_t cbor_array_gen_length_size;
-  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw cbor_array_gen_ptr;
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
+  cbor_array_gen_ptr;
 }
 cbor_mixed_list_array;
 
 typedef struct
-LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry_s
+LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry_s
 {
-  LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
+  LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_tags
+  tag;
   union {
     cbor_map_entry *case_Singleton;
-    Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry case_Slice;
     struct
     {
-      size_t count;
+      Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry ss;
+      uint64_t count;
+    }
+    case_Slice;
+    struct
+    {
+      uint64_t count;
       CBOR_Pulse_Raw_Slice_byte_slice payload;
     }
     case_Serialized;
   }
   ;
 }
-LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry;
+LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry;
 
 typedef struct
-LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry_s
-LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry;
+LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry_s
+LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry;
 
 typedef struct
-LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry_s
+LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry_s
 {
-  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
   union {
-    LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry
+    LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
     case_Base;
     struct
     {
-      size_t cb;
-      size_t ca;
-      size_t ob;
-      LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry *before;
-      size_t oa;
-      LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry *after;
+      uint64_t cb;
+      uint64_t ca;
+      uint64_t tot;
+      uint64_t ob;
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+      *before;
+      uint64_t oa;
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+      *after;
     }
     case_Append;
   }
   ;
 }
-LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry;
+LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry;
 
 typedef struct cbor_mixed_list_map_s
 {
   uint8_t cbor_map_gen_length_size;
-  LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
   cbor_map_gen_ptr;
 }
 cbor_mixed_list_map;
@@ -252,23 +272,27 @@ cbor_map_entry;
 #define LowParse_PulseParse_Iterator_Type_IBase 0
 #define LowParse_PulseParse_Iterator_Type_IPair 1
 
-typedef uint8_t LowParse_PulseParse_Iterator_Type_iterator__CBOR_Pulse_Raw_Type_cbor_raw_tags;
+typedef uint8_t
+LowParse_PulseParse_Iterator_Type_iterator__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_tags;
 
-typedef struct LowParse_PulseParse_Iterator_Type_iterator__CBOR_Pulse_Raw_Type_cbor_raw_s
+typedef struct
+LowParse_PulseParse_Iterator_Type_iterator__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_s
 {
-  LowParse_PulseParse_Iterator_Type_iterator__CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
+  LowParse_PulseParse_Iterator_Type_iterator__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
   union {
-    LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw case_IBase;
+    LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
+    case_IBase;
     struct
     {
-      LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw before;
-      LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw after;
+      LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
+      before;
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw after;
     }
     case_IPair;
   }
   ;
 }
-LowParse_PulseParse_Iterator_Type_iterator__CBOR_Pulse_Raw_Type_cbor_raw;
+LowParse_PulseParse_Iterator_Type_iterator__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw;
 
 #define CBOR_Raw_Iterator_Slice 0
 #define CBOR_Raw_Iterator_Serialized 1
@@ -282,29 +306,32 @@ typedef struct cbor_array_iterator_s
   union {
     Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw case_CBOR_Raw_Iterator_Slice;
     CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator case_CBOR_Raw_Iterator_Serialized;
-    LowParse_PulseParse_Iterator_Type_iterator__CBOR_Pulse_Raw_Type_cbor_raw
+    LowParse_PulseParse_Iterator_Type_iterator__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
     case_CBOR_Raw_Iterator_Mixed;
   }
   ;
 }
 cbor_array_iterator;
 
-typedef struct LowParse_PulseParse_Iterator_Type_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry_s
+typedef struct
+LowParse_PulseParse_Iterator_Type_iterator__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry_s
 {
-  LowParse_PulseParse_Iterator_Type_iterator__CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
+  LowParse_PulseParse_Iterator_Type_iterator__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw_tags tag;
   union {
-    LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry
+    LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
     case_IBase;
     struct
     {
-      LowParse_PulseParse_Iterator_Type_base_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry before;
-      LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry after;
+      LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+      before;
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+      after;
     }
     case_IPair;
   }
   ;
 }
-LowParse_PulseParse_Iterator_Type_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry;
+LowParse_PulseParse_Iterator_Type_iterator__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry;
 
 typedef struct cbor_map_iterator_s
 {
@@ -312,7 +339,7 @@ typedef struct cbor_map_iterator_s
   union {
     Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_map_entry case_CBOR_Raw_Iterator_Slice;
     CBOR_Pulse_Raw_Iterator_Base_cbor_raw_serialized_iterator case_CBOR_Raw_Iterator_Serialized;
-    LowParse_PulseParse_Iterator_Type_iterator__CBOR_Pulse_Raw_Type_cbor_map_entry
+    LowParse_PulseParse_Iterator_Type_iterator__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
     case_CBOR_Raw_Iterator_Mixed;
   }
   ;
@@ -327,10 +354,10 @@ typedef cbor_map_iterator cbor_nondet_map_iterator_t;
 
 typedef cbor_map_entry cbor_nondet_map_entry_t;
 
-typedef LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw
+typedef LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
 cbor_nondet_array_append_cell_t;
 
-typedef LowParse_PulseParse_Iterator_Type_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry
+typedef LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
 cbor_nondet_map_entry_insert_cell_t;
 
 #if defined(__cplusplus)

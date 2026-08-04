@@ -383,8 +383,6 @@ pub fn cbor_det_get_array_length(x: crate::cbordetveraux::cbor_raw) -> u64
                   crate::cbordetveraux::cbor_raw_mixed_list_length__CBOR_Pulse_Raw_Type_cbor_raw(
                       c·.cbor_array_gen_ptr
                   )
-                  as
-                  u64
               },
             _ => panic!("Incomplete pattern matching")
         };
@@ -441,7 +439,7 @@ pub fn cbor_det_get_array_item <'a>(x: crate::cbordetveraux::cbor_raw <'a>, i: u
 }
 
 pub type cbor_det_array_append_cell_t <'a> =
-crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_raw <'a>;
+crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw <'a>;
 
 pub fn cbor_det_array_empty <'a>() -> crate::cbordetveraux::cbor_raw <'a>
 {
@@ -473,8 +471,9 @@ pub enum option__CBOR_Pulse_API_Det_Rust_cbor_det_array <'a>
 pub fn cbor_det_array_append <'a>(
     x1: crate::cbordetveraux::cbor_raw <'a>,
     x2: crate::cbordetveraux::cbor_raw <'a>,
-    r_before: &'a mut [crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_raw <'a>],
-    r_after: &'a mut [crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_raw <'a>]
+    r_before:
+    &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw <'a>],
+    r_after: &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw <'a>]
 ) ->
     option__CBOR_Pulse_API_Det_Rust_cbor_det_array
     <'a>
@@ -539,8 +538,6 @@ pub fn cbor_det_map_length(x: crate::cbordetveraux::cbor_raw) -> u64
                   crate::cbordetveraux::cbor_raw_mixed_list_length__CBOR_Pulse_Raw_Type_cbor_map_entry(
                       c·.cbor_map_gen_ptr
                   )
-                  as
-                  u64
               },
             _ => panic!("Incomplete pattern matching")
         };
@@ -647,7 +644,7 @@ pub fn cbor_det_map_get <'a>(
 }
 
 pub type cbor_det_map_entry_insert_cell_t <'a> =
-crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>;
+crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>;
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum option__CBOR_Pulse_API_Det_Rust_cbor_det_map <'a>
@@ -660,10 +657,14 @@ pub fn cbor_det_map_entry_insert <'a>(
     x: crate::cbordetveraux::cbor_raw <'a>,
     key: crate::cbordetveraux::cbor_raw <'a>,
     value: crate::cbordetveraux::cbor_raw <'a>,
-    r1: &'a mut [crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
-    r2: &'a mut [crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
-    r3: &'a mut [crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
-    r4: &'a mut [crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
+    r1:
+    &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
+    r2:
+    &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
+    r3:
+    &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
+    r4:
+    &'a mut [crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>],
     ry: &'a mut [crate::cbordetveraux::cbor_map_entry <'a>]
 ) ->
     option__CBOR_Pulse_API_Det_Rust_cbor_det_map
@@ -725,19 +726,22 @@ pub fn dummy_cbor_det_t <'a>() -> crate::cbordetveraux::cbor_raw <'a>
 { crate::cbordetveraux::cbor_raw::CBOR_Case_Simple { v: 0u8 } }
 
 pub fn dummy_cbor_det_array_append_cell <'a>() ->
-    crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_raw
+    crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
     <'a>
 {
-    crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_raw::Base
-    { _0: crate::cbordetveraux::base_mixed_list__CBOR_Pulse_Raw_Type_cbor_raw::Empty }
+    crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Base
+    { _0: crate::cbordetveraux::base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Empty }
 }
 
 pub fn dummy_cbor_det_map_entry_insert_cell <'a>() ->
-    crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry
+    crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
     <'a>
 {
-    crate::cbordetveraux::mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry::Base
-    { _0: crate::cbordetveraux::base_mixed_list__CBOR_Pulse_Raw_Type_cbor_map_entry::Empty }
+    crate::cbordetveraux::mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry::Base
+    {
+        _0:
+        crate::cbordetveraux::base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry::Empty
+    }
 }
 
 pub fn dummy_cbor_det_map_entry <'a>() -> crate::cbordetveraux::cbor_map_entry <'a>
