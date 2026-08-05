@@ -137,6 +137,67 @@ val cbor_array_finalize
       pure (y == CBOR_Case_Array_Gen x))
 
 (* ================================================================ *)
+(* Finalize with a caller-chosen length encoding [len].              *)
+(*                                                                   *)
+(* Identical to [cbor_array_finalize] except the resulting           *)
+(* [cbor_raw] carries the length header [len] supplied by the caller *)
+(* (which need NOT be the minimal encoding), so that a deep-copy can  *)
+(* reproduce a source array's EXACT (possibly non-canonical) length   *)
+(* header.  The element count [U64.v len.value] must equal the number *)
+(* of elements (enforced by [cbor_array_len_ok] on [l]).             *)
+(*                                                                   *)
+(* The postcondition [cbor_array_finalized_val] exposes the CONCRETE  *)
+(* match on the whole (refined) array value [Array len l] with NO     *)
+(* existential length witness, so a consumer can [unfold] it and then *)
+(* relabel the match to a known array value without a Skolem length   *)
+(* defeating downstream [Trade.trans] frame inference.               *)
+(* ================================================================ *)
+
+(* Precondition wrapper: [x] owns [l] AND [len] is a (possibly           *)
+(* non-minimal) encoding of the element count.  The [U64.v]/[nat]        *)
+(* comparison is deliberately kept inside this transparent [let] so that *)
+(* its [do_not_unrefine] coercion is elaborated by F* core rather than   *)
+(* Pulse's [fn] signature elaboration (which either rejects it as        *)
+(* "Ill-typed" for the [uint]-left order, or loops on the [nat]-left     *)
+(* order when matching the reflexive precondition).                      *)
+let cbor_array_owned_with_len
+  (x: cbor_mixed_list_array) (len: raw_uint64) (l: list raw_data_item)
+: slprop
+= cbor_array_owned x l ** pure (U64.v len.value == List.Tot.length l)
+
+(* [cbor_array_len_ok len l]: [len] is a (possibly non-minimal) encoding of the *)
+(* element count of [l].  Wrapped in a top-level [prop]-returning [let] so that  *)
+(* it can appear as a refinement on the [#l] binder of                          *)
+(* [cbor_array_finalize_with_len] WITHOUT tripping Pulse's [fn] signature        *)
+(* elaboration on the raw [U64.v _ == length _] comparison (which mis-handles    *)
+(* the [do_not_unrefine] coercion; the wrapper defers it to F* core / SMT).      *)
+let cbor_array_len_ok (len: raw_uint64) (l: list raw_data_item) : prop
+= U64.v len.value == List.Tot.length l
+
+(* [cbor_array_finalized_val x y a]: concrete-match finalize result for the     *)
+(* WHOLE (erased) array value [a] (refined [Array? a]).  It carries NO           *)
+(* existential length witness: [a] is a refined parameter, so [cbor_match 1.0R   *)
+(* y a] typechecks directly and a consumer that [unfold]s it obtains a match on  *)
+(* the concrete [a] (no Skolem length that would defeat downstream               *)
+(* [Trade.trans] frame inference).                                               *)
+let cbor_array_finalized_val
+  (x: cbor_mixed_list_array) (y: cbor_raw) (a: (a: raw_data_item { Array? a }))
+: slprop
+= cbor_match 1.0R y a **
+  Trade.trade
+    (cbor_match 1.0R y a)
+    (cbor_array_owned x (Array?.v a))
+
+val cbor_array_finalize_with_len
+  (x: cbor_mixed_list_array)
+  (len: raw_uint64)
+  (#l: Ghost.erased (l: list raw_data_item { cbor_array_len_ok len l }))
+: stt cbor_raw
+    (cbor_array_owned_with_len x len (Ghost.reveal l))
+    (fun y ->
+      cbor_array_finalized_val x y (Array len (Ghost.reveal l)))
+
+(* ================================================================ *)
 (* cbor_array_borrow_entries / cbor_array_init                      *)
 (*                                                                  *)
 (* View an existing ARRAY [x] (ANY of the three representations:    *)

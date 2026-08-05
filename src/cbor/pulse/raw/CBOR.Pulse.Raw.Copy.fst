@@ -11,6 +11,8 @@ module U8 = FStar.UInt8
 module U64 = FStar.UInt64
 module V = Pulse.Lib.Vec
 module B = Pulse.Lib.Box
+module R = Pulse.Lib.Reference
+module IT = LowParse.PulseParse.Iterator.Type
 
 [@@erasable]
 noeq
@@ -19,6 +21,8 @@ type freeable_tree = // this is necessary to define the freeable slprop by struc
 | FTBox: (b: freeable_tree) -> freeable_tree
 | FTArray: (a: list freeable_tree) -> freeable_tree
 | FTMap: (m: list (freeable_tree & freeable_tree)) -> freeable_tree
+| FTArrayGen: (a: list freeable_tree) -> freeable_tree
+| FTMapGen: (m: list (freeable_tree & freeable_tree)) -> freeable_tree
 | FTUnit
 
 noeq
@@ -27,7 +31,27 @@ type cbor_freeable0 =
 | CBOR_Copy_Box: (b: cbor_freeable_box) -> cbor_freeable0
 | CBOR_Copy_Array: (a: cbor_freeable_array) -> cbor_freeable0
 | CBOR_Copy_Map: (m: cbor_freeable_map) -> cbor_freeable0
+| CBOR_Copy_ArrayGen: (a: option (B.box arraygen_node)) -> cbor_freeable0
+| CBOR_Copy_MapGen: (m: option (B.box mapgen_node)) -> cbor_freeable0
 | CBOR_Copy_Unit
+
+// A heap node in the spine (box-chain) of a structurally-copied (_Gen) array
+// footprint. Recursion goes through [B.box] (which is [strictly_positive]), so
+// the mutual inductive [cbor_freeable0] is accepted; a [Prims.list] here would
+// leak (its cons cells are pure values with no [pts_to]) and is rejected by
+// KaRaMeL's C backend as a garbage-collected type.
+and arraygen_node = {
+  ag_hd: cbor_freeable_arraygen_elt;
+  ag_tl: option (B.box arraygen_node);
+}
+
+// A heap node in the spine (box-chain) of a structurally-copied (_Gen) MAP
+// footprint.  Mirrors [arraygen_node]; recursion goes through [B.box]
+// ([strictly_positive]) so the mutual inductive is accepted.
+and mapgen_node = {
+  mg_hd: cbor_freeable_mapgen_elt;
+  mg_tl: option (B.box mapgen_node);
+}
 
 and cbor_freeable_box = {
   box_cbor: B.box cbor_raw; // the box turned into ref in cbor_tagged
@@ -51,7 +75,301 @@ and cbor_freeable_map = {
   map_len: (map_len: SZ.t { SZ.v map_len == V.length map_footprint });
 }
 
+// One element of a structurally-copied (_Gen) array: the element's own
+// footprint, plus the three O(1) heap boxes used to build the singleton and
+// the enclosing Append node (the singleton slot [age_box_elt] and the Append
+// node's before/after sublist refs [age_box_before]/[age_box_after]).
+and cbor_freeable_arraygen_elt = {
+  age_footprint: cbor_freeable0;
+  age_box_elt: B.box cbor_raw;
+  age_box_before: B.box (IT.mixed_list U64.t cbor_raw);
+  age_box_after: B.box (IT.mixed_list U64.t cbor_raw);
+}
+
+// One entry of a structurally-copied (_Gen) map: the key's and value's own
+// footprints (like [cbor_freeable_map_entry]), plus the three O(1) heap boxes
+// used to build the singleton entry and the enclosing Append node (the
+// singleton slot [mge_box_elt] and the Append node's before/after sublist refs
+// [mge_box_before]/[mge_box_after]).
+and cbor_freeable_mapgen_elt = {
+  mge_key_footprint: cbor_freeable0;
+  mge_val_footprint: cbor_freeable0;
+  mge_box_elt: B.box cbor_map_entry;
+  mge_box_before: B.box (IT.mixed_list U64.t cbor_map_entry);
+  mge_box_after: B.box (IT.mixed_list U64.t cbor_map_entry);
+}
+
 module SM = Pulse.Lib.SeqMatch.Util
+
+// ===== spine of a structurally-copied (_Gen) array footprint =====
+// A heap linked list (box-chain) of per-element footprints.  Modeled faithfully
+// on [Pulse.Lib.LinkedList.is_list] and its case-analysis lemmas; hand-rolled
+// rather than reusing [llist] because [llist] is not marked [strictly_positive]
+// (so it cannot occur in the [cbor_freeable0] inductive), whereas [B.box] is.
+// [arraygen_spine x l] owns ONLY the spine node boxes and pins the element
+// sequence to the ghost list [l]; the per-element runtime resources live in a
+// companion [seq_list_match] indexed by that same [l].
+
+let rec arraygen_spine
+  ([@@@mkey] x: option (B.box arraygen_node))
+  (l: list cbor_freeable_arraygen_elt)
+: Tot slprop
+  (decreases l)
+= match l with
+  | [] -> pure (x == None)
+  | hd :: tl -> exists* (v: B.box arraygen_node) (tail: option (B.box arraygen_node)) .
+      pure (x == Some v) **
+      B.pts_to v ({ ag_hd = hd; ag_tl = tail }) **
+      arraygen_spine tail tl
+
+let arraygen_spine_cases
+  ([@@@mkey] x: option (B.box arraygen_node))
+  (l: list cbor_freeable_arraygen_elt)
+: Tot slprop
+= match x with
+  | None -> pure (l == [])
+  | Some v -> exists* (node: arraygen_node) (tl: list cbor_freeable_arraygen_elt) .
+      B.pts_to v node **
+      pure (l == node.ag_hd :: tl) **
+      arraygen_spine node.ag_tl tl
+
+ghost
+fn arraygen_intro_cons
+  (x: option (B.box arraygen_node))
+  (v: B.box arraygen_node)
+  (#node: arraygen_node)
+  (#tl: list cbor_freeable_arraygen_elt)
+requires
+  B.pts_to v node ** arraygen_spine node.ag_tl tl ** pure (x == Some v)
+ensures
+  arraygen_spine x (node.ag_hd :: tl)
+{
+  fold (arraygen_spine x (node.ag_hd :: tl));
+}
+
+ghost
+fn arraygen_cases_of_spine
+  (x: option (B.box arraygen_node))
+  (l: list cbor_freeable_arraygen_elt)
+requires
+  arraygen_spine x l
+ensures
+  arraygen_spine_cases x l
+{
+  match l {
+    [] -> {
+      unfold (arraygen_spine x ([] <: list cbor_freeable_arraygen_elt));
+      fold (arraygen_spine_cases (None #(B.box arraygen_node)) l);
+      rewrite (arraygen_spine_cases (None #(B.box arraygen_node)) l)
+           as (arraygen_spine_cases x l);
+    }
+    hd :: tl -> {
+      unfold (arraygen_spine x (hd :: tl));
+      with w tail. _;
+      let v = Some?.v x;
+      rewrite each w as v;
+      rewrite each tail as (({ ag_hd = hd; ag_tl = tail }).ag_tl) in (arraygen_spine tail tl);
+      fold (arraygen_spine_cases (Some v) l);
+      rewrite (arraygen_spine_cases (Some v) l)
+           as (arraygen_spine_cases x l);
+    }
+  }
+}
+
+ghost
+fn arraygen_spine_cases_none
+  (x: option (B.box arraygen_node))
+  (#l: list cbor_freeable_arraygen_elt)
+requires
+  arraygen_spine x l ** pure (x == None)
+ensures
+  arraygen_spine x l ** pure (l == [])
+{
+  match l {
+    [] -> { () }
+    hd :: tl -> {
+      unfold (arraygen_spine x (hd :: tl));
+      unreachable ()
+    }
+  }
+}
+
+ghost
+fn arraygen_spine_cases_some
+  (x: option (B.box arraygen_node))
+  (v: B.box arraygen_node)
+  (#l: list cbor_freeable_arraygen_elt)
+requires
+  arraygen_spine x l ** pure (x == Some v)
+ensures
+  exists* (node: arraygen_node) (tl: list cbor_freeable_arraygen_elt) .
+    B.pts_to v node **
+    pure (l == node.ag_hd :: tl) **
+    arraygen_spine node.ag_tl tl
+{
+  arraygen_cases_of_spine x l;
+  rewrite (arraygen_spine_cases x l) as (arraygen_spine_cases (Some v) l);
+  unfold (arraygen_spine_cases (Some v) l);
+}
+
+// Allocate one spine node (O(1), no total-count allocation) and prepend it.
+fn arraygen_cons
+  (new_elt: cbor_freeable_arraygen_elt)
+  (x: option (B.box arraygen_node))
+  (#l: Ghost.erased (list cbor_freeable_arraygen_elt))
+requires
+  arraygen_spine x l
+returns y: option (B.box arraygen_node)
+ensures
+  arraygen_spine y (new_elt :: l)
+{
+  let node : arraygen_node = { ag_hd = new_elt; ag_tl = x };
+  let np = B.alloc node;
+  rewrite each x as node.ag_tl in (arraygen_spine x l);
+  arraygen_intro_cons (Some np) np;
+  Some np
+}
+
+// [Some?] written as a [match] so C/Rust extraction compiles a tag-switch
+// rather than referencing the [uu___is_Some] discriminator; the refinement
+// keeps the [while]-guard fact available for the proof.
+inline_for_extraction
+let option_box_is_some (x: option (B.box arraygen_node))
+: (b: bool { b == Some? x })
+= match x with
+  | None -> false
+  | Some _ -> true
+
+// ===== spine of a structurally-copied (_Gen) MAP footprint =====
+// Exact mirror of [arraygen_spine] and its case-analysis helpers, for the map
+// entry element type [cbor_freeable_mapgen_elt] and spine node [mapgen_node].
+
+let rec mapgen_spine
+  ([@@@mkey] x: option (B.box mapgen_node))
+  (l: list cbor_freeable_mapgen_elt)
+: Tot slprop
+  (decreases l)
+= match l with
+  | [] -> pure (x == None)
+  | hd :: tl -> exists* (v: B.box mapgen_node) (tail: option (B.box mapgen_node)) .
+      pure (x == Some v) **
+      B.pts_to v ({ mg_hd = hd; mg_tl = tail }) **
+      mapgen_spine tail tl
+
+let mapgen_spine_cases
+  ([@@@mkey] x: option (B.box mapgen_node))
+  (l: list cbor_freeable_mapgen_elt)
+: Tot slprop
+= match x with
+  | None -> pure (l == [])
+  | Some v -> exists* (node: mapgen_node) (tl: list cbor_freeable_mapgen_elt) .
+      B.pts_to v node **
+      pure (l == node.mg_hd :: tl) **
+      mapgen_spine node.mg_tl tl
+
+ghost
+fn mapgen_intro_cons
+  (x: option (B.box mapgen_node))
+  (v: B.box mapgen_node)
+  (#node: mapgen_node)
+  (#tl: list cbor_freeable_mapgen_elt)
+requires
+  B.pts_to v node ** mapgen_spine node.mg_tl tl ** pure (x == Some v)
+ensures
+  mapgen_spine x (node.mg_hd :: tl)
+{
+  fold (mapgen_spine x (node.mg_hd :: tl));
+}
+
+ghost
+fn mapgen_cases_of_spine
+  (x: option (B.box mapgen_node))
+  (l: list cbor_freeable_mapgen_elt)
+requires
+  mapgen_spine x l
+ensures
+  mapgen_spine_cases x l
+{
+  match l {
+    [] -> {
+      unfold (mapgen_spine x ([] <: list cbor_freeable_mapgen_elt));
+      fold (mapgen_spine_cases (None #(B.box mapgen_node)) l);
+      rewrite (mapgen_spine_cases (None #(B.box mapgen_node)) l)
+           as (mapgen_spine_cases x l);
+    }
+    hd :: tl -> {
+      unfold (mapgen_spine x (hd :: tl));
+      with w tail. _;
+      let v = Some?.v x;
+      rewrite each w as v;
+      rewrite each tail as (({ mg_hd = hd; mg_tl = tail }).mg_tl) in (mapgen_spine tail tl);
+      fold (mapgen_spine_cases (Some v) l);
+      rewrite (mapgen_spine_cases (Some v) l)
+           as (mapgen_spine_cases x l);
+    }
+  }
+}
+
+ghost
+fn mapgen_spine_cases_none
+  (x: option (B.box mapgen_node))
+  (#l: list cbor_freeable_mapgen_elt)
+requires
+  mapgen_spine x l ** pure (x == None)
+ensures
+  mapgen_spine x l ** pure (l == [])
+{
+  match l {
+    [] -> { () }
+    hd :: tl -> {
+      unfold (mapgen_spine x (hd :: tl));
+      unreachable ()
+    }
+  }
+}
+
+ghost
+fn mapgen_spine_cases_some
+  (x: option (B.box mapgen_node))
+  (v: B.box mapgen_node)
+  (#l: list cbor_freeable_mapgen_elt)
+requires
+  mapgen_spine x l ** pure (x == Some v)
+ensures
+  exists* (node: mapgen_node) (tl: list cbor_freeable_mapgen_elt) .
+    B.pts_to v node **
+    pure (l == node.mg_hd :: tl) **
+    mapgen_spine node.mg_tl tl
+{
+  mapgen_cases_of_spine x l;
+  rewrite (mapgen_spine_cases x l) as (mapgen_spine_cases (Some v) l);
+  unfold (mapgen_spine_cases (Some v) l);
+}
+
+// Allocate one spine node (O(1), no total-count allocation) and prepend it.
+fn mapgen_cons
+  (new_elt: cbor_freeable_mapgen_elt)
+  (x: option (B.box mapgen_node))
+  (#l: Ghost.erased (list cbor_freeable_mapgen_elt))
+requires
+  mapgen_spine x l
+returns y: option (B.box mapgen_node)
+ensures
+  mapgen_spine y (new_elt :: l)
+{
+  let node : mapgen_node = { mg_hd = new_elt; mg_tl = x };
+  let np = B.alloc node;
+  rewrite each x as node.mg_tl in (mapgen_spine x l);
+  mapgen_intro_cons (Some np) np;
+  Some np
+}
+
+inline_for_extraction
+let option_mapbox_is_some (x: option (B.box mapgen_node))
+: (b: bool { b == Some? x })
+= match x with
+  | None -> false
+  | Some _ -> true
 
 let rec freeable_match'
   (x: cbor_freeable0)
@@ -63,6 +381,8 @@ let rec freeable_match'
   | CBOR_Copy_Box bx, FTBox ft' -> exists* (v: cbor_raw) (x': cbor_freeable0) . pts_to bx.box_cbor v ** pts_to bx.box_footprint x' ** freeable_match' x' ft'
   | CBOR_Copy_Array ar, FTArray ft' -> exists* (v: Seq.seq cbor_raw) (x': Seq.seq cbor_freeable0) . pts_to ar.array_cbor v ** pts_to ar.array_footprint x' ** SM.seq_list_match x' ft' freeable_match' ** pure (V.is_full_vec ar.array_cbor /\ V.is_full_vec ar.array_footprint)
   | CBOR_Copy_Map m, FTMap ft' -> exists* (v: Seq.seq cbor_map_entry) (x': Seq.seq cbor_freeable_map_entry) . pts_to m.map_cbor v ** pts_to m.map_footprint x' ** SM.seq_list_match x' ft' (freeable_match_map_entry' ft freeable_match') ** pure (V.is_full_vec m.map_cbor /\ V.is_full_vec m.map_footprint)
+  | CBOR_Copy_ArrayGen ag, FTArrayGen ft' -> exists* (agl: list cbor_freeable_arraygen_elt) . arraygen_spine ag agl ** SM.seq_list_match (Seq.seq_of_list agl) ft' (freeable_match_arraygen_elt' ft freeable_match')
+  | CBOR_Copy_MapGen mg, FTMapGen ft' -> exists* (mgl: list cbor_freeable_mapgen_elt) . mapgen_spine mg mgl ** SM.seq_list_match (Seq.seq_of_list mgl) ft' (freeable_match_mapgen_elt' ft freeable_match')
   | CBOR_Copy_Unit, FTUnit -> emp
   | _ -> pure False
     
@@ -75,6 +395,31 @@ and freeable_match_map_entry'
   (decreases r)
 = freeable_match' c.map_entry_key (fst r) **
   freeable_match' c.map_entry_value (snd r)
+
+and freeable_match_arraygen_elt'
+  (r0: freeable_tree)
+  (freeable_match: (cbor_freeable0 -> (v': freeable_tree { v' << r0 }) -> slprop))
+  (c: cbor_freeable_arraygen_elt)
+  (r: freeable_tree { r << r0 })
+: Tot slprop
+  (decreases r)
+= freeable_match c.age_footprint r **
+  (exists* (w: cbor_raw) . R.pts_to (B.box_to_ref c.age_box_elt) w) **
+  (exists* (wb wa: IT.mixed_list U64.t cbor_raw) . R.pts_to (B.box_to_ref c.age_box_before) wb ** R.pts_to (B.box_to_ref c.age_box_after) wa) **
+  pure (R.is_full_ref (B.box_to_ref c.age_box_elt) /\ R.is_full_ref (B.box_to_ref c.age_box_before) /\ R.is_full_ref (B.box_to_ref c.age_box_after))
+
+and freeable_match_mapgen_elt'
+  (r0: freeable_tree)
+  (freeable_match: (cbor_freeable0 -> (v': freeable_tree { v' << r0 }) -> slprop))
+  (c: cbor_freeable_mapgen_elt)
+  (r: (freeable_tree & freeable_tree) { r << r0 })
+: Tot slprop
+  (decreases r)
+= freeable_match' c.mge_key_footprint (fst r) **
+  freeable_match' c.mge_val_footprint (snd r) **
+  (exists* (w: cbor_map_entry) . R.pts_to (B.box_to_ref c.mge_box_elt) w) **
+  (exists* (wb wa: IT.mixed_list U64.t cbor_map_entry) . R.pts_to (B.box_to_ref c.mge_box_before) wb ** R.pts_to (B.box_to_ref c.mge_box_after) wa) **
+  pure (R.is_full_ref (B.box_to_ref c.mge_box_elt) /\ R.is_full_ref (B.box_to_ref c.mge_box_before) /\ R.is_full_ref (B.box_to_ref c.mge_box_after))
 
 let freeable_match_box
   (bx: cbor_freeable_box)
@@ -150,6 +495,62 @@ let ftarray_precedes
   [SMTPat (FTArray r0)]
 = ftarray_precedes' (FTArray r0)
 
+// ===== structural (_Gen) array element footprint helpers =====
+
+// Standalone element match (unrefined tree arg): used by the build loop (as a
+// fixed item_match for [seq_list_match], independent of the whole tree) and by
+// the recursive free.  Mirrors [freeable_match_arraygen_elt'] with the
+// recursive knot instantiated to [freeable_match'].
+let freeable_match_arraygen_elt
+  (c: cbor_freeable_arraygen_elt)
+  (r: freeable_tree)
+: Tot slprop
+= freeable_match' c.age_footprint r **
+  (exists* (w: cbor_raw) . R.pts_to (B.box_to_ref c.age_box_elt) w) **
+  (exists* (wb wa: IT.mixed_list U64.t cbor_raw) . R.pts_to (B.box_to_ref c.age_box_before) wb ** R.pts_to (B.box_to_ref c.age_box_after) wa) **
+  pure (R.is_full_ref (B.box_to_ref c.age_box_elt) /\ R.is_full_ref (B.box_to_ref c.age_box_before) /\ R.is_full_ref (B.box_to_ref c.age_box_after))
+
+ghost
+fn freeable_match_arraygen_elt_weaken
+  (r0: freeable_tree)
+  (c: cbor_freeable_arraygen_elt)
+  (r: freeable_tree { r << r0 })
+requires
+  freeable_match_arraygen_elt' r0 freeable_match' c r
+ensures
+  freeable_match_arraygen_elt c r
+{
+  unfold (freeable_match_arraygen_elt' r0 freeable_match' c r);
+  fold (freeable_match_arraygen_elt c r)
+}
+
+let ftarraygen_precedes'
+  (r: freeable_tree { FTArrayGen? r })
+: Lemma
+  (FTArrayGen?.a r << r)
+= ()
+
+let ftarraygen_precedes
+  (r0: list freeable_tree)
+: Lemma
+  (ensures (r0 << FTArrayGen r0))
+  [SMTPat (FTArrayGen r0)]
+= ftarraygen_precedes' (FTArrayGen r0)
+
+ghost
+fn freeable_match_arraygen_elt_weaken_recip
+  (r0: list freeable_tree)
+  (c: cbor_freeable_arraygen_elt)
+  (r: freeable_tree { r << r0 })
+requires
+  freeable_match_arraygen_elt c r
+ensures
+  freeable_match_arraygen_elt' (FTArrayGen r0) freeable_match' c r
+{
+  unfold (freeable_match_arraygen_elt c r);
+  fold (freeable_match_arraygen_elt' (FTArrayGen r0) freeable_match' c r);
+}
+
 ghost
 fn freeable_match_map_entry_weaken_recip
   (r0: list (freeable_tree & freeable_tree))
@@ -164,6 +565,73 @@ ensures
   fold (freeable_match_map_entry' (FTMap r0) freeable_match' c r);
 }
 
+// ===== structural (_Gen) map entry footprint helpers =====
+
+// Standalone entry match (unrefined tree arg): mirrors
+// [freeable_match_mapgen_elt'] with the recursive knot instantiated to
+// [freeable_match'].  Owns BOTH the key and value footprints plus the three
+// O(1) build boxes.
+let freeable_match_mapgen_elt
+  (c: cbor_freeable_mapgen_elt)
+  (r: (freeable_tree & freeable_tree))
+: Tot slprop
+= freeable_match' c.mge_key_footprint (fst r) **
+  freeable_match' c.mge_val_footprint (snd r) **
+  (exists* (w: cbor_map_entry) . R.pts_to (B.box_to_ref c.mge_box_elt) w) **
+  (exists* (wb wa: IT.mixed_list U64.t cbor_map_entry) . R.pts_to (B.box_to_ref c.mge_box_before) wb ** R.pts_to (B.box_to_ref c.mge_box_after) wa) **
+  pure (R.is_full_ref (B.box_to_ref c.mge_box_elt) /\ R.is_full_ref (B.box_to_ref c.mge_box_before) /\ R.is_full_ref (B.box_to_ref c.mge_box_after))
+
+ghost
+fn freeable_match_mapgen_elt_weaken
+  (r0: freeable_tree)
+  (c: cbor_freeable_mapgen_elt)
+  (r: (freeable_tree & freeable_tree) { r << r0 })
+requires
+  freeable_match_mapgen_elt' r0 freeable_match' c r
+ensures
+  freeable_match_mapgen_elt c r
+{
+  unfold (freeable_match_mapgen_elt' r0 freeable_match' c r);
+  fold (freeable_match_mapgen_elt c r)
+}
+
+let ftmapgen_precedes'
+  (r: freeable_tree { FTMapGen? r })
+: Lemma
+  (FTMapGen?.m r << r)
+= ()
+
+let ftmapgen_precedes
+  (r0: list (freeable_tree & freeable_tree))
+: Lemma
+  (ensures (r0 << FTMapGen r0))
+  [SMTPat (FTMapGen r0)]
+= ftmapgen_precedes' (FTMapGen r0)
+
+ghost
+fn freeable_match_mapgen_elt_weaken_recip
+  (r0: list (freeable_tree & freeable_tree))
+  (c: cbor_freeable_mapgen_elt)
+  (r: (freeable_tree & freeable_tree) { r << r0 })
+requires
+  freeable_match_mapgen_elt c r
+ensures
+  freeable_match_mapgen_elt' (FTMapGen r0) freeable_match' c r
+{
+  unfold (freeable_match_mapgen_elt c r);
+  fold (freeable_match_mapgen_elt' (FTMapGen r0) freeable_match' c r);
+}
+
+// [hd]/[tl] and the two component trees of the head entry all strictly precede
+// the whole [(tree & tree)] list, so the per-entry [cbor_free'] calls (on the
+// key and value footprints) terminate against [bound == ft].
+let mapgen_hd_tree_precedes
+  (l: list (freeable_tree & freeable_tree) { Cons? l })
+: Lemma
+  (List.Tot.hd l << l /\ List.Tot.tl l << l /\
+   fst (List.Tot.hd l) << l /\ snd (List.Tot.hd l) << l)
+= ()
+
 let freeable_match'_cases_pred
   (x: cbor_freeable0)
   (ft: freeable_tree)
@@ -174,6 +642,8 @@ let freeable_match'_cases_pred
   | CBOR_Copy_Box _, FTBox _
   | CBOR_Copy_Array _, FTArray _
   | CBOR_Copy_Map _, FTMap _
+  | CBOR_Copy_ArrayGen _, FTArrayGen _
+  | CBOR_Copy_MapGen _, FTMapGen _
   | CBOR_Copy_Unit, FTUnit
    -> true
   | _ -> false
@@ -219,6 +689,33 @@ ensures
   cbor_free' x.map_entry_key (fst (Ghost.reveal ft));
   cbor_free' x.map_entry_value (snd (Ghost.reveal ft));
 }
+
+inline_for_extraction
+fn free_arraygen_box
+  (#t: Type0)
+  (b: B.box t)
+requires
+  (exists* (w: t) . R.pts_to (B.box_to_ref b) w) ** pure (R.is_full_ref (B.box_to_ref b))
+ensures
+  emp
+{
+  with w. assert (R.pts_to (B.box_to_ref b) w);
+  B.to_box_pts_to b;
+  B.free b;
+}
+
+let arraygen_hd_precedes
+  (l: list freeable_tree { Cons? l })
+: Lemma
+  (List.Tot.hd l << l /\ List.Tot.tl l << l)
+= ()
+
+// NOTE: the per-element free walk over a [CBOR_Copy_ArrayGen] footprint spine is
+// inlined as a [while]-loop directly inside the [CBOR_Copy_ArrayGen] arm of
+// [cbor_free'] below (mirroring the [CBOR_Copy_Array]/[CBOR_Copy_Map] arms).
+// A recursive higher-order helper taking [cbor_free'] as a partially-applied
+// argument does NOT extract (KaRaMeL Warning 16: cannot enforce arity at the
+// call-site for a partial application of a recursive function).
 
 fn rec cbor_free'
   (bound: freeable_tree)
@@ -324,6 +821,161 @@ decreases bound
       SM.seq_seq_match_empty_elim freeable_match_map_entry s (Seq.seq_of_list (Ghost.reveal ft')) (SZ.v len);
       V.free a.map_footprint
     }
+    CBOR_Copy_ArrayGen ag -> {
+      let ft' = Ghost.hide (FTArrayGen?.a ft);
+      rewrite each ft as (FTArrayGen ft');
+      unfold (freeable_match' (CBOR_Copy_ArrayGen ag) (FTArrayGen ft'));
+      with agl. assert (
+        arraygen_spine ag agl **
+        SM.seq_list_match (Seq.seq_of_list agl) (Ghost.reveal ft') (freeable_match_arraygen_elt' ft freeable_match')
+      );
+      SM.seq_list_match_weaken (Seq.seq_of_list agl) (Ghost.reveal ft') (freeable_match_arraygen_elt' ft freeable_match') freeable_match_arraygen_elt (freeable_match_arraygen_elt_weaken ft);
+      // Walk the spine box-chain, synchronized (via the shared ghost element
+      // list) with the companion [seq_list_match] carrying the per-element
+      // resources.  Each iteration frees one element (via a FULLY-APPLIED
+      // [cbor_free']), its three scratch boxes and its spine node box.
+      // No recursive higher-order helper => extraction is happy (no Warning 16).
+      ftarraygen_precedes (Ghost.reveal ft');
+      let mut phead = ag;
+      while (
+        let h = !phead;
+        option_box_is_some h
+      )
+      invariant exists* (h: option (B.box arraygen_node)) (r_ag: list cbor_freeable_arraygen_elt) (r_ft: list freeable_tree).
+        pts_to phead h **
+        arraygen_spine h r_ag **
+        SM.seq_list_match (Seq.seq_of_list r_ag) r_ft freeable_match_arraygen_elt **
+        pure (r_ft << ft)
+      {
+        with h0 r_ag0 r_ft0. assert (
+          pts_to phead h0 **
+          arraygen_spine h0 r_ag0 **
+          SM.seq_list_match (Seq.seq_of_list r_ag0) r_ft0 freeable_match_arraygen_elt **
+          pure (r_ft0 << ft)
+        );
+        let h = !phead;
+        match h {
+          None -> {
+            unreachable ()
+          }
+          Some v -> {
+            // [h == Some v] (branch) and [h == h0] (read) => [h0 == Some v]
+            arraygen_spine_cases_some h v;
+            with gnode gtl. assert (
+              B.pts_to v gnode **
+              arraygen_spine gnode.ag_tl gtl **
+              pure (r_ag0 == gnode.ag_hd :: gtl)
+            );
+            let node_v = ((let open Pulse.Lib.Box in ( ! )) v); // node_v == gnode
+            rewrite (SM.seq_list_match (Seq.seq_of_list r_ag0) r_ft0 freeable_match_arraygen_elt)
+                 as (SM.seq_list_match (Seq.seq_of_list (gnode.ag_hd :: gtl)) r_ft0 freeable_match_arraygen_elt);
+            Seq.lemma_seq_of_list_induction (gnode.ag_hd :: gtl);
+            let _sq = SM.seq_list_match_cons_elim (Seq.seq_of_list (gnode.ag_hd :: gtl)) r_ft0 freeable_match_arraygen_elt;
+            arraygen_hd_precedes r_ft0;
+            rewrite (freeable_match_arraygen_elt (Seq.head (Seq.seq_of_list (gnode.ag_hd :: gtl))) (List.Tot.hd r_ft0))
+                 as (freeable_match_arraygen_elt node_v.ag_hd (List.Tot.hd r_ft0));
+            unfold (freeable_match_arraygen_elt node_v.ag_hd (List.Tot.hd r_ft0));
+            cbor_free' ft node_v.ag_hd.age_footprint (List.Tot.hd r_ft0);
+            free_arraygen_box node_v.ag_hd.age_box_elt;
+            free_arraygen_box node_v.ag_hd.age_box_before;
+            free_arraygen_box node_v.ag_hd.age_box_after;
+            B.free v;
+            rewrite (SM.seq_list_match (Seq.tail (Seq.seq_of_list (gnode.ag_hd :: gtl))) (List.Tot.tl r_ft0) freeable_match_arraygen_elt)
+                 as (SM.seq_list_match (Seq.seq_of_list gtl) (List.Tot.tl r_ft0) freeable_match_arraygen_elt);
+            rewrite each gnode.ag_tl as node_v.ag_tl in (arraygen_spine gnode.ag_tl gtl);
+            phead := node_v.ag_tl;
+          }
+        }
+      };
+      // loop exit: [h == None], so the spine and its element list are empty
+      with hlast r_ag1 r_ft1. assert (
+        pts_to phead hlast **
+        arraygen_spine hlast r_ag1 **
+        SM.seq_list_match (Seq.seq_of_list r_ag1) r_ft1 freeable_match_arraygen_elt
+      );
+      arraygen_spine_cases_none hlast;
+      rewrite (SM.seq_list_match (Seq.seq_of_list r_ag1) r_ft1 freeable_match_arraygen_elt)
+           as (SM.seq_list_match (Seq.seq_of_list []) r_ft1 freeable_match_arraygen_elt);
+      SM.seq_list_match_nil_elim (Seq.seq_of_list []) r_ft1 freeable_match_arraygen_elt;
+      rewrite (arraygen_spine hlast r_ag1) as (arraygen_spine hlast ([] <: list cbor_freeable_arraygen_elt));
+      unfold (arraygen_spine hlast ([] <: list cbor_freeable_arraygen_elt));
+    }
+    CBOR_Copy_MapGen mg -> {
+      let ft' = Ghost.hide (FTMapGen?.m ft);
+      rewrite each ft as (FTMapGen ft');
+      unfold (freeable_match' (CBOR_Copy_MapGen mg) (FTMapGen ft'));
+      with mgl. assert (
+        mapgen_spine mg mgl **
+        SM.seq_list_match (Seq.seq_of_list mgl) (Ghost.reveal ft') (freeable_match_mapgen_elt' ft freeable_match')
+      );
+      SM.seq_list_match_weaken (Seq.seq_of_list mgl) (Ghost.reveal ft') (freeable_match_mapgen_elt' ft freeable_match') freeable_match_mapgen_elt (freeable_match_mapgen_elt_weaken ft);
+      // Walk the spine box-chain, freeing per entry the key and value footprints
+      // (two FULLY-APPLIED [cbor_free'] calls), the three scratch boxes and the
+      // spine node box.  No higher-order recursive helper => no Warning 16.
+      ftmapgen_precedes (Ghost.reveal ft');
+      let mut phead = mg;
+      while (
+        let h = !phead;
+        option_mapbox_is_some h
+      )
+      invariant exists* (h: option (B.box mapgen_node)) (r_mg: list cbor_freeable_mapgen_elt) (r_ft: list (freeable_tree & freeable_tree)).
+        pts_to phead h **
+        mapgen_spine h r_mg **
+        SM.seq_list_match (Seq.seq_of_list r_mg) r_ft freeable_match_mapgen_elt **
+        pure (r_ft << ft)
+      {
+        with h0 r_mg0 r_ft0. assert (
+          pts_to phead h0 **
+          mapgen_spine h0 r_mg0 **
+          SM.seq_list_match (Seq.seq_of_list r_mg0) r_ft0 freeable_match_mapgen_elt **
+          pure (r_ft0 << ft)
+        );
+        let h = !phead;
+        match h {
+          None -> {
+            unreachable ()
+          }
+          Some v -> {
+            mapgen_spine_cases_some h v;
+            with gnode gtl. assert (
+              B.pts_to v gnode **
+              mapgen_spine gnode.mg_tl gtl **
+              pure (r_mg0 == gnode.mg_hd :: gtl)
+            );
+            let node_v = ((let open Pulse.Lib.Box in ( ! )) v); // node_v == gnode
+            rewrite (SM.seq_list_match (Seq.seq_of_list r_mg0) r_ft0 freeable_match_mapgen_elt)
+                 as (SM.seq_list_match (Seq.seq_of_list (gnode.mg_hd :: gtl)) r_ft0 freeable_match_mapgen_elt);
+            Seq.lemma_seq_of_list_induction (gnode.mg_hd :: gtl);
+            let _sq = SM.seq_list_match_cons_elim (Seq.seq_of_list (gnode.mg_hd :: gtl)) r_ft0 freeable_match_mapgen_elt;
+            mapgen_hd_tree_precedes r_ft0;
+            rewrite (freeable_match_mapgen_elt (Seq.head (Seq.seq_of_list (gnode.mg_hd :: gtl))) (List.Tot.hd r_ft0))
+                 as (freeable_match_mapgen_elt node_v.mg_hd (List.Tot.hd r_ft0));
+            unfold (freeable_match_mapgen_elt node_v.mg_hd (List.Tot.hd r_ft0));
+            cbor_free' ft node_v.mg_hd.mge_key_footprint (fst (List.Tot.hd r_ft0));
+            cbor_free' ft node_v.mg_hd.mge_val_footprint (snd (List.Tot.hd r_ft0));
+            free_arraygen_box node_v.mg_hd.mge_box_elt;
+            free_arraygen_box node_v.mg_hd.mge_box_before;
+            free_arraygen_box node_v.mg_hd.mge_box_after;
+            B.free v;
+            rewrite (SM.seq_list_match (Seq.tail (Seq.seq_of_list (gnode.mg_hd :: gtl))) (List.Tot.tl r_ft0) freeable_match_mapgen_elt)
+                 as (SM.seq_list_match (Seq.seq_of_list gtl) (List.Tot.tl r_ft0) freeable_match_mapgen_elt);
+            rewrite each gnode.mg_tl as node_v.mg_tl in (mapgen_spine gnode.mg_tl gtl);
+            phead := node_v.mg_tl;
+          }
+        }
+      };
+      with hlast r_mg1 r_ft1. assert (
+        pts_to phead hlast **
+        mapgen_spine hlast r_mg1 **
+        SM.seq_list_match (Seq.seq_of_list r_mg1) r_ft1 freeable_match_mapgen_elt
+      );
+      mapgen_spine_cases_none hlast;
+      rewrite (SM.seq_list_match (Seq.seq_of_list r_mg1) r_ft1 freeable_match_mapgen_elt)
+           as (SM.seq_list_match (Seq.seq_of_list []) r_ft1 freeable_match_mapgen_elt);
+      SM.seq_list_match_nil_elim (Seq.seq_of_list []) r_ft1 freeable_match_mapgen_elt;
+      rewrite (mapgen_spine hlast r_mg1) as (mapgen_spine hlast ([] <: list cbor_freeable_mapgen_elt));
+      unfold (mapgen_spine hlast ([] <: list cbor_freeable_mapgen_elt));
+    }
   }
 }
 
@@ -352,6 +1004,25 @@ module Trade = Pulse.Lib.Trade.Util
 module ML = CBOR.Pulse.Raw.Format.MixedList
 module IO = LowParse.PulseParse.Iterator.IntOps
 module Match = CBOR.Pulse.Raw.Match
+module AB = CBOR.Pulse.Raw.EverParse.ArrayBuilder
+module I = LowParse.PulseParse.Iterator
+module Append = LowParse.PulseParse.Iterator.Append
+module MB = CBOR.Pulse.Raw.EverParse.MapBuilder
+module MP = CBOR.Pulse.Raw.Match.Perm
+module LPC = LowParse.Spec.Combinators
+module Cbor = CBOR.Spec.Raw.EverParse
+
+// The element parser for map entries (a key/value pair).  Kept as an [unfold]
+// abbreviation so it reduces to the literal application that the MapBuilder /
+// Append signatures spell out, and hence unifies with them.
+unfold let map_entry_parser = LPC.nondep_then Cbor.parse_raw_data_item Cbor.parse_raw_data_item
+
+// Bridge the lowparse dictionary views [IO.u64_ops.v]/[IO.u64_ops.fits] to
+// their concrete [U64] meaning (mirrors MapBuilder.fst), so the [io.fits]
+// precondition of [mixed_list_append] discharges from the [U64.v count] bound.
+let u64_ops_v_eq (x: U64.t) : Lemma (IO.u64_ops.v x == U64.v x) [SMTPat (IO.u64_ops.v x)] = ()
+let u64_ops_fits_eq (n: nat) : Lemma (IO.u64_ops.fits n == (n < pow2 64 <: prop)) [SMTPat (IO.u64_ops.fits n)] = ()
+
 
 // ===== PURE size-bound helpers (mirror CBOR.Pulse.Raw.Compare) =====
 // A [size]-bound threaded as a precondition keeps [decreases depth] working
@@ -1139,6 +1810,124 @@ let get_cbor_raw_map_gen
 : Tot cbor_mixed_list_map
 = let CBOR_Case_Map_Gen v = x in v
 
+// Definitional unfolding of the standalone element match at a record literal,
+// with the record projections reduced.  Used to fold the element match during
+// the structural array build (Pulse's [rewrite]/[fold] do not reduce record
+// projections on a [let]-bound record on their own).
+let arraygen_elt_fold
+  (fp: cbor_freeable0)
+  (r: freeable_tree)
+  (be: B.box cbor_raw)
+  (bbf baf: B.box (IT.mixed_list U64.t cbor_raw))
+: Lemma
+  (ensures
+    freeable_match_arraygen_elt ({ age_footprint = fp; age_box_elt = be; age_box_before = bbf; age_box_after = baf }) r ==
+    (freeable_match' fp r **
+      (exists* (w: cbor_raw). R.pts_to (B.box_to_ref be) w) **
+      (exists* (wb wa: IT.mixed_list U64.t cbor_raw). R.pts_to (B.box_to_ref bbf) wb ** R.pts_to (B.box_to_ref baf) wa) **
+      pure (R.is_full_ref (B.box_to_ref be) /\ R.is_full_ref (B.box_to_ref bbf) /\ R.is_full_ref (B.box_to_ref baf))))
+= assert_norm (
+    freeable_match_arraygen_elt ({ age_footprint = fp; age_box_elt = be; age_box_before = bbf; age_box_after = baf }) r ==
+    (freeable_match' fp r **
+      (exists* (w: cbor_raw). R.pts_to (B.box_to_ref be) w) **
+      (exists* (wb wa: IT.mixed_list U64.t cbor_raw). R.pts_to (B.box_to_ref bbf) wb ** R.pts_to (B.box_to_ref baf) wa) **
+      pure (R.is_full_ref (B.box_to_ref be) /\ R.is_full_ref (B.box_to_ref bbf) /\ R.is_full_ref (B.box_to_ref baf))))
+
+// One fold step for the structural (_Gen) array build.  Given the ArrayBuilder
+// trades produced by [cbor_array_append] / [cbor_array_singleton], the copy
+// trade for the freshly-copied element, and the accumulated destructor trade
+// [owned acc_cur l_acc --* seq_list_match ...], produce the extended destructor
+// trade for [acc'] with the new element prepended to the footprint list.
+ghost
+fn arraygen_step
+  (l_acc: Ghost.erased (list raw_data_item))
+  (v1: Ghost.erased raw_data_item)
+  (acc_cur acc' s_i: cbor_mixed_list_array)
+  (c': cbor_freeable)
+  (bs: B.box cbor_raw)
+  (bb ba: B.box (IT.mixed_list U64.t cbor_raw))
+  (ag_acc: Ghost.erased (list cbor_freeable_arraygen_elt))
+  (ft_acc: Ghost.erased (list freeable_tree))
+requires
+  Trade.trade
+    (AB.cbor_array_owned acc' (List.Tot.append l_acc [Ghost.reveal v1]))
+    (AB.cbor_array_owned acc_cur l_acc ** AB.cbor_array_owned s_i [Ghost.reveal v1] **
+      (exists* (vb va: IT.mixed_list U64.t cbor_raw). R.pts_to (B.box_to_ref bb) vb ** R.pts_to (B.box_to_ref ba) va)) **
+  Trade.trade
+    (AB.cbor_array_owned s_i [Ghost.reveal v1])
+    (cbor_match 1.0R c'.cbor v1 ** (exists* (w: cbor_raw). R.pts_to (B.box_to_ref bs) w)) **
+  Trade.trade (cbor_match 1.0R c'.cbor v1) (freeable c') **
+  Trade.trade
+    (AB.cbor_array_owned acc_cur l_acc)
+    (SM.seq_list_match (Seq.seq_of_list ag_acc) ft_acc freeable_match_arraygen_elt) **
+  pure (
+    R.is_full_ref (B.box_to_ref bs) /\
+    R.is_full_ref (B.box_to_ref bb) /\
+    R.is_full_ref (B.box_to_ref ba)
+  )
+ensures
+  Trade.trade
+    (AB.cbor_array_owned acc' (List.Tot.append l_acc [Ghost.reveal v1]))
+    (SM.seq_list_match
+      (Seq.seq_of_list (({ age_footprint = c'.footprint; age_box_elt = bs; age_box_before = bb; age_box_after = ba } <: cbor_freeable_arraygen_elt) :: ag_acc))
+      (c'.tree :: ft_acc)
+      freeable_match_arraygen_elt)
+{
+  let new_elt : cbor_freeable_arraygen_elt = { age_footprint = c'.footprint; age_box_elt = bs; age_box_before = bb; age_box_after = ba };
+  intro
+    (Trade.trade
+      (AB.cbor_array_owned acc' (List.Tot.append l_acc [Ghost.reveal v1]))
+      (SM.seq_list_match (Seq.seq_of_list (new_elt :: ag_acc)) (c'.tree :: ft_acc) freeable_match_arraygen_elt))
+    #(
+      Trade.trade
+        (AB.cbor_array_owned acc' (List.Tot.append l_acc [Ghost.reveal v1]))
+        (AB.cbor_array_owned acc_cur l_acc ** AB.cbor_array_owned s_i [Ghost.reveal v1] **
+          (exists* (vb va: IT.mixed_list U64.t cbor_raw). R.pts_to (B.box_to_ref bb) vb ** R.pts_to (B.box_to_ref ba) va)) **
+      Trade.trade
+        (AB.cbor_array_owned s_i [Ghost.reveal v1])
+        (cbor_match 1.0R c'.cbor v1 ** (exists* (w: cbor_raw). R.pts_to (B.box_to_ref bs) w)) **
+      Trade.trade (cbor_match 1.0R c'.cbor v1) (freeable c') **
+      Trade.trade
+        (AB.cbor_array_owned acc_cur l_acc)
+        (SM.seq_list_match (Seq.seq_of_list ag_acc) ft_acc freeable_match_arraygen_elt) **
+      pure (
+        R.is_full_ref (B.box_to_ref bs) /\
+        R.is_full_ref (B.box_to_ref bb) /\
+        R.is_full_ref (B.box_to_ref ba)
+      )
+    )
+    fn _
+    {
+      Trade.elim _
+        (AB.cbor_array_owned acc_cur l_acc ** AB.cbor_array_owned s_i [Ghost.reveal v1] **
+          (exists* (vb va: IT.mixed_list U64.t cbor_raw). R.pts_to (B.box_to_ref bb) vb ** R.pts_to (B.box_to_ref ba) va));
+      Trade.elim _
+        (cbor_match 1.0R c'.cbor v1 ** (exists* (w: cbor_raw). R.pts_to (B.box_to_ref bs) w));
+      Trade.elim _ (freeable c');
+      Trade.elim _ (SM.seq_list_match (Seq.seq_of_list ag_acc) ft_acc freeable_match_arraygen_elt);
+      unfold (freeable c');
+      arraygen_elt_fold c'.footprint c'.tree bs bb ba;
+      rewrite
+        (freeable_match' c'.footprint c'.tree **
+          (exists* (w: cbor_raw). R.pts_to (B.box_to_ref bs) w) **
+          (exists* (wb wa: IT.mixed_list U64.t cbor_raw). R.pts_to (B.box_to_ref bb) wb ** R.pts_to (B.box_to_ref ba) wa) **
+          pure (R.is_full_ref (B.box_to_ref bs) /\ R.is_full_ref (B.box_to_ref bb) /\ R.is_full_ref (B.box_to_ref ba)))
+        as (freeable_match_arraygen_elt new_elt c'.tree);
+      Seq.lemma_seq_of_list_induction (new_elt :: ag_acc);
+      SM.seq_list_match_cons_intro new_elt c'.tree (Seq.seq_of_list ag_acc) ft_acc freeable_match_arraygen_elt;
+      rewrite (SM.seq_list_match (Seq.cons new_elt (Seq.seq_of_list ag_acc)) (c'.tree :: ft_acc) freeable_match_arraygen_elt)
+        as (SM.seq_list_match (Seq.seq_of_list (new_elt :: ag_acc)) (c'.tree :: ft_acc) freeable_match_arraygen_elt);
+    };
+    rewrite
+      (Trade.trade
+        (AB.cbor_array_owned acc' (List.Tot.append l_acc [Ghost.reveal v1]))
+        (SM.seq_list_match (Seq.seq_of_list (new_elt :: ag_acc)) (c'.tree :: ft_acc) freeable_match_arraygen_elt))
+      as
+      (Trade.trade
+        (AB.cbor_array_owned acc' (List.Tot.append l_acc [Ghost.reveal v1]))
+        (SM.seq_list_match (Seq.seq_of_list (({ age_footprint = c'.footprint; age_box_elt = bs; age_box_before = bb; age_box_after = ba } <: cbor_freeable_arraygen_elt) :: ag_acc)) (c'.tree :: ft_acc) freeable_match_arraygen_elt));
+}
+
 // Deep-copy a _Gen array by streaming its elements through the depth-aware
 // array iterator (which dispatches CBOR_Case_Array_Gen internally) into the
 // same CBOR_Copy_Array footprint the inline arm builds.
@@ -1187,162 +1976,332 @@ ensures
   let len = IO.u64_ops.to_sizet count;
   let len64 : raw_uint64 = { size = a.cbor_array_gen_length_size; value = count };
   assert (pure (len64 == Array?.len v));
-  let v' = V.alloc (CBOR_Case_Simple 0uy (* dummy *)) len;
-  V.pts_to_len v';
-  let vf = V.alloc CBOR_Copy_Unit (* dummy *) len;
-  V.pts_to_len vf;
-  with s0 . assert (pts_to v' s0);
-  with sf0 . assert (pts_to vf sf0);
-  let sl = Ghost.hide (Seq.seq_of_list (Array?.v v));
-  SM.seq_seq_match_empty_intro (cbor_match 1.0R) s0 sl 0;
+  // === build a structural (_Gen) array by folding singletons via ArrayBuilder ===
+  let acc0 = AB.cbor_array_empty ();
+  let mut pacc = acc0;
+  let mut pi = 0sz;
+  let mut pit = it;
+  // the footprint spine is a heap box-chain built up (one O(1) node per element)
+  // alongside the array; it starts empty and is captured into the destructor
+  // trade once the array is finalized.
+  let mut phead : option (B.box arraygen_node) = None;
+  fold (arraygen_spine (None #(B.box arraygen_node)) ([] <: list cbor_freeable_arraygen_elt));
+  Trade.refl (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
+  // initial destructor trade: the empty owned array is a pure resource, so
+  // [owned acc0 []] can be dropped and [seq_list_match] on empty lists built.
   intro
     (Trade.trade
-      (SM.seq_seq_match (cbor_match 1.0R) s0 sl 0 0)
-      (SM.seq_seq_match freeable_match' sf0 (Seq.create (SZ.v len) FTUnit (* dummy *)) 0 0)
-    )
+      (AB.cbor_array_owned acc0 [])
+      (SM.seq_list_match (Seq.seq_of_list ([] <: list cbor_freeable_arraygen_elt)) ([] <: list freeable_tree) freeable_match_arraygen_elt))
     #emp
     fn _
   {
-    SM.seq_seq_match_empty_elim (cbor_match 1.0R) s0 sl 0;
-    SM.seq_seq_match_empty_intro freeable_match' sf0 (Seq.create (SZ.v len) FTUnit (* dummy *)) 0;
+    drop_ (AB.cbor_array_owned acc0 []);
+    SM.seq_list_match_nil_intro (Seq.seq_of_list ([] <: list cbor_freeable_arraygen_elt)) ([] <: list freeable_tree) freeable_match_arraygen_elt;
   };
-  // --- streaming copy loop ---
-  let mut pi = 0sz;
-  let mut pit = it;
-  Trade.refl (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
   while (
     let i = !pi;
     (SZ.lt i len)
-  ) invariant exists* i gi m pj s1 j sf st . (
+  ) invariant exists* i gi m pj acc l_acc ag ft hd_ptr . (
     pts_to pi i **
     pts_to pit gi **
+    pts_to pacc acc **
+    pts_to phead hd_ptr **
+    arraygen_spine hd_ptr ag **
     cbor_array_iterator_match_with_depth (nat_pred depth) pj gi m **
     Trade.trade
       (cbor_array_iterator_match_with_depth (nat_pred depth) pj gi m)
       (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v)) **
-    pts_to v' s1 **
-    SM.seq_seq_match (cbor_match 1.0R) s1 sl 0 j **
-    pts_to vf sf **
+    AB.cbor_array_owned acc l_acc **
     Trade.trade
-      (SM.seq_seq_match (cbor_match 1.0R) s1 sl 0 j)
-      (SM.seq_seq_match freeable_match' sf st 0 j) **
+      (AB.cbor_array_owned acc l_acc)
+      (SM.seq_list_match (Seq.seq_of_list ag) ft freeable_match_arraygen_elt) **
     pure (
-      j == SZ.v i /\
       SZ.v i <= SZ.v len /\
       SZ.v len == List.Tot.length (Ghost.reveal (Array?.v v)) /\
+      U64.v count == SZ.v len /\
+      (len64 <: raw_uint64) == Array?.len v /\
+      List.Tot.length (Ghost.reveal l_acc) == SZ.v i /\
       Ghost.reveal m == snd (List.Tot.splitAt (SZ.v i) (Ghost.reveal (Array?.v v))) /\
-      Seq.length st == SZ.v len
+      List.Tot.append (Ghost.reveal l_acc) (Ghost.reveal m) == Ghost.reveal (Array?.v v)
     )
   ) {
-    V.pts_to_len v';
-    V.pts_to_len vf;
     let i = !pi;
-    with s1 j sf st . assert (pts_to v' s1 ** pts_to vf sf ** Trade.trade
-      (SM.seq_seq_match (cbor_match 1.0R) s1 sl 0 j)
-      (SM.seq_seq_match freeable_match' sf st 0 j)
+    with gi m pj acc l_acc ag ft hd_ptr . assert (
+      pts_to pit gi **
+      pts_to pacc acc **
+      pts_to phead hd_ptr **
+      arraygen_spine hd_ptr ag **
+      cbor_array_iterator_match_with_depth (nat_pred depth) pj gi m **
+      Trade.trade
+        (cbor_array_iterator_match_with_depth (nat_pred depth) pj gi m)
+        (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v)) **
+      AB.cbor_array_owned acc l_acc **
+      Trade.trade
+        (AB.cbor_array_owned acc l_acc)
+        (SM.seq_list_match (Seq.seq_of_list ag) ft freeable_match_arraygen_elt)
     );
-    rewrite each j as (SZ.v i);
+    List.Tot.append_length (Ghost.reveal l_acc) (Ghost.reveal m);
     // identify the head of the remaining suffix with the element at index i,
     // and expose the one-step advance [snd (splitAt i) == index i :: snd (splitAt (i+1))]
     splitAt_snd_cons (SZ.v i) (Array?.v v);
     let c = cbor_array_iterator_next_with_depth (nat_pred depth) pit;
     Trade.trans _ _ (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
-    // size bound for the recursive copy
     size_array_elt v (List.Tot.index (Array?.v v) (SZ.v i));
     FStar.SizeT.fits_lte (Ghost.reveal (nat_pred depth)) (Ghost.reveal depth);
     let c' = copy (nat_pred depth) c;
     Trade.elim_hyp_l _ _ (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
     with v1 . assert (cbor_match 1.0R c'.cbor v1 ** Trade.trade (cbor_match 1.0R c'.cbor v1) (freeable c'));
-    V.op_Array_Assignment v' i c'.cbor;
-    with s1' . assert (pts_to v' s1');
-    V.op_Array_Assignment vf i c'.footprint;
-    with sf' . assert (pts_to vf sf');
-    SM.seq_seq_match_rewrite_seq_trade (cbor_match 1.0R) s1 s1' sl sl 0 (SZ.v i);
-    Trade.trans (SM.seq_seq_match (cbor_match 1.0R) s1' sl 0 (SZ.v i)) _ _;
-    Trade.prod (SM.seq_seq_match (cbor_match 1.0R) s1' sl 0 (SZ.v i)) _ (cbor_match 1.0R c'.cbor v1) _;
-    SM.seq_seq_match_enqueue_right_trade (cbor_match 1.0R) s1' sl 0 (SZ.v i) c'.cbor v1;
-    Trade.trans (SM.seq_seq_match (cbor_match 1.0R) s1' sl 0 (SZ.v i + 1)) _ _;
-    let st' = Ghost.hide (Seq.upd st (SZ.v i) c'.tree);
-    intro
-      (Trade.trade
-        (SM.seq_seq_match freeable_match' sf st 0 (SZ.v i) ** freeable c')
-        (SM.seq_seq_match freeable_match' sf' st' 0 (SZ.v i + 1))
-      )
-      #emp
-      fn _
-    {
-      SM.seq_seq_match_rewrite_seq freeable_match' sf sf' st st' 0 (SZ.v i);
-      unfold (freeable c');
-      SM.seq_seq_match_enqueue_right freeable_match' sf' st' 0 (SZ.v i) c'.footprint c'.tree;
-    };
-    Trade.trans (SM.seq_seq_match (cbor_match 1.0R) s1' sl 0 (SZ.v i + 1)) _ _;
-    pi := (SZ.add i 1sz);
+    let bs = B.alloc c'.cbor;
+    B.to_ref_pts_to bs;
+    let s_i = AB.cbor_array_singleton c'.cbor (B.box_to_ref bs);
+    let acc_cur = !pacc;
+    let bb = B.alloc (IT.Base IT.Empty <: IT.mixed_list U64.t cbor_raw);
+    let ba = B.alloc (IT.Base IT.Empty <: IT.mixed_list U64.t cbor_raw);
+    B.to_ref_pts_to bb;
+    B.to_ref_pts_to ba;
+    AB.cbor_array_owned_length_fits acc_cur;
+    let appended = AB.cbor_array_append acc_cur s_i (B.box_to_ref bb) (B.box_to_ref ba);
+    match appended {
+      Some acc' -> {
+        List.Tot.append_assoc (Ghost.reveal l_acc) [Ghost.reveal v1]
+          (snd (List.Tot.splitAt (SZ.v i + 1) (Ghost.reveal (Array?.v v))));
+        arraygen_step l_acc v1 acc_cur acc' s_i c' bs bb ba ag ft;
+        let head_cur = !phead;
+        let new_head = arraygen_cons ({ age_footprint = c'.footprint; age_box_elt = bs; age_box_before = bb; age_box_after = ba } <: cbor_freeable_arraygen_elt) head_cur;
+        phead := new_head;
+        pacc := acc';
+        pi := (SZ.add i 1sz);
+      }
+      None -> {
+        assert (pure (List.Tot.length [Ghost.reveal v1] == 1));
+        assert (pure False);
+        unreachable ()
+      }
+    }
   };
-  // --- restore the source node from the loop trade and the init trade ---
   Trade.elim _ (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
   Trade.elim _ (cbor_match_with_depth depth p x v);
-  // --- finalize destination into a CBOR_Copy_Array (mirrors cbor_copy_array_d) ---
-  with s1 j sf st . assert (pts_to v' s1 ** pts_to vf sf **
-    SM.seq_seq_match (cbor_match 1.0R) s1 sl 0 j **
+  // at loop exit, [i == len == length (Array?.v v)], so the iterator suffix is
+  // empty and [l_acc == Array?.v v]
+  with acc_g l_acc_g ag_g ft_g hd_g . assert (
+    AB.cbor_array_owned acc_g l_acc_g **
     Trade.trade
-      (SM.seq_seq_match (cbor_match 1.0R) s1 sl 0 j)
-      (SM.seq_seq_match freeable_match' sf st 0 j)
+      (AB.cbor_array_owned acc_g l_acc_g)
+      (SM.seq_list_match (Seq.seq_of_list ag_g) ft_g freeable_match_arraygen_elt) **
+    pts_to phead hd_g **
+    arraygen_spine hd_g ag_g
   );
-  rewrite each j as (SZ.v len);
-  V.pts_to_len v';
-  SM.seq_seq_match_seq_list_match_trade (cbor_match 1.0R) s1 sl;
-  CBOR.Pulse.Raw.Iterator.trade_trans_nounify _ _ _ (SM.seq_seq_match freeable_match' sf st 0 (SZ.v len));
-  V.pts_to_len vf;
-  let lt = Ghost.hide (Seq.seq_to_list st);
+  FStar.List.Tot.Base.lemma_splitAt_snd_length (SZ.v len) (Ghost.reveal (Array?.v v));
+  List.Tot.Properties.append_l_nil (Ghost.reveal l_acc_g);
+  assert (pure (Ghost.reveal l_acc_g == Ghost.reveal (Array?.v v)));
+  assert (pure (List.Tot.length (Ghost.reveal l_acc_g) == SZ.v len));
+  assert (pure (U64.v (len64.value) == SZ.v len));
+  let acc = !pacc;
+  let head_final = !phead;
+  rewrite (arraygen_spine hd_g ag_g) as (arraygen_spine head_final ag_g);
+  // finalize with the (possibly non-minimal) length header [len64] of the
+  // source, so the resulting match reproduces [v] exactly.
+  fold (AB.cbor_array_owned_with_len acc len64 (Ghost.reveal l_acc_g));
+  // pin [U64.v len64.value == length l_acc_g] so [Array len64 l_acc_g] (a
+  // dependent [nlist]) typechecks below.
+  assert (pure (AB.cbor_array_len_ok len64 (Ghost.reveal l_acc_g)));
+  let y = AB.cbor_array_finalize_with_len acc len64;
+  // [finalize_with_len] now exposes the CONCRETE match [cbor_match y (Array
+  // len64 l_acc_g)] (no existential length witness).  Bind the whole finalized
+  // array value [a] with a single metavariable (so the frame matcher never has
+  // to unify under [Array]'s dependent [nlist] refinement), then unfold.
+  with a. assert (AB.cbor_array_finalized_val acc y a);
+  unfold (AB.cbor_array_finalized_val acc y a);
+  // build the structural result and its destructor trade
+  let res : cbor_freeable = {
+    cbor = y;
+    footprint = CBOR_Copy_ArrayGen head_final;
+    tree = FTArrayGen ft_g;
+  };
+  // [a == Array len64 l_acc_g] (finalize), [len64 == Array?.len v] (invariant),
+  // [l_acc_g == Array?.v v] (loop exit) give [a == v]; relabel the concrete
+  // finalize match and its destructor trade to the source value [v].
+  assert (pure (Ghost.reveal l_acc_g == Ghost.reveal (Array?.v v)));
+  assert (pure (a == Ghost.reveal v));
+  rewrite (cbor_match 1.0R y a)
+    as (cbor_match 1.0R res.cbor v);
+  rewrite (Trade.trade
+      (cbor_match 1.0R y a)
+      (AB.cbor_array_owned acc (Array?.v a)))
+    as (Trade.trade
+      (cbor_match 1.0R res.cbor v)
+      (AB.cbor_array_owned acc (Ghost.reveal l_acc_g)));
+  // compose the finalize trade [cbor_match res.cbor v --* owned acc l]
+  // with the accumulated destructor trade [owned acc l --* seq_list_match elts]
+  Trade.trans _ _
+    (SM.seq_list_match (Seq.seq_of_list ag_g) ft_g freeable_match_arraygen_elt);
+  // capture the live footprint spine [arraygen_spine head_final ag_g] into the
+  // destructor trade, so firing it reproduces the full [freeable res]
   intro
     (Trade.trade
-      (SM.seq_seq_match freeable_match' sf st 0 (SZ.v len))
-      (SM.seq_list_match sf lt freeable_match')
-    )
-    #emp
+      (cbor_match 1.0R res.cbor v)
+      (freeable res))
+    #(arraygen_spine head_final ag_g **
+      Trade.trade
+        (cbor_match 1.0R res.cbor v)
+        (SM.seq_list_match (Seq.seq_of_list ag_g) ft_g freeable_match_arraygen_elt))
     fn _
   {
-    rewrite (SM.seq_seq_match freeable_match' sf st 0 (SZ.v len))
-      as (SM.seq_seq_match freeable_match' sf (Seq.seq_of_list lt) 0 (SZ.v len));
-    SM.seq_seq_match_seq_list_match freeable_match' sf lt;
+    Trade.elim _ (SM.seq_list_match (Seq.seq_of_list ag_g) ft_g freeable_match_arraygen_elt);
+    SM.seq_list_match_weaken (Seq.seq_of_list ag_g) ft_g
+      freeable_match_arraygen_elt
+      (freeable_match_arraygen_elt' (FTArrayGen ft_g) freeable_match')
+      (freeable_match_arraygen_elt_weaken_recip ft_g);
+    fold (freeable_match' (CBOR_Copy_ArrayGen head_final) (FTArrayGen ft_g));
+    rewrite (freeable_match' (CBOR_Copy_ArrayGen head_final) (FTArrayGen ft_g))
+      as (freeable_match' res.footprint res.tree);
+    fold (freeable res);
   };
-  Trade.trans _ _ (SM.seq_list_match sf lt freeable_match');
-  V.to_array_pts_to v';
-  let ar' = S.from_array (V.vec_to_array v') len;
-  S.pts_to_len ar';
-  let c' = cbor_match_array_intro len64 ar';
-  Trade.trans_concl_r _ _ _ _;
-  let fa = {
-    array_cbor = v';
-    array_footprint = vf;
-    array_len = len;
-  };
-  let res = {
-    cbor = c';
-    footprint = CBOR_Copy_Array fa;
-    tree = FTArray lt;
-  };
-  intro
-    (Trade.trade
-      (pts_to ar' s1 ** SM.seq_list_match sf lt freeable_match')
-      (freeable res)
-    )
-    #(S.is_from_array (V.vec_to_array v') ar' ** pts_to vf sf)
-    fn _
-  {
-   S.to_array ar';
-   V.to_vec_pts_to v';
-   rewrite (pts_to v' s1) as (pts_to fa.array_cbor s1);
-   rewrite (pts_to vf sf) as (pts_to fa.array_footprint sf);
-   fold (freeable_match' (CBOR_Copy_Array fa) (FTArray lt));
-   rewrite freeable_match' (CBOR_Copy_Array fa) (FTArray lt) as
-     freeable_match' res.footprint res.tree;
-   fold (freeable res)
-  };
-  Trade.trans _ _ (freeable res);
-  with r' . assert cbor_match 1.0R c' (Array len64 r');
-  rewrite each cbor_match 1.0R c' (Array len64 r') as cbor_match 1.0R res.cbor v;
   res
+}
+
+// Gather two [cbor_match_map_entry] shares of the same concrete entry (needed
+// as the [gather_t] argument to [Append.mixed_list_singleton]).  Copied from
+// CBOR.Pulse.Raw.EverParse.Det.MapInsert.
+ghost
+fn cbor_match_map_entry_gather
+  (x1: cbor_map_entry)
+  (#p: perm)
+  (#x2: (raw_data_item & raw_data_item))
+  (#p': perm)
+  (#x2': (raw_data_item & raw_data_item))
+requires cbor_match_map_entry p x1 x2 ** cbor_match_map_entry p' x1 x2'
+ensures cbor_match_map_entry (p +. p') x1 x2 ** pure (x2 == x2')
+{
+  unfold (cbor_match_map_entry p x1 x2);
+  unfold (cbor_match_map_entry p' x1 x2');
+  MP.cbor_raw_gather p x1.cbor_map_entry_key (fst x2) p' (fst x2');
+  MP.cbor_raw_gather p x1.cbor_map_entry_value (snd x2) p' (snd x2');
+  fold (cbor_match_map_entry (p +. p') x1 x2);
+}
+
+// [assert_norm] equality unfolding the per-entry [freeable_match_mapgen_elt]
+// for a record literal at [(kr, vr)] (mirrors [arraygen_elt_fold]).
+let mapgen_elt_fold
+  (kfp vfp: cbor_freeable0)
+  (r: (freeable_tree & freeable_tree))
+  (be: B.box cbor_map_entry)
+  (bbf baf: B.box (IT.mixed_list U64.t cbor_map_entry))
+: Lemma
+  (ensures
+    freeable_match_mapgen_elt ({ mge_key_footprint = kfp; mge_val_footprint = vfp; mge_box_elt = be; mge_box_before = bbf; mge_box_after = baf }) r ==
+    (freeable_match' kfp (fst r) **
+      freeable_match' vfp (snd r) **
+      (exists* (w: cbor_map_entry). R.pts_to (B.box_to_ref be) w) **
+      (exists* (wb wa: IT.mixed_list U64.t cbor_map_entry). R.pts_to (B.box_to_ref bbf) wb ** R.pts_to (B.box_to_ref baf) wa) **
+      pure (R.is_full_ref (B.box_to_ref be) /\ R.is_full_ref (B.box_to_ref bbf) /\ R.is_full_ref (B.box_to_ref baf))))
+= assert_norm (
+    freeable_match_mapgen_elt ({ mge_key_footprint = kfp; mge_val_footprint = vfp; mge_box_elt = be; mge_box_before = bbf; mge_box_after = baf }) r ==
+    (freeable_match' kfp (fst r) **
+      freeable_match' vfp (snd r) **
+      (exists* (w: cbor_map_entry). R.pts_to (B.box_to_ref be) w) **
+      (exists* (wb wa: IT.mixed_list U64.t cbor_map_entry). R.pts_to (B.box_to_ref bbf) wb ** R.pts_to (B.box_to_ref baf) wa) **
+      pure (R.is_full_ref (B.box_to_ref be) /\ R.is_full_ref (B.box_to_ref bbf) /\ R.is_full_ref (B.box_to_ref baf))))
+
+// One fold step for the structural (_Gen) map build.  Mirrors [arraygen_step]
+// but folds BOTH the key and value footprints (and the entry-destructor trade
+// [cbor_match_map_entry cme' --* (freeable key' ** freeable value')]) into the
+// per-entry [freeable_match_mapgen_elt] prepended to the footprint list.
+ghost
+fn mapgen_step
+  (l_acc: Ghost.erased (list (raw_data_item & raw_data_item)))
+  (entry_v: Ghost.erased (raw_data_item & raw_data_item))
+  (acc_cur acc' s_i: IT.mixed_list U64.t cbor_map_entry)
+  (cme': cbor_map_entry)
+  (key' value': cbor_freeable)
+  (bs: B.box cbor_map_entry)
+  (bb ba: B.box (IT.mixed_list U64.t cbor_map_entry))
+  (mg_acc: Ghost.erased (list cbor_freeable_mapgen_elt))
+  (ft_acc: Ghost.erased (list (freeable_tree & freeable_tree)))
+requires
+  Trade.trade
+    (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc' (List.Tot.append l_acc [Ghost.reveal entry_v]))
+    (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc_cur l_acc **
+      I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R s_i [Ghost.reveal entry_v] **
+      (exists* (vb va: IT.mixed_list U64.t cbor_map_entry). R.pts_to (B.box_to_ref bb) vb ** R.pts_to (B.box_to_ref ba) va)) **
+  Trade.trade
+    (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R s_i [Ghost.reveal entry_v])
+    (cbor_match_map_entry 1.0R cme' entry_v ** (exists* (w: cbor_map_entry). R.pts_to (B.box_to_ref bs) w)) **
+  Trade.trade (cbor_match_map_entry 1.0R cme' entry_v) (freeable key' ** freeable value') **
+  Trade.trade
+    (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc_cur l_acc)
+    (SM.seq_list_match (Seq.seq_of_list mg_acc) ft_acc freeable_match_mapgen_elt) **
+  pure (
+    R.is_full_ref (B.box_to_ref bs) /\
+    R.is_full_ref (B.box_to_ref bb) /\
+    R.is_full_ref (B.box_to_ref ba)
+  )
+ensures
+  Trade.trade
+    (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc' (List.Tot.append l_acc [Ghost.reveal entry_v]))
+    (SM.seq_list_match
+      (Seq.seq_of_list (({ mge_key_footprint = key'.footprint; mge_val_footprint = value'.footprint; mge_box_elt = bs; mge_box_before = bb; mge_box_after = ba } <: cbor_freeable_mapgen_elt) :: mg_acc))
+      ((key'.tree, value'.tree) :: ft_acc)
+      freeable_match_mapgen_elt)
+{
+  let new_elt : cbor_freeable_mapgen_elt = { mge_key_footprint = key'.footprint; mge_val_footprint = value'.footprint; mge_box_elt = bs; mge_box_before = bb; mge_box_after = ba };
+  intro
+    (Trade.trade
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc' (List.Tot.append l_acc [Ghost.reveal entry_v]))
+      (SM.seq_list_match (Seq.seq_of_list (new_elt :: mg_acc)) ((key'.tree, value'.tree) :: ft_acc) freeable_match_mapgen_elt))
+    #(
+      Trade.trade
+        (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc' (List.Tot.append l_acc [Ghost.reveal entry_v]))
+        (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc_cur l_acc **
+          I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R s_i [Ghost.reveal entry_v] **
+          (exists* (vb va: IT.mixed_list U64.t cbor_map_entry). R.pts_to (B.box_to_ref bb) vb ** R.pts_to (B.box_to_ref ba) va)) **
+      Trade.trade
+        (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R s_i [Ghost.reveal entry_v])
+        (cbor_match_map_entry 1.0R cme' entry_v ** (exists* (w: cbor_map_entry). R.pts_to (B.box_to_ref bs) w)) **
+      Trade.trade (cbor_match_map_entry 1.0R cme' entry_v) (freeable key' ** freeable value') **
+      Trade.trade
+        (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc_cur l_acc)
+        (SM.seq_list_match (Seq.seq_of_list mg_acc) ft_acc freeable_match_mapgen_elt) **
+      pure (
+        R.is_full_ref (B.box_to_ref bs) /\
+        R.is_full_ref (B.box_to_ref bb) /\
+        R.is_full_ref (B.box_to_ref ba)
+      )
+    )
+    fn _
+    {
+      Trade.elim _
+        (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc_cur l_acc **
+          I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R s_i [Ghost.reveal entry_v] **
+          (exists* (vb va: IT.mixed_list U64.t cbor_map_entry). R.pts_to (B.box_to_ref bb) vb ** R.pts_to (B.box_to_ref ba) va));
+      Trade.elim _
+        (cbor_match_map_entry 1.0R cme' entry_v ** (exists* (w: cbor_map_entry). R.pts_to (B.box_to_ref bs) w));
+      Trade.elim _ (freeable key' ** freeable value');
+      Trade.elim _ (SM.seq_list_match (Seq.seq_of_list mg_acc) ft_acc freeable_match_mapgen_elt);
+      unfold (freeable key');
+      unfold (freeable value');
+      mapgen_elt_fold key'.footprint value'.footprint (key'.tree, value'.tree) bs bb ba;
+      rewrite
+        (freeable_match' key'.footprint key'.tree **
+          freeable_match' value'.footprint value'.tree **
+          (exists* (w: cbor_map_entry). R.pts_to (B.box_to_ref bs) w) **
+          (exists* (wb wa: IT.mixed_list U64.t cbor_map_entry). R.pts_to (B.box_to_ref bb) wb ** R.pts_to (B.box_to_ref ba) wa) **
+          pure (R.is_full_ref (B.box_to_ref bs) /\ R.is_full_ref (B.box_to_ref bb) /\ R.is_full_ref (B.box_to_ref ba)))
+        as (freeable_match_mapgen_elt new_elt (key'.tree, value'.tree));
+      Seq.lemma_seq_of_list_induction (new_elt :: mg_acc);
+      SM.seq_list_match_cons_intro new_elt (key'.tree, value'.tree) (Seq.seq_of_list mg_acc) ft_acc freeable_match_mapgen_elt;
+      rewrite (SM.seq_list_match (Seq.cons new_elt (Seq.seq_of_list mg_acc)) ((key'.tree, value'.tree) :: ft_acc) freeable_match_mapgen_elt)
+        as (SM.seq_list_match (Seq.seq_of_list (new_elt :: mg_acc)) ((key'.tree, value'.tree) :: ft_acc) freeable_match_mapgen_elt);
+    };
+    rewrite
+      (Trade.trade
+        (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc' (List.Tot.append l_acc [Ghost.reveal entry_v]))
+        (SM.seq_list_match (Seq.seq_of_list (new_elt :: mg_acc)) ((key'.tree, value'.tree) :: ft_acc) freeable_match_mapgen_elt))
+      as
+      (Trade.trade
+        (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc' (List.Tot.append l_acc [Ghost.reveal entry_v]))
+        (SM.seq_list_match (Seq.seq_of_list (({ mge_key_footprint = key'.footprint; mge_val_footprint = value'.footprint; mge_box_elt = bs; mge_box_before = bb; mge_box_after = ba } <: cbor_freeable_mapgen_elt) :: mg_acc)) ((key'.tree, value'.tree) :: ft_acc) freeable_match_mapgen_elt));
 }
 
 // Deep-copy a _Gen map by streaming its entries through the depth-aware map
@@ -1392,72 +2351,76 @@ ensures
   let len = IO.u64_ops.to_sizet count;
   let len64 : raw_uint64 = { size = a.cbor_map_gen_length_size; value = count };
   assert (pure (len64 == Map?.len v));
-  let v' = V.alloc
-    ({
-      cbor_map_entry_key = CBOR_Case_Simple 0uy; (* dummy *)
-      cbor_map_entry_value = CBOR_Case_Simple 0uy;
-    })
-    len;
-  V.pts_to_len v';
-  let vf = V.alloc
-    ({
-      map_entry_key = CBOR_Copy_Unit;
-      map_entry_value = CBOR_Copy_Unit;
-    })
-    len;
-  V.pts_to_len vf;
-  with s0 . assert (pts_to v' s0);
-  with sf0 . assert (pts_to vf sf0);
-  let sl = Ghost.hide (Seq.seq_of_list (Map?.v v));
-  SM.seq_seq_match_empty_intro (cbor_match_map_entry 1.0R) s0 sl 0;
+  // === build a structural (_Gen) map by folding singletons via Append ===
+  Append.mixed_list_empty cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R;
+  let acc0 : IT.mixed_list U64.t cbor_map_entry = IT.Base IT.Empty;
+  rewrite (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R (IT.Base IT.Empty <: IT.mixed_list U64.t cbor_map_entry) [])
+    as (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc0 []);
+  let mut pacc = acc0;
+  let mut pi = 0sz;
+  let mut pit = it;
+  // the footprint spine is a heap box-chain built up (one O(1) node per entry)
+  // alongside the map; it starts empty and is captured into the destructor
+  // trade once the map is finalized.
+  let mut phead : option (B.box mapgen_node) = None;
+  fold (mapgen_spine (None #(B.box mapgen_node)) ([] <: list cbor_freeable_mapgen_elt));
+  Trade.refl (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
+  // initial destructor trade: the empty mixed_list is a pure resource, so
+  // [mlm acc0 []] can be dropped and [seq_list_match] on empty lists built.
   intro
     (Trade.trade
-      (SM.seq_seq_match (cbor_match_map_entry 1.0R) s0 sl 0 0)
-      (SM.seq_seq_match freeable_match_map_entry sf0 (Seq.create (SZ.v len) (FTUnit, FTUnit) (* dummy *)) 0 0)
-    )
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc0 [])
+      (SM.seq_list_match (Seq.seq_of_list ([] <: list cbor_freeable_mapgen_elt)) ([] <: list (freeable_tree & freeable_tree)) freeable_match_mapgen_elt))
     #emp
     fn _
   {
-    SM.seq_seq_match_empty_elim (cbor_match_map_entry 1.0R) s0 sl 0;
-    SM.seq_seq_match_empty_intro freeable_match_map_entry sf0 (Seq.create (SZ.v len) (FTUnit, FTUnit) (* dummy *)) 0;
+    drop_ (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc0 []);
+    SM.seq_list_match_nil_intro (Seq.seq_of_list ([] <: list cbor_freeable_mapgen_elt)) ([] <: list (freeable_tree & freeable_tree)) freeable_match_mapgen_elt;
   };
-  // --- streaming copy loop ---
-  let mut pi = 0sz;
-  let mut pit = it;
-  Trade.refl (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
   while (
     let i = !pi;
     (SZ.lt i len)
-  ) invariant exists* i gi m pj s1 j sf st . (
+  ) invariant exists* i gi m pj acc l_acc mg ft hd_ptr . (
     pts_to pi i **
     pts_to pit gi **
+    pts_to pacc acc **
+    pts_to phead hd_ptr **
+    mapgen_spine hd_ptr mg **
     cbor_map_iterator_match_with_depth (nat_pred depth) pj gi m **
     Trade.trade
       (cbor_map_iterator_match_with_depth (nat_pred depth) pj gi m)
       (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v)) **
-    pts_to v' s1 **
-    SM.seq_seq_match (cbor_match_map_entry 1.0R) s1 sl 0 j **
-    pts_to vf sf **
+    I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc l_acc **
     Trade.trade
-      (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1 sl 0 j)
-      (SM.seq_seq_match freeable_match_map_entry sf st 0 j) **
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc l_acc)
+      (SM.seq_list_match (Seq.seq_of_list mg) ft freeable_match_mapgen_elt) **
     pure (
-      j == SZ.v i /\
       SZ.v i <= SZ.v len /\
       SZ.v len == List.Tot.length (Ghost.reveal (Map?.v v)) /\
+      U64.v count == SZ.v len /\
+      (len64 <: raw_uint64) == Map?.len v /\
+      List.Tot.length (Ghost.reveal l_acc) == SZ.v i /\
       Ghost.reveal m == snd (List.Tot.splitAt (SZ.v i) (Ghost.reveal (Map?.v v))) /\
-      Seq.length st == SZ.v len
+      List.Tot.append (Ghost.reveal l_acc) (Ghost.reveal m) == Ghost.reveal (Map?.v v)
     )
   ) {
-    V.pts_to_len v';
-    V.pts_to_len vf;
     let i = !pi;
-    with s1 j sf st . assert (pts_to v' s1 ** pts_to vf sf ** Trade.trade
-      (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1 sl 0 j)
-      (SM.seq_seq_match freeable_match_map_entry sf st 0 j)
+    with gi m pj acc l_acc mg ft hd_ptr . assert (
+      pts_to pit gi **
+      pts_to pacc acc **
+      pts_to phead hd_ptr **
+      mapgen_spine hd_ptr mg **
+      cbor_map_iterator_match_with_depth (nat_pred depth) pj gi m **
+      Trade.trade
+        (cbor_map_iterator_match_with_depth (nat_pred depth) pj gi m)
+        (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v)) **
+      I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc l_acc **
+      Trade.trade
+        (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc l_acc)
+        (SM.seq_list_match (Seq.seq_of_list mg) ft freeable_match_mapgen_elt)
     );
-    rewrite each j as (SZ.v i);
-    // identify the head entry with index i and expose the one-step advance
+    List.Tot.append_length (Ghost.reveal l_acc) (Ghost.reveal m);
+    // identify the head entry with index i, and expose the one-step advance
     splitAt_snd_cons (SZ.v i) (Map?.v v);
     let c = cbor_map_iterator_next_with_depth (nat_pred depth) pit;
     Trade.trans _ _ (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
@@ -1472,7 +2435,8 @@ ensures
     let value' = copy (nat_pred depth) c.cbor_map_entry_value;
     fold (Match.cbor_match_map_entry_with_depth (nat_pred depth) pe c a1);
     Trade.elim_hyp_l _ _ (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
-    // --- accumulate the copied entry into the destination (mirrors cbor_copy_map_d) ---
+    // combine the two copies into a single entry match plus a destructor trade
+    // [cbor_match_map_entry cme' a1 --* (freeable key' ** freeable value')]
     Trade.prod
       (cbor_match 1.0R key'.cbor (fst a1))
       (freeable key')
@@ -1488,105 +2452,105 @@ ensures
       )
       (cbor_match_map_entry 1.0R cme' a1);
     Trade.trans (cbor_match_map_entry 1.0R cme' a1) _ _;
-    V.op_Array_Assignment v' i cme';
-    with s1' . assert (pts_to v' s1');
-    let cfp' = {
-      map_entry_key = key'.footprint;
-      map_entry_value = value'.footprint;
-    };
-    V.op_Array_Assignment vf i cfp';
-    with sf' . assert (pts_to vf sf');
-    SM.seq_seq_match_rewrite_seq_trade (cbor_match_map_entry 1.0R) s1 s1' sl sl 0 (SZ.v i);
-    Trade.trans (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1' sl 0 (SZ.v i)) _ _;
-    Trade.prod (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1' sl 0 (SZ.v i)) _ (cbor_match_map_entry 1.0R cme' a1) _;
-    SM.seq_seq_match_enqueue_right_trade (cbor_match_map_entry 1.0R) s1' sl 0 (SZ.v i) cme' a1;
-    Trade.trans (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1' sl 0 (SZ.v i + 1)) _ _;
-    let tree = Ghost.hide (key'.tree, value'.tree);
-    let st' = Ghost.hide (Seq.upd st (SZ.v i) tree);
-    intro
-      (Trade.trade
-        (SM.seq_seq_match freeable_match_map_entry sf st 0 (SZ.v i) ** (freeable key' ** freeable value'))
-        (SM.seq_seq_match freeable_match_map_entry sf' st' 0 (SZ.v i + 1))
-      )
-      #emp
-      fn _
-    {
-      SM.seq_seq_match_rewrite_seq freeable_match_map_entry sf sf' st st' 0 (SZ.v i);
-      unfold (freeable key');
-      unfold (freeable value');
-      rewrite each key'.footprint as cfp'.map_entry_key;
-      rewrite each value'.footprint as cfp'.map_entry_value;
-      fold (freeable_match_map_entry cfp' (key'.tree, value'.tree));
-      SM.seq_seq_match_enqueue_right freeable_match_map_entry sf' st' 0 (SZ.v i) cfp' (key'.tree, value'.tree);
-    };
-    Trade.trans (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1' sl 0 (SZ.v i + 1)) _ _;
+    // build a singleton entry mixed_list and append it to the accumulator
+    let bs = B.alloc cme';
+    B.to_ref_pts_to bs;
+    let s_i = Append.mixed_list_singleton cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R cme' a1 (B.box_to_ref bs) cbor_match_map_entry_gather;
+    let acc_cur = !pacc;
+    let bb = B.alloc (IT.Base IT.Empty <: IT.mixed_list U64.t cbor_map_entry);
+    let ba = B.alloc (IT.Base IT.Empty <: IT.mixed_list U64.t cbor_map_entry);
+    B.to_ref_pts_to bb;
+    B.to_ref_pts_to ba;
+    // discharge [io.fits] for the append from the length bounds:
+    //   len(acc_cur) == length l_acc == i  and  len(s_i) == 1, so
+    //   len(acc_cur) + len(s_i) == i+1 <= count < 2^64.
+    I.mixed_list_match_length cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc_cur l_acc;
+    I.mixed_list_match_length cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R s_i [a1];
+    let acc' = Append.mixed_list_append cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc_cur l_acc s_i [a1] (B.box_to_ref bb) (B.box_to_ref ba);
+    List.Tot.append_assoc (Ghost.reveal l_acc) [a1]
+      (snd (List.Tot.splitAt (SZ.v i + 1) (Ghost.reveal (Map?.v v))));
+    mapgen_step l_acc a1 acc_cur acc' s_i cme' key' value' bs bb ba mg ft;
+    let head_cur = !phead;
+    let new_head = mapgen_cons ({ mge_key_footprint = key'.footprint; mge_val_footprint = value'.footprint; mge_box_elt = bs; mge_box_before = bb; mge_box_after = ba } <: cbor_freeable_mapgen_elt) head_cur;
+    phead := new_head;
+    pacc := acc';
     pi := (SZ.add i 1sz);
   };
-  // --- restore the source node from the loop trade and the init trade ---
   Trade.elim _ (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
   Trade.elim _ (cbor_match_with_depth depth p x v);
-  // --- finalize destination into a CBOR_Copy_Map (mirrors cbor_copy_map_d) ---
-  with s1 j sf st . assert (pts_to v' s1 ** pts_to vf sf **
-    SM.seq_seq_match (cbor_match_map_entry 1.0R) s1 sl 0 j **
+  // at loop exit, [i == len == length (Map?.v v)], so the iterator suffix is
+  // empty and [l_acc == Map?.v v]
+  with acc_g l_acc_g mg_g ft_g hd_g . assert (
+    I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc_g l_acc_g **
     Trade.trade
-      (SM.seq_seq_match (cbor_match_map_entry 1.0R) s1 sl 0 j)
-      (SM.seq_seq_match freeable_match_map_entry sf st 0 j)
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc_g l_acc_g)
+      (SM.seq_list_match (Seq.seq_of_list mg_g) ft_g freeable_match_mapgen_elt) **
+    pts_to phead hd_g **
+    mapgen_spine hd_g mg_g
   );
-  rewrite each j as (SZ.v len);
-  V.pts_to_len v';
-  SM.seq_seq_match_seq_list_match_trade (cbor_match_map_entry 1.0R) s1 sl;
-  CBOR.Pulse.Raw.Iterator.trade_trans_nounify _ _ _ (SM.seq_seq_match freeable_match_map_entry sf st 0 (SZ.v len));
-  V.pts_to_len vf;
-  let lt = Ghost.hide (Seq.seq_to_list st);
+  FStar.List.Tot.Base.lemma_splitAt_snd_length (SZ.v len) (Ghost.reveal (Map?.v v));
+  List.Tot.Properties.append_length (Ghost.reveal l_acc_g) (snd (List.Tot.splitAt (SZ.v len) (Ghost.reveal (Map?.v v))));
+  List.Tot.Properties.append_l_nil (Ghost.reveal l_acc_g);
+  assert (pure (Ghost.reveal l_acc_g == Ghost.reveal (Map?.v v)));
+  assert (pure (List.Tot.length (Ghost.reveal l_acc_g) == SZ.v len));
+  assert (pure (U64.v (len64.value) == SZ.v len));
+  let acc = !pacc;
+  let head_final = !phead;
+  rewrite (mapgen_spine hd_g mg_g) as (mapgen_spine head_final mg_g);
+  // finalize with the source's (possibly non-minimal) length header [len64],
+  // so the resulting match reproduces [v] exactly.
+  assert (pure (MB.cbor_map_len_ok len64 (Ghost.reveal l_acc_g)));
+  let y = MB.cbor_mk_map_full_with_len 1.0R acc len64;
+  // [cbor_mk_map_full_with_len] exposes the CONCRETE match [cbor_match y (Map
+  // len64 l_acc_g)] (no existential length witness).  Bind the finalized value
+  // with a single metavariable, then unfold.
+  with fv . assert (MB.cbor_map_finalized_val 1.0R acc y fv);
+  unfold (MB.cbor_map_finalized_val 1.0R acc y fv);
+  // build the structural result and its destructor trade
+  let res : cbor_freeable = {
+    cbor = y;
+    footprint = CBOR_Copy_MapGen head_final;
+    tree = FTMapGen ft_g;
+  };
+  // [fv == Map len64 l_acc_g] (finalize), [len64 == Map?.len v] (invariant),
+  // [l_acc_g == Map?.v v] (loop exit) give [fv == v]; relabel the concrete
+  // finalize match and its destructor trade to the source value [v].
+  assert (pure (Ghost.reveal l_acc_g == Ghost.reveal (Map?.v v)));
+  assert (pure (fv == Ghost.reveal v));
+  rewrite (cbor_match 1.0R y fv)
+    as (cbor_match 1.0R res.cbor v);
+  rewrite (Trade.trade
+      (cbor_match 1.0R y fv)
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc (Map?.v fv)))
+    as (Trade.trade
+      (cbor_match 1.0R res.cbor v)
+      (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc (Ghost.reveal l_acc_g)));
+  // compose the finalize trade [cbor_match res.cbor v --* mlm acc l] with the
+  // accumulated destructor trade [mlm acc l --* seq_list_match entries]
+  Trade.trans _ _
+    (SM.seq_list_match (Seq.seq_of_list mg_g) ft_g freeable_match_mapgen_elt);
+  // capture the live footprint spine [mapgen_spine head_final mg_g] into the
+  // destructor trade, so firing it reproduces the full [freeable res]
   intro
     (Trade.trade
-      (SM.seq_seq_match freeable_match_map_entry sf st 0 (SZ.v len))
-      (SM.seq_list_match sf lt (freeable_match_map_entry' (FTMap lt) freeable_match'))
-    )
-    #emp
+      (cbor_match 1.0R res.cbor v)
+      (freeable res))
+    #(mapgen_spine head_final mg_g **
+      Trade.trade
+        (cbor_match 1.0R res.cbor v)
+        (SM.seq_list_match (Seq.seq_of_list mg_g) ft_g freeable_match_mapgen_elt))
     fn _
   {
-    rewrite (SM.seq_seq_match freeable_match_map_entry sf st 0 (SZ.v len))
-      as (SM.seq_seq_match freeable_match_map_entry sf (Seq.seq_of_list lt) 0 (SZ.v len));
-    SM.seq_seq_match_seq_list_match freeable_match_map_entry sf lt;
-    SM.seq_list_match_weaken sf lt freeable_match_map_entry (freeable_match_map_entry' (FTMap lt) freeable_match') (freeable_match_map_entry_weaken_recip lt);
+    Trade.elim _ (SM.seq_list_match (Seq.seq_of_list mg_g) ft_g freeable_match_mapgen_elt);
+    SM.seq_list_match_weaken (Seq.seq_of_list mg_g) ft_g
+      freeable_match_mapgen_elt
+      (freeable_match_mapgen_elt' (FTMapGen ft_g) freeable_match')
+      (freeable_match_mapgen_elt_weaken_recip ft_g);
+    fold (freeable_match' (CBOR_Copy_MapGen head_final) (FTMapGen ft_g));
+    rewrite (freeable_match' (CBOR_Copy_MapGen head_final) (FTMapGen ft_g))
+      as (freeable_match' res.footprint res.tree);
+    fold (freeable res);
   };
-  Trade.trans _ _ (SM.seq_list_match sf lt (freeable_match_map_entry' (FTMap lt) freeable_match'));
-  V.to_array_pts_to v';
-  let ar' = S.from_array (V.vec_to_array v') len;
-  S.pts_to_len ar';
-  let c' = cbor_match_map_intro len64 ar';
-  Trade.trans_concl_r _ _ _ _;
-  let fa = {
-    map_cbor = v';
-    map_footprint = vf;
-    map_len = len;
-  };
-  let res = {
-    cbor = c';
-    footprint = CBOR_Copy_Map fa;
-    tree = FTMap lt;
-  };
-  intro
-    (Trade.trade
-      (pts_to ar' s1 ** SM.seq_list_match sf lt (freeable_match_map_entry' (FTMap lt) freeable_match'))
-      (freeable res)
-    )
-    #(S.is_from_array (V.vec_to_array v') ar' ** pts_to vf sf)
-    fn _
-  {
-   S.to_array ar';
-   V.to_vec_pts_to v';
-   rewrite (pts_to v' s1) as (pts_to fa.map_cbor s1);
-   rewrite (pts_to vf sf) as (pts_to fa.map_footprint sf);
-   fold (freeable_match' (CBOR_Copy_Map fa) (FTMap lt));
-   rewrite (freeable_match' (CBOR_Copy_Map fa) (FTMap lt)) as freeable_match' res.footprint res.tree;
-   fold (freeable res)
-  };
-  Trade.trans _ _ (freeable res);
-  with r' . assert cbor_match 1.0R c' (Map len64 r');
-  rewrite each cbor_match 1.0R c' (Map len64 r') as
-  cbor_match 1.0R res.cbor v;
   res
 }
 

@@ -80,6 +80,53 @@ val cbor_mk_map_full
       pure (CBOR_Case_Map_Gen? y))
 
 (* ================================================================ *)
+(* cbor_mk_map_full_with_len                                        *)
+(*                                                                  *)
+(* Like [cbor_mk_map_full] but stamps the caller-chosen length      *)
+(* header [len] (need NOT be minimal) onto the result, so that a    *)
+(* deep copy can reproduce a source map's EXACT (possibly           *)
+(* non-canonical) length header.  Mirrors                           *)
+(* [ArrayBuilder.cbor_array_finalize_with_len].                     *)
+(*                                                                  *)
+(* The postcondition [cbor_map_finalized_val] exposes the CONCRETE  *)
+(* match on the whole (refined) map value [Map len l] with NO       *)
+(* existential length witness, so a consumer can [unfold] it and    *)
+(* relabel the match to a known map value without a Skolem length   *)
+(* defeating downstream [Trade.trans] frame inference.              *)
+(* ================================================================ *)
+
+(* [len] is a (possibly non-minimal) encoding of the entry count of [l].    *)
+(* Kept inside a transparent [prop]-returning [let] so it can refine the    *)
+(* [#l] binder of [cbor_mk_map_full_with_len] without tripping Pulse's [fn] *)
+(* signature elaboration on the raw [U64.v _ == length _] comparison.       *)
+let cbor_map_len_ok (len: raw_uint64) (l: list (raw_data_item & raw_data_item)) : prop
+= U64.v len.value == List.Tot.length l
+
+(* Concrete-match finalize result for the WHOLE (erased) map value [a]        *)
+(* (refined [Map? a]).  Carries NO existential length witness.                *)
+let cbor_map_finalized_val
+  (pm: perm)
+  (ml: IT.mixed_list U64.t cbor_map_entry) (y: cbor_raw)
+  (a: (a: raw_data_item { Map? a }))
+: slprop
+= cbor_match 1.0R y a **
+  Trade.trade
+    (cbor_match 1.0R y a)
+    (I.mixed_list_match cbor_match_map_entry IO.u64_ops
+      (nondep_then parse_raw_data_item parse_raw_data_item) pm ml (Map?.v a))
+
+val cbor_mk_map_full_with_len
+  (pm: perm)
+  (ml: IT.mixed_list U64.t cbor_map_entry)
+  (len: raw_uint64)
+  (#l: Ghost.erased (l: list (raw_data_item & raw_data_item) { cbor_map_len_ok len l }))
+: stt cbor_raw
+    (I.mixed_list_match cbor_match_map_entry IO.u64_ops
+      (nondep_then parse_raw_data_item parse_raw_data_item) pm ml (Ghost.reveal l))
+    (fun y ->
+      cbor_map_finalized_val pm ml y (Map len (Ghost.reveal l)))
+
+(* ================================================================ *)
 (* cbor_map_borrow_entries                                          *)
 (*                                                                  *)
 (* View an existing MAP [x] (ANY of the three representations:      *)

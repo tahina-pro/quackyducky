@@ -416,6 +416,111 @@ ensures
 #pop-options
 
 (* ================================================================ *)
+(* cbor_array_finalize_with_len                                      *)
+(*                                                                   *)
+(* Like [cbor_array_finalize] but stamps the caller-chosen length    *)
+(* header [len] (need not be minimal) onto a FRESH handle [x'] that   *)
+(* shares [x]'s pointer/permission; the trade back restores the      *)
+(* original (minimal-encoded) owned handle [x].                       *)
+(* ================================================================ *)
+
+#restart-solver
+#push-options "--z3rlimit 10 --fuel 2 --ifuel 2"
+fn cbor_array_finalize_with_len
+  (x: cbor_mixed_list_array)
+  (len: raw_uint64)
+  (#l: Ghost.erased (l: list raw_data_item { cbor_array_len_ok len l }))
+requires cbor_array_owned_with_len x len (Ghost.reveal l)
+returns y: cbor_raw
+ensures
+  cbor_array_finalized_val x y (Array len (Ghost.reveal l))
+{
+  unfold (cbor_array_owned_with_len x len (Ghost.reveal l));
+  unfold (cbor_array_owned x (Ghost.reveal l));
+  I.mixed_list_match_length cbor_match IO.u64_ops parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l);
+  // [U64.v (mixed_list_length x.ptr) == length l == U64.v len.value], hence the
+  // fresh handle [x'] with size [len.size] is well-formed
+  assert (pure (U64.v (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length x.cbor_array_gen_ptr) == U64.v len.value));
+  assert (pure (CBOR.Pulse.Raw.Format.MixedList.cbor_raw_mixed_list_length x.cbor_array_gen_ptr == len.value));
+  let x' : cbor_mixed_list_array = {
+    cbor_array_gen_length_size = len.size;
+    cbor_array_gen_ptr = x.cbor_array_gen_ptr;
+    cbor_array_gen_perm = x.cbor_array_gen_perm;
+  };
+  let xh0 : Ghost.erased (r: raw_data_item { Array? r }) =
+    Ghost.hide (Array len (Ghost.reveal l));
+  let y : cbor_raw = CBOR_Case_Array_Gen x';
+  rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l))
+    as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item
+          (1.0R *. x'.cbor_array_gen_perm) x'.cbor_array_gen_ptr
+          (Array?.v (Ghost.reveal xh0)));
+  ghost
+  fn prf_bwd (x1: cbor_raw) (pm0: perm)
+    (yv: raw_data_item { List.Tot.memP yv (Array?.v (Ghost.reveal xh0)) })
+    requires cbor_match pm0 x1 yv
+    ensures cbor_match_bounded (Ghost.reveal xh0) cbor_match pm0 x1 yv
+  {
+    array_elem_precedes (Ghost.reveal xh0) yv;
+    cbor_match_bounded_eq (Ghost.reveal xh0) cbor_match pm0 x1 yv;
+    rewrite (cbor_match pm0 x1 yv)
+      as (cbor_match_bounded (Ghost.reveal xh0) cbor_match pm0 x1 yv);
+  };
+  I.mixed_list_match_weaken
+    cbor_match (cbor_match_bounded (Ghost.reveal xh0) cbor_match)
+    IO.u64_ops parse_raw_data_item (1.0R *. x'.cbor_array_gen_perm) x'.cbor_array_gen_ptr
+    (Array?.v (Ghost.reveal xh0)) prf_bwd;
+  fold (cbor_match_mixed_list_array 1.0R x' (Ghost.reveal xh0) cbor_match);
+  cbor_match_eq_array_gen 1.0R x' (Ghost.reveal xh0);
+  Trade.rewrite_with_trade
+    (cbor_match_mixed_list_array 1.0R x' (Ghost.reveal xh0) cbor_match)
+    (cbor_match 1.0R y (Ghost.reveal xh0));
+  // Expose [x']'s field equalities as outer pure facts so they propagate into
+  // the trade-elimination closure below (x' is a local let, so its defining
+  // equation would otherwise not be visible inside the lifted closure).
+  assert (pure (x'.cbor_array_gen_perm == 1.0R));
+  assert (pure (x'.cbor_array_gen_ptr == x.cbor_array_gen_ptr));
+  Trade.intro_trade
+    (cbor_match_mixed_list_array 1.0R x' (Ghost.reveal xh0) cbor_match)
+    (cbor_array_owned x (Ghost.reveal l))
+    emp
+    fn _ {
+      unfold (cbor_match_mixed_list_array 1.0R x' (Ghost.reveal xh0) cbor_match);
+      ghost
+      fn prf_fwd (x1: cbor_raw) (pm0: perm)
+        (yv: raw_data_item { List.Tot.memP yv (Array?.v (Ghost.reveal xh0)) })
+        requires cbor_match_bounded (Ghost.reveal xh0) cbor_match pm0 x1 yv
+        ensures cbor_match pm0 x1 yv
+      {
+        array_elem_precedes (Ghost.reveal xh0) yv;
+        cbor_match_bounded_eq (Ghost.reveal xh0) cbor_match pm0 x1 yv;
+        rewrite (cbor_match_bounded (Ghost.reveal xh0) cbor_match pm0 x1 yv)
+          as (cbor_match pm0 x1 yv);
+      };
+      I.mixed_list_match_weaken
+        (cbor_match_bounded (Ghost.reveal xh0) cbor_match) cbor_match
+        IO.u64_ops parse_raw_data_item (1.0R *. x'.cbor_array_gen_perm) x'.cbor_array_gen_ptr
+        (Array?.v (Ghost.reveal xh0)) prf_fwd;
+      rewrite (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item
+                 (1.0R *. x'.cbor_array_gen_perm) x'.cbor_array_gen_ptr
+                 (Array?.v (Ghost.reveal xh0)))
+        as (I.mixed_list_match cbor_match IO.u64_ops parse_raw_data_item 1.0R x.cbor_array_gen_ptr (Ghost.reveal l));
+      fold (cbor_array_owned x (Ghost.reveal l));
+    };
+  Trade.trans
+    (cbor_match 1.0R y (Ghost.reveal xh0))
+    (cbor_match_mixed_list_array 1.0R x' (Ghost.reveal xh0) cbor_match)
+    (cbor_array_owned x (Ghost.reveal l));
+  rewrite (cbor_match 1.0R y (Ghost.reveal xh0))
+    as (cbor_match 1.0R y (Array len (Ghost.reveal l)));
+  rewrite (Trade.trade (cbor_match 1.0R y (Ghost.reveal xh0)) (cbor_array_owned x (Ghost.reveal l)))
+    as (Trade.trade (cbor_match 1.0R y (Array len (Ghost.reveal l)))
+          (cbor_array_owned x (Array?.v (Array len (Ghost.reveal l)))));
+  fold (cbor_array_finalized_val x y (Array len (Ghost.reveal l)));
+  y
+}
+#pop-options
+
+(* ================================================================ *)
 (* Borrow helpers (array analogue of MapBuilder's borrow machinery) *)
 (* ================================================================ *)
 

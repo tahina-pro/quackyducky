@@ -209,6 +209,118 @@ ensures
 #pop-options
 
 (* ================================================================ *)
+(* cbor_mk_map_full_with_len                                        *)
+(*                                                                  *)
+(* Mirrors [cbor_mk_map_full] but stamps the caller-chosen (possibly *)
+(* non-minimal) length header [len], as in                          *)
+(* [ArrayBuilder.cbor_array_finalize_with_len].                     *)
+(* ================================================================ *)
+
+#restart-solver
+#push-options "--z3rlimit 20 --fuel 2 --ifuel 2"
+fn cbor_mk_map_full_with_len
+  (pm: perm)
+  (ml: IT.mixed_list U64.t cbor_map_entry)
+  (len: raw_uint64)
+  (#l: Ghost.erased (l: list (raw_data_item & raw_data_item) { cbor_map_len_ok len l }))
+requires
+  I.mixed_list_match cbor_match_map_entry
+    IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml (Ghost.reveal l)
+returns y: cbor_raw
+ensures
+  cbor_map_finalized_val pm ml y (Map len (Ghost.reveal l))
+{
+  I.mixed_list_match_length cbor_match_map_entry
+    IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml (Ghost.reveal l);
+  let ct : cbor_mixed_list_map = {
+    cbor_map_gen_length_size = len.size;
+    cbor_map_gen_ptr = ml;
+    cbor_map_gen_perm = pm;
+  };
+  let xh0 : Ghost.erased (r: raw_data_item { Map? r }) =
+    Ghost.hide (Map len (Ghost.reveal l));
+  let y : cbor_raw = CBOR_Case_Map_Gen ct;
+  perm_one_l pm;
+  rewrite (I.mixed_list_match cbor_match_map_entry
+             IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml (Ghost.reveal l))
+    as (I.mixed_list_match cbor_match_map_entry
+          IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item)
+          (1.0R *. ct.cbor_map_gen_perm) ct.cbor_map_gen_ptr
+          (Map?.v (Ghost.reveal xh0)));
+  ghost
+  fn prf_bwd (c: cbor_map_entry) (pm0: perm)
+    (yv: (raw_data_item & raw_data_item) { List.Tot.memP yv (Map?.v (Ghost.reveal xh0)) })
+    requires cbor_match_map_entry pm0 c yv
+    ensures cbor_match_map_entry_bounded (Ghost.reveal xh0) cbor_match pm0 c yv
+  {
+    map_elem_precedes (Ghost.reveal xh0) yv;
+    cbor_match_map_entry_bounded_eq (Ghost.reveal xh0) cbor_match pm0 c yv;
+    rewrite (cbor_match_map_entry pm0 c yv)
+      as (cbor_match_map_entry_bounded (Ghost.reveal xh0) cbor_match pm0 c yv);
+  };
+  I.mixed_list_match_weaken
+    cbor_match_map_entry (cbor_match_map_entry_bounded (Ghost.reveal xh0) cbor_match)
+    IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item)
+    (1.0R *. ct.cbor_map_gen_perm) ct.cbor_map_gen_ptr
+    (Map?.v (Ghost.reveal xh0)) prf_bwd;
+  fold (cbor_match_mixed_list_map 1.0R ct (Ghost.reveal xh0) cbor_match);
+  cbor_match_eq_map_gen 1.0R ct (Ghost.reveal xh0);
+  Trade.rewrite_with_trade
+    (cbor_match_mixed_list_map 1.0R ct (Ghost.reveal xh0) cbor_match)
+    (cbor_match 1.0R y (Ghost.reveal xh0));
+  assert (pure (ct.cbor_map_gen_perm == pm));
+  assert (pure (ct.cbor_map_gen_ptr == ml));
+  Trade.intro_trade
+    (cbor_match_mixed_list_map 1.0R ct (Ghost.reveal xh0) cbor_match)
+    (I.mixed_list_match cbor_match_map_entry
+       IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml (Ghost.reveal l))
+    emp
+    fn _ {
+      unfold (cbor_match_mixed_list_map 1.0R ct (Ghost.reveal xh0) cbor_match);
+      ghost
+      fn prf_fwd (c: cbor_map_entry) (pm0: perm)
+        (yv: (raw_data_item & raw_data_item) { List.Tot.memP yv (Map?.v (Ghost.reveal xh0)) })
+        requires cbor_match_map_entry_bounded (Ghost.reveal xh0) cbor_match pm0 c yv
+        ensures cbor_match_map_entry pm0 c yv
+      {
+        map_elem_precedes (Ghost.reveal xh0) yv;
+        cbor_match_map_entry_bounded_eq (Ghost.reveal xh0) cbor_match pm0 c yv;
+        rewrite (cbor_match_map_entry_bounded (Ghost.reveal xh0) cbor_match pm0 c yv)
+          as (cbor_match_map_entry pm0 c yv);
+      };
+      I.mixed_list_match_weaken
+        (cbor_match_map_entry_bounded (Ghost.reveal xh0) cbor_match) cbor_match_map_entry
+        IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item)
+        (1.0R *. ct.cbor_map_gen_perm) ct.cbor_map_gen_ptr
+        (Map?.v (Ghost.reveal xh0)) prf_fwd;
+      perm_one_l pm;
+      rewrite (I.mixed_list_match cbor_match_map_entry
+                 IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item)
+                 (1.0R *. ct.cbor_map_gen_perm) ct.cbor_map_gen_ptr
+                 (Map?.v (Ghost.reveal xh0)))
+        as (I.mixed_list_match cbor_match_map_entry
+              IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml (Ghost.reveal l));
+    };
+  Trade.trans
+    (cbor_match 1.0R y (Ghost.reveal xh0))
+    (cbor_match_mixed_list_map 1.0R ct (Ghost.reveal xh0) cbor_match)
+    (I.mixed_list_match cbor_match_map_entry
+       IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml (Ghost.reveal l));
+  rewrite (cbor_match 1.0R y (Ghost.reveal xh0))
+    as (cbor_match 1.0R y (Map len (Ghost.reveal l)));
+  rewrite (Trade.trade (cbor_match 1.0R y (Ghost.reveal xh0))
+             (I.mixed_list_match cbor_match_map_entry
+                IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml (Ghost.reveal l)))
+    as (Trade.trade (cbor_match 1.0R y (Map len (Ghost.reveal l)))
+          (I.mixed_list_match cbor_match_map_entry
+             IO.u64_ops (nondep_then parse_raw_data_item parse_raw_data_item) pm ml
+             (Map?.v (Map len (Ghost.reveal l)))));
+  fold (cbor_map_finalized_val pm ml y (Map len (Ghost.reveal l)));
+  y
+}
+#pop-options
+
+(* ================================================================ *)
 (* ================================================================ *)
 (* cbor_map_borrow_entries_serialized                              *)
 (*                                                                  *)
