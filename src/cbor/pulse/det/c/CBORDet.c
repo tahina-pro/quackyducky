@@ -27798,17 +27798,16 @@ cbor_freeable cbor_copy0_with_depth(cbor_raw x)
     count =
       CBOR_Pulse_Raw_Format_MixedList_cbor_raw_mixed_list_length__CBOR_Pulse_Raw_Type_cbor_raw(a1.cbor_array_gen_ptr);
     cbor_array_iterator it = CBOR_Pulse_Raw_Read_cbor_array_iterator_init_with_depth(x);
-    size_t len = (size_t)count;
     CBOR_Spec_Raw_Base_raw_uint64
     len64 = { .size = a1.cbor_array_gen_length_size, .value = count };
     cbor_mixed_list_array pacc = CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_empty();
-    size_t pi = (size_t)0U;
+    uint64_t pi = 0ULL;
     cbor_array_iterator pit = it;
     FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_
     phead = { .tag = FStar_Pervasives_Native_None };
-    while (pi < len)
+    while (pi < count)
     {
-      size_t i = pi;
+      uint64_t i = pi;
       cbor_freeable
       c_ = cbor_copy0_with_depth(CBOR_Pulse_Raw_Read_cbor_array_iterator_next_with_depth(&pit));
       cbor_raw *bs = KRML_HOST_MALLOC(sizeof (cbor_raw));
@@ -27858,7 +27857,7 @@ cbor_freeable cbor_copy0_with_depth(cbor_raw x)
             ),
             phead);
         pacc = acc_;
-        pi = i + (size_t)1U;
+        pi = i + 1ULL;
       }
       else if (!(scrut.tag == FStar_Pervasives_Native_None))
       {
@@ -27888,7 +27887,6 @@ cbor_freeable cbor_copy0_with_depth(cbor_raw x)
     uint64_t
     count =
       CBOR_Pulse_Raw_Format_MixedList_cbor_raw_mixed_list_length__CBOR_Pulse_Raw_Type_cbor_map_entry(a1.cbor_map_gen_ptr);
-    size_t len = (size_t)count;
     CBOR_Spec_Raw_Base_raw_uint64 len64 = { .size = a1.cbor_map_gen_length_size, .value = count };
     LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
     pacc =
@@ -27896,13 +27894,13 @@ cbor_freeable cbor_copy0_with_depth(cbor_raw x)
         .tag = LowParse_PulseParse_Iterator_Type_Base,
         { .case_Base = { .tag = LowParse_PulseParse_Iterator_Type_Empty } }
       };
-    size_t pi = (size_t)0U;
+    uint64_t pi = 0ULL;
     cbor_map_iterator pit = CBOR_Pulse_Raw_Read_cbor_map_iterator_init_with_depth(x);
     FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_
     phead = { .tag = FStar_Pervasives_Native_None };
-    while (pi < len)
+    while (pi < count)
     {
-      size_t i = pi;
+      uint64_t i = pi;
       cbor_map_entry c = CBOR_Pulse_Raw_Read_cbor_map_iterator_next_with_depth(&pit);
       cbor_freeable key_ = cbor_copy0_with_depth(c.cbor_map_entry_key);
       cbor_freeable value_ = cbor_copy0_with_depth(c.cbor_map_entry_value);
@@ -28016,7 +28014,7 @@ cbor_freeable cbor_copy0_with_depth(cbor_raw x)
           ),
           phead);
       pacc = acc_;
-      pi = i + (size_t)1U;
+      pi = i + 1ULL;
     }
     FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_ head_final = phead;
     return
