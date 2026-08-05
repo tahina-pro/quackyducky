@@ -24297,6 +24297,23 @@ CBOR_Pulse_Raw_EverParse_MapBuilder_cbor_mk_map_full(
     );
 }
 
+static cbor_raw
+CBOR_Pulse_Raw_EverParse_MapBuilder_cbor_mk_map_full_with_len(
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry ml,
+  CBOR_Spec_Raw_Base_raw_uint64 len
+)
+{
+  return
+    (
+      (cbor_raw){
+        .tag = CBOR_Case_Map_Gen,
+        {
+          .case_CBOR_Case_Map_Gen = { .cbor_map_gen_length_size = len.size, .cbor_map_gen_ptr = ml }
+        }
+      }
+    );
+}
+
 static LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
 CBOR_Pulse_Raw_EverParse_MapBuilder_cbor_map_borrow_entries_serialized(cbor_serialized v)
 {
@@ -27153,6 +27170,26 @@ CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_finalize(cbor_mixed_list_array 
   return ((cbor_raw){ .tag = CBOR_Case_Array_Gen, { .case_CBOR_Case_Array_Gen = x } });
 }
 
+static cbor_raw
+CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_finalize_with_len(
+  cbor_mixed_list_array x,
+  CBOR_Spec_Raw_Base_raw_uint64 len
+)
+{
+  return
+    (
+      (cbor_raw){
+        .tag = CBOR_Case_Array_Gen,
+        {
+          .case_CBOR_Case_Array_Gen = {
+            .cbor_array_gen_length_size = len.size,
+            .cbor_array_gen_ptr = x.cbor_array_gen_ptr
+          }
+        }
+      }
+    );
+}
+
 static LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
 CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_borrow_entries_serialized(cbor_serialized v)
 {
@@ -27288,6 +27325,42 @@ CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_init(
     );
 }
 
+static FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_
+arraygen_cons(
+  cbor_freeable_arraygen_elt new_elt,
+  FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_ x
+)
+{
+  arraygen_node *buf = KRML_HOST_MALLOC(sizeof (arraygen_node));
+  if (buf != NULL)
+    buf[0U] = ((arraygen_node){ .ag_hd = new_elt, .ag_tl = x });
+  return
+    (
+      (FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_){
+        .tag = FStar_Pervasives_Native_Some,
+        .v = buf
+      }
+    );
+}
+
+static FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_
+mapgen_cons(
+  cbor_freeable_mapgen_elt new_elt,
+  FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_ x
+)
+{
+  mapgen_node *buf = KRML_HOST_MALLOC(sizeof (mapgen_node));
+  if (buf != NULL)
+    buf[0U] = ((mapgen_node){ .mg_hd = new_elt, .mg_tl = x });
+  return
+    (
+      (FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_){
+        .tag = FStar_Pervasives_Native_Some,
+        .v = buf
+      }
+    );
+}
+
 void cbor_free_(cbor_freeable0 x)
 {
   if (!(x.tag == CBOR_Copy_Unit))
@@ -27330,6 +27403,103 @@ void cbor_free_(cbor_freeable0 x)
         pi = i + (size_t)1U;
       }
       KRML_HOST_FREE(a.map_footprint);
+    }
+    else if (x.tag == CBOR_Copy_ArrayGen)
+    {
+      FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_
+      phead = x.case_CBOR_Copy_ArrayGen;
+      FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_ scrut0 = phead;
+      bool cond;
+      if (scrut0.tag == FStar_Pervasives_Native_None)
+        cond = false;
+      else if (scrut0.tag == FStar_Pervasives_Native_Some)
+        cond = true;
+      else
+        cond = KRML_EABORT(bool, "unreachable (pattern matches are exhaustive in F*)");
+      while (cond)
+      {
+        FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_ scrut = phead;
+        if (!(scrut.tag == FStar_Pervasives_Native_None))
+        {
+          if (scrut.tag == FStar_Pervasives_Native_Some)
+          {
+            arraygen_node *v = scrut.v;
+            arraygen_node node_v = *v;
+            cbor_free_(node_v.ag_hd.age_footprint);
+            KRML_HOST_FREE(node_v.ag_hd.age_box_elt);
+            KRML_HOST_FREE(node_v.ag_hd.age_box_before);
+            KRML_HOST_FREE(node_v.ag_hd.age_box_after);
+            KRML_HOST_FREE(v);
+            phead = node_v.ag_tl;
+          }
+          else
+          {
+            KRML_HOST_EPRINTF("KaRaMeL abort at %s:%d\n%s\n",
+              __FILE__,
+              __LINE__,
+              "unreachable (pattern matches are exhaustive in F*)");
+            KRML_HOST_EXIT(255U);
+          }
+        }
+        FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_ scrut0 = phead;
+        bool ite;
+        if (scrut0.tag == FStar_Pervasives_Native_None)
+          ite = false;
+        else if (scrut0.tag == FStar_Pervasives_Native_Some)
+          ite = true;
+        else
+          ite = KRML_EABORT(bool, "unreachable (pattern matches are exhaustive in F*)");
+        cond = ite;
+      }
+    }
+    else if (x.tag == CBOR_Copy_MapGen)
+    {
+      FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_
+      phead = x.case_CBOR_Copy_MapGen;
+      FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_ scrut0 = phead;
+      bool cond;
+      if (scrut0.tag == FStar_Pervasives_Native_None)
+        cond = false;
+      else if (scrut0.tag == FStar_Pervasives_Native_Some)
+        cond = true;
+      else
+        cond = KRML_EABORT(bool, "unreachable (pattern matches are exhaustive in F*)");
+      while (cond)
+      {
+        FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_ scrut = phead;
+        if (!(scrut.tag == FStar_Pervasives_Native_None))
+        {
+          if (scrut.tag == FStar_Pervasives_Native_Some)
+          {
+            mapgen_node *v = scrut.v;
+            mapgen_node node_v = *v;
+            cbor_free_(node_v.mg_hd.mge_key_footprint);
+            cbor_free_(node_v.mg_hd.mge_val_footprint);
+            KRML_HOST_FREE(node_v.mg_hd.mge_box_elt);
+            KRML_HOST_FREE(node_v.mg_hd.mge_box_before);
+            KRML_HOST_FREE(node_v.mg_hd.mge_box_after);
+            KRML_HOST_FREE(v);
+            phead = node_v.mg_tl;
+          }
+          else
+          {
+            KRML_HOST_EPRINTF("KaRaMeL abort at %s:%d\n%s\n",
+              __FILE__,
+              __LINE__,
+              "unreachable (pattern matches are exhaustive in F*)");
+            KRML_HOST_EXIT(255U);
+          }
+        }
+        FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_ scrut0 = phead;
+        bool ite;
+        if (scrut0.tag == FStar_Pervasives_Native_None)
+          ite = false;
+        else if (scrut0.tag == FStar_Pervasives_Native_Some)
+          ite = true;
+        else
+          ite = KRML_EABORT(bool, "unreachable (pattern matches are exhaustive in F*)");
+        cond = ite;
+      }
     }
     else
     {
@@ -27627,48 +27797,84 @@ cbor_freeable cbor_copy0_with_depth(cbor_raw x)
     uint64_t
     count =
       CBOR_Pulse_Raw_Format_MixedList_cbor_raw_mixed_list_length__CBOR_Pulse_Raw_Type_cbor_raw(a1.cbor_array_gen_ptr);
+    cbor_array_iterator it = CBOR_Pulse_Raw_Read_cbor_array_iterator_init_with_depth(x);
     size_t len = (size_t)count;
     CBOR_Spec_Raw_Base_raw_uint64
     len64 = { .size = a1.cbor_array_gen_length_size, .value = count };
-    KRML_CHECK_SIZE(sizeof (cbor_raw), len);
-    cbor_raw *v_ = KRML_HOST_MALLOC(sizeof (cbor_raw) * len);
-    if (v_ != NULL)
-      for (uint32_t _i = 0U; _i < len; ++_i)
-        v_[_i] = ((cbor_raw){ .tag = CBOR_Case_Simple, { .case_CBOR_Case_Simple = 0U } });
-    KRML_CHECK_SIZE(sizeof (cbor_freeable0), len);
-    cbor_freeable0 *vf = KRML_HOST_MALLOC(sizeof (cbor_freeable0) * len);
-    if (vf != NULL)
-      for (uint32_t _i = 0U; _i < len; ++_i)
-        vf[_i] = ((cbor_freeable0){ .tag = CBOR_Copy_Unit });
+    cbor_mixed_list_array pacc = CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_empty();
     size_t pi = (size_t)0U;
-    cbor_array_iterator pit = CBOR_Pulse_Raw_Read_cbor_array_iterator_init_with_depth(x);
+    cbor_array_iterator pit = it;
+    FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_
+    phead = { .tag = FStar_Pervasives_Native_None };
     while (pi < len)
     {
       size_t i = pi;
       cbor_freeable
       c_ = cbor_copy0_with_depth(CBOR_Pulse_Raw_Read_cbor_array_iterator_next_with_depth(&pit));
-      v_[i] = c_.cbor;
-      vf[i] = c_.footprint;
-      pi = i + (size_t)1U;
+      cbor_raw *bs = KRML_HOST_MALLOC(sizeof (cbor_raw));
+      if (bs != NULL)
+        bs[0U] = c_.cbor;
+      cbor_mixed_list_array
+      s_i = CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_singleton(c_.cbor, bs);
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
+      *bb =
+        KRML_HOST_MALLOC(sizeof (
+            LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
+          ));
+      if (bb != NULL)
+        bb[0U] =
+          (
+            (LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw){
+              .tag = LowParse_PulseParse_Iterator_Type_Base,
+              { .case_Base = { .tag = LowParse_PulseParse_Iterator_Type_Empty } }
+            }
+          );
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
+      *ba =
+        KRML_HOST_MALLOC(sizeof (
+            LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
+          ));
+      if (ba != NULL)
+        ba[0U] =
+          (
+            (LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw){
+              .tag = LowParse_PulseParse_Iterator_Type_Base,
+              { .case_Base = { .tag = LowParse_PulseParse_Iterator_Type_Empty } }
+            }
+          );
+      FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array
+      scrut = CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_append(pacc, s_i, bb, ba);
+      if (scrut.tag == FStar_Pervasives_Native_Some)
+      {
+        cbor_mixed_list_array acc_ = scrut.v;
+        phead =
+          arraygen_cons((
+              (cbor_freeable_arraygen_elt){
+                .age_footprint = c_.footprint,
+                .age_box_elt = bs,
+                .age_box_before = bb,
+                .age_box_after = ba
+              }
+            ),
+            phead);
+        pacc = acc_;
+        pi = i + (size_t)1U;
+      }
+      else if (!(scrut.tag == FStar_Pervasives_Native_None))
+      {
+        KRML_HOST_EPRINTF("KaRaMeL abort at %s:%d\n%s\n",
+          __FILE__,
+          __LINE__,
+          "unreachable (pattern matches are exhaustive in F*)");
+        KRML_HOST_EXIT(255U);
+      }
     }
+    FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_ head_final = phead;
     return
       (
         (cbor_freeable){
-          .cbor = {
-            .tag = CBOR_Case_Array,
-            {
-              .case_CBOR_Case_Array = {
-                .cbor_array_length_size = len64.size,
-                .cbor_array_ptr = Pulse_Lib_Slice_from_array__CBOR_Pulse_Raw_Type_cbor_raw(v_, len)
-              }
-            }
-          },
-          .footprint = {
-            .tag = CBOR_Copy_Array,
-            {
-              .case_CBOR_Copy_Array = { .array_cbor = v_, .array_footprint = vf, .array_len = len }
-            }
-          }
+          .cbor = CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_finalize_with_len(pacc, len64),
+          .footprint = { .tag = CBOR_Copy_ArrayGen, { .case_CBOR_Copy_ArrayGen = head_final } }
         }
       );
   }
@@ -27684,64 +27890,140 @@ cbor_freeable cbor_copy0_with_depth(cbor_raw x)
       CBOR_Pulse_Raw_Format_MixedList_cbor_raw_mixed_list_length__CBOR_Pulse_Raw_Type_cbor_map_entry(a1.cbor_map_gen_ptr);
     size_t len = (size_t)count;
     CBOR_Spec_Raw_Base_raw_uint64 len64 = { .size = a1.cbor_map_gen_length_size, .value = count };
-    KRML_CHECK_SIZE(sizeof (cbor_map_entry), len);
-    cbor_map_entry *v_ = KRML_HOST_MALLOC(sizeof (cbor_map_entry) * len);
-    if (v_ != NULL)
-      for (uint32_t _i = 0U; _i < len; ++_i)
-        v_[_i] =
-          (
-            (cbor_map_entry){
-              .cbor_map_entry_key = { .tag = CBOR_Case_Simple, { .case_CBOR_Case_Simple = 0U } },
-              .cbor_map_entry_value = { .tag = CBOR_Case_Simple, { .case_CBOR_Case_Simple = 0U } }
-            }
-          );
-    KRML_CHECK_SIZE(sizeof (cbor_freeable_map_entry), len);
-    cbor_freeable_map_entry *vf = KRML_HOST_MALLOC(sizeof (cbor_freeable_map_entry) * len);
-    if (vf != NULL)
-      for (uint32_t _i = 0U; _i < len; ++_i)
-        vf[_i] =
-          (
-            (cbor_freeable_map_entry){
-              .map_entry_key = { .tag = CBOR_Copy_Unit },
-              .map_entry_value = { .tag = CBOR_Copy_Unit }
-            }
-          );
+    LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+    pacc =
+      {
+        .tag = LowParse_PulseParse_Iterator_Type_Base,
+        { .case_Base = { .tag = LowParse_PulseParse_Iterator_Type_Empty } }
+      };
     size_t pi = (size_t)0U;
     cbor_map_iterator pit = CBOR_Pulse_Raw_Read_cbor_map_iterator_init_with_depth(x);
+    FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_
+    phead = { .tag = FStar_Pervasives_Native_None };
     while (pi < len)
     {
       size_t i = pi;
       cbor_map_entry c = CBOR_Pulse_Raw_Read_cbor_map_iterator_next_with_depth(&pit);
       cbor_freeable key_ = cbor_copy0_with_depth(c.cbor_map_entry_key);
       cbor_freeable value_ = cbor_copy0_with_depth(c.cbor_map_entry_value);
-      v_[i] =
-        ((cbor_map_entry){ .cbor_map_entry_key = key_.cbor, .cbor_map_entry_value = value_.cbor });
-      vf[i] =
-        (
-          (cbor_freeable_map_entry){
-            .map_entry_key = key_.footprint,
-            .map_entry_value = value_.footprint
+      cbor_map_entry
+      cme_ = { .cbor_map_entry_key = key_.cbor, .cbor_map_entry_value = value_.cbor };
+      cbor_map_entry *bs = KRML_HOST_MALLOC(sizeof (cbor_map_entry));
+      if (bs != NULL)
+        bs[0U] = cme_;
+      *bs = cme_;
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+      s_i =
+        {
+          .tag = LowParse_PulseParse_Iterator_Type_Base,
+          {
+            .case_Base = {
+              .tag = LowParse_PulseParse_Iterator_Type_Singleton,
+              { .case_Singleton = bs }
+            }
           }
-        );
+        };
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+      acc_cur = pacc;
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+      *bb =
+        KRML_HOST_MALLOC(sizeof (
+            LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+          ));
+      if (bb != NULL)
+        bb[0U] =
+          (
+            (LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry){
+              .tag = LowParse_PulseParse_Iterator_Type_Base,
+              { .case_Base = { .tag = LowParse_PulseParse_Iterator_Type_Empty } }
+            }
+          );
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+      *ba =
+        KRML_HOST_MALLOC(sizeof (
+            LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+          ));
+      if (ba != NULL)
+        ba[0U] =
+          (
+            (LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry){
+              .tag = LowParse_PulseParse_Iterator_Type_Base,
+              { .case_Base = { .tag = LowParse_PulseParse_Iterator_Type_Empty } }
+            }
+          );
+      uint64_t len_a;
+      if (acc_cur.tag == LowParse_PulseParse_Iterator_Type_Base)
+      {
+        LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+        bi = acc_cur.case_Base;
+        if (bi.tag == LowParse_PulseParse_Iterator_Type_Empty)
+          len_a = 0ULL;
+        else if (bi.tag == LowParse_PulseParse_Iterator_Type_Singleton)
+          len_a = 1ULL;
+        else if (bi.tag == LowParse_PulseParse_Iterator_Type_Slice)
+          len_a = bi.case_Slice.count;
+        else if (bi.tag == LowParse_PulseParse_Iterator_Type_Serialized)
+          len_a = bi.case_Serialized.count;
+        else
+          len_a = KRML_EABORT(uint64_t, "unreachable (pattern matches are exhaustive in F*)");
+      }
+      else if (acc_cur.tag == LowParse_PulseParse_Iterator_Type_Append)
+        len_a = acc_cur.case_Append.tot;
+      else
+        len_a = KRML_EABORT(uint64_t, "unreachable (pattern matches are exhaustive in F*)");
+      uint64_t len_b;
+      if (s_i.tag == LowParse_PulseParse_Iterator_Type_Base)
+      {
+        LowParse_PulseParse_Iterator_Type_base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+        bi = s_i.case_Base;
+        if (bi.tag == LowParse_PulseParse_Iterator_Type_Empty)
+          len_b = 0ULL;
+        else if (bi.tag == LowParse_PulseParse_Iterator_Type_Singleton)
+          len_b = 1ULL;
+        else if (bi.tag == LowParse_PulseParse_Iterator_Type_Slice)
+          len_b = bi.case_Slice.count;
+        else if (bi.tag == LowParse_PulseParse_Iterator_Type_Serialized)
+          len_b = bi.case_Serialized.count;
+        else
+          len_b = KRML_EABORT(uint64_t, "unreachable (pattern matches are exhaustive in F*)");
+      }
+      else if (s_i.tag == LowParse_PulseParse_Iterator_Type_Append)
+        len_b = s_i.case_Append.tot;
+      else
+        len_b = KRML_EABORT(uint64_t, "unreachable (pattern matches are exhaustive in F*)");
+      *bb = acc_cur;
+      *ba = s_i;
+      LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+      acc_ =
+        {
+          .tag = LowParse_PulseParse_Iterator_Type_Append,
+          {
+            .case_Append = {
+              .cb = len_a, .ca = len_b, .tot = len_a + len_b, .ob = 0ULL, .before = bb, .oa = 0ULL,
+              .after = ba
+            }
+          }
+        };
+      phead =
+        mapgen_cons((
+            (cbor_freeable_mapgen_elt){
+              .mge_key_footprint = key_.footprint,
+              .mge_val_footprint = value_.footprint,
+              .mge_box_elt = bs,
+              .mge_box_before = bb,
+              .mge_box_after = ba
+            }
+          ),
+          phead);
+      pacc = acc_;
       pi = i + (size_t)1U;
     }
+    FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_ head_final = phead;
     return
       (
         (cbor_freeable){
-          .cbor = {
-            .tag = CBOR_Case_Map,
-            {
-              .case_CBOR_Case_Map = {
-                .cbor_map_length_size = len64.size,
-                .cbor_map_ptr = Pulse_Lib_Slice_from_array__CBOR_Pulse_Raw_Type_cbor_map_entry(v_,
-                  len)
-              }
-            }
-          },
-          .footprint = {
-            .tag = CBOR_Copy_Map,
-            { .case_CBOR_Copy_Map = { .map_cbor = v_, .map_footprint = vf, .map_len = len } }
-          }
+          .cbor = CBOR_Pulse_Raw_EverParse_MapBuilder_cbor_mk_map_full_with_len(pacc, len64),
+          .footprint = { .tag = CBOR_Copy_MapGen, { .case_CBOR_Copy_MapGen = head_final } }
         }
       );
   }

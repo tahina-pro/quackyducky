@@ -60,11 +60,33 @@ typedef struct cbor_freeable_map_s
 }
 cbor_freeable_map;
 
+typedef struct arraygen_node_s arraygen_node;
+
+typedef struct FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node__s
+{
+  FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_tags
+  tag;
+  arraygen_node *v;
+}
+FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_;
+
+typedef struct mapgen_node_s mapgen_node;
+
+typedef struct FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node__s
+{
+  FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_tags
+  tag;
+  mapgen_node *v;
+}
+FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_;
+
 #define CBOR_Copy_Bytes 0
 #define CBOR_Copy_Box 1
 #define CBOR_Copy_Array 2
 #define CBOR_Copy_Map 3
-#define CBOR_Copy_Unit 4
+#define CBOR_Copy_ArrayGen 4
+#define CBOR_Copy_MapGen 5
+#define CBOR_Copy_Unit 6
 
 typedef uint8_t cbor_freeable0_tags;
 
@@ -76,10 +98,49 @@ typedef struct cbor_freeable0_s
     cbor_freeable_box case_CBOR_Copy_Box;
     cbor_freeable_array case_CBOR_Copy_Array;
     cbor_freeable_map case_CBOR_Copy_Map;
+    FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_ case_CBOR_Copy_ArrayGen;
+    FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_ case_CBOR_Copy_MapGen;
   }
   ;
 }
 cbor_freeable0;
+
+typedef struct cbor_freeable_arraygen_elt_s
+{
+  cbor_freeable0 age_footprint;
+  cbor_raw *age_box_elt;
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
+  *age_box_before;
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw
+  *age_box_after;
+}
+cbor_freeable_arraygen_elt;
+
+typedef struct arraygen_node_s
+{
+  cbor_freeable_arraygen_elt ag_hd;
+  FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_arraygen_node_ ag_tl;
+}
+arraygen_node;
+
+typedef struct cbor_freeable_mapgen_elt_s
+{
+  cbor_freeable0 mge_key_footprint;
+  cbor_freeable0 mge_val_footprint;
+  cbor_map_entry *mge_box_elt;
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+  *mge_box_before;
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry
+  *mge_box_after;
+}
+cbor_freeable_mapgen_elt;
+
+typedef struct mapgen_node_s
+{
+  cbor_freeable_mapgen_elt mg_hd;
+  FStar_Pervasives_Native_option___CBOR_Pulse_Raw_Copy_mapgen_node_ mg_tl;
+}
+mapgen_node;
 
 typedef struct cbor_freeable_map_entry_s
 {
