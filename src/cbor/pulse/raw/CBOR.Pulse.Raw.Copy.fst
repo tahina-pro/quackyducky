@@ -1079,10 +1079,11 @@ let rec splitAt_snd_cons (#t: Type) (n: nat) (l: list t)
     else (match l with | _ :: q -> splitAt_snd_cons (n - 1) q)
 
 // A raw_data_item node always has [raw_data_item_size >= 1] (leaves are 1;
-// Array/Map/Tagged are >= 2), so a container's element count is bounded by its
-// recursive [raw_data_item_size].  Combined with the threaded [SZ.fits depth]
-// and [raw_data_item_size v <= depth], this discharges [SZ.fits (element count)]
-// for the [_Gen] copy loops WITHOUT any global size_t-width platform axiom.
+// Array/Map/Tagged are >= 2), so each child's [raw_data_item_size] is strictly
+// less than its parent's.  Combined with [raw_data_item_size v <= depth], this
+// discharges the [raw_data_item_size child <= nat_pred depth] precondition of
+// the recursive [copy (nat_pred depth)] call, keeping [decreases depth]
+// well-founded for the open recursion.
 let rec length_le_list_sum_size (l: list raw_data_item)
   : Lemma (ensures List.Tot.length l <= CBOR.Spec.Util.list_sum raw_data_item_size l)
           (decreases l)
@@ -1118,7 +1119,7 @@ let cbor_copy_with_depth_t (depth: Ghost.erased nat) =
   (#p: perm) ->
   (#v: Ghost.erased raw_data_item) ->
   stt cbor_freeable
-    (cbor_match_with_depth depth p x v ** pure (raw_data_item_size v <= Ghost.reveal depth /\ FStar.SizeT.fits (Ghost.reveal depth)))
+    (cbor_match_with_depth depth p x v ** pure (raw_data_item_size v <= Ghost.reveal depth))
     (fun res ->
       cbor_match_with_depth depth p x v **
       cbor_match 1.0R res.cbor v **
@@ -1363,7 +1364,7 @@ fn cbor_copy_map_entry_d
   (#v: Ghost.erased (raw_data_item & raw_data_item))
 requires
     cbor_match_map_entry_with_depth d' pl x v **
-    pure (raw_data_item_size (fst v) <= Ghost.reveal d' /\ raw_data_item_size (snd v) <= Ghost.reveal d' /\ FStar.SizeT.fits (Ghost.reveal d'))
+    pure (raw_data_item_size (fst v) <= Ghost.reveal d' /\ raw_data_item_size (snd v) <= Ghost.reveal d')
 returns res: (cbor_freeable & cbor_freeable)
 ensures
     cbor_match_map_entry_with_depth d' pl x v **
@@ -1399,7 +1400,7 @@ fn cbor_copy_array_d
   (#p: perm)
   (#v: Ghost.erased raw_data_item)
 requires
-    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Array? x /\ raw_data_item_size v <= Ghost.reveal depth /\ FStar.SizeT.fits (Ghost.reveal depth)))
+    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Array? x /\ raw_data_item_size v <= Ghost.reveal depth))
 returns res: cbor_freeable
 ensures
     (
@@ -1477,7 +1478,6 @@ ensures
     let c = ar.(i);
     SM.seq_list_match_index_trade (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_array_payload_perm)) s (Array?.v v) (SZ.v i);
     size_array_elt v (List.Tot.index (Array?.v v) (SZ.v i));
-    FStar.SizeT.fits_lte (Ghost.reveal (nat_pred depth)) (Ghost.reveal depth);
     let c' = copy (nat_pred depth) c;
     rewrite each Seq.index s (SZ.v i) as c;
     Trade.elim _ (SM.seq_list_match s (Array?.v v) (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_array_payload_perm)));
@@ -1589,7 +1589,7 @@ fn cbor_copy_map_d
   (#p: perm)
   (#v: Ghost.erased raw_data_item)
 requires
-    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Map? x /\ raw_data_item_size v <= Ghost.reveal depth /\ FStar.SizeT.fits (Ghost.reveal depth)))
+    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Map? x /\ raw_data_item_size v <= Ghost.reveal depth))
 returns res: cbor_freeable
 ensures
     (
@@ -1677,7 +1677,6 @@ ensures
     let c = S.op_Array_Access ar i;
     SM.seq_list_match_index_trade (cbor_match_map_entry_with_depth (nat_pred depth) (p `perm_mul` a.cbor_map_payload_perm)) s (Map?.v v) (SZ.v i);
     size_map_entry v (List.Tot.index (Map?.v v) (SZ.v i));
-    FStar.SizeT.fits_lte (Ghost.reveal (nat_pred depth)) (Ghost.reveal depth);
     with v1 . assert (cbor_match_map_entry_with_depth (nat_pred depth) (p `perm_mul` a.cbor_map_payload_perm) c v1);
     let key', value' = cbor_copy_map_entry_d (nat_pred depth) (copy (nat_pred depth)) (p `perm_mul` a.cbor_map_payload_perm) c;
     Trade.elim _ (SM.seq_list_match s (Map?.v v) (cbor_match_map_entry_with_depth (nat_pred depth) (p `perm_mul` a.cbor_map_payload_perm)));
@@ -1940,7 +1939,7 @@ fn cbor_copy_array_gen_d
   (#p: perm)
   (#v: Ghost.erased raw_data_item)
 requires
-    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Array_Gen? x /\ raw_data_item_size v <= Ghost.reveal depth /\ FStar.SizeT.fits (Ghost.reveal depth)))
+    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Array_Gen? x /\ raw_data_item_size v <= Ghost.reveal depth))
 returns res: cbor_freeable
 ensures
     (
@@ -1966,20 +1965,17 @@ ensures
   let it = cbor_array_iterator_init_with_depth depth x;
   with p_it . assert (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
   // --- pre-allocate destination vectors ---
-  // Discharge [SZ.fits (U64.v count)] soundly (no global size_t-width axiom):
-  // the element count equals [List.length (Array?.v v)] <= [raw_data_item_size v]
-  // <= depth, and [SZ.fits depth] is threaded through the copy recursion.
+  // The element count [count : U64.t] IS the loop bound: the fold iterates
+  // [count] times over a u64 counter, so no [size_t] conversion (and hence no
+  // [SZ.fits] bound on the whole value) is required.
   array_length_le_size v;
   assert (pure (U64.v count == List.Tot.length (Array?.v v)));
-  FStar.SizeT.fits_lte (raw_data_item_size v) (Ghost.reveal depth);
-  FStar.SizeT.fits_lte (U64.v count) (raw_data_item_size v);
-  let len = IO.u64_ops.to_sizet count;
   let len64 : raw_uint64 = { size = a.cbor_array_gen_length_size; value = count };
   assert (pure (len64 == Array?.len v));
   // === build a structural (_Gen) array by folding singletons via ArrayBuilder ===
   let acc0 = AB.cbor_array_empty ();
   let mut pacc = acc0;
-  let mut pi = 0sz;
+  let mut pi = 0uL;
   let mut pit = it;
   // the footprint spine is a heap box-chain built up (one O(1) node per element)
   // alongside the array; it starts empty and is captured into the destructor
@@ -2001,7 +1997,7 @@ ensures
   };
   while (
     let i = !pi;
-    (SZ.lt i len)
+    (U64.lt i count)
   ) invariant exists* i gi m pj acc l_acc ag ft hd_ptr . (
     pts_to pi i **
     pts_to pit gi **
@@ -2017,12 +2013,11 @@ ensures
       (AB.cbor_array_owned acc l_acc)
       (SM.seq_list_match (Seq.seq_of_list ag) ft freeable_match_arraygen_elt) **
     pure (
-      SZ.v i <= SZ.v len /\
-      SZ.v len == List.Tot.length (Ghost.reveal (Array?.v v)) /\
-      U64.v count == SZ.v len /\
+      U64.v i <= U64.v count /\
+      U64.v count == List.Tot.length (Ghost.reveal (Array?.v v)) /\
       (len64 <: raw_uint64) == Array?.len v /\
-      List.Tot.length (Ghost.reveal l_acc) == SZ.v i /\
-      Ghost.reveal m == snd (List.Tot.splitAt (SZ.v i) (Ghost.reveal (Array?.v v))) /\
+      List.Tot.length (Ghost.reveal l_acc) == U64.v i /\
+      Ghost.reveal m == snd (List.Tot.splitAt (U64.v i) (Ghost.reveal (Array?.v v))) /\
       List.Tot.append (Ghost.reveal l_acc) (Ghost.reveal m) == Ghost.reveal (Array?.v v)
     )
   ) {
@@ -2044,11 +2039,10 @@ ensures
     List.Tot.append_length (Ghost.reveal l_acc) (Ghost.reveal m);
     // identify the head of the remaining suffix with the element at index i,
     // and expose the one-step advance [snd (splitAt i) == index i :: snd (splitAt (i+1))]
-    splitAt_snd_cons (SZ.v i) (Array?.v v);
+    splitAt_snd_cons (U64.v i) (Array?.v v);
     let c = cbor_array_iterator_next_with_depth (nat_pred depth) pit;
     Trade.trans _ _ (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
-    size_array_elt v (List.Tot.index (Array?.v v) (SZ.v i));
-    FStar.SizeT.fits_lte (Ghost.reveal (nat_pred depth)) (Ghost.reveal depth);
+    size_array_elt v (List.Tot.index (Array?.v v) (U64.v i));
     let c' = copy (nat_pred depth) c;
     Trade.elim_hyp_l _ _ (cbor_array_iterator_match_with_depth (nat_pred depth) p_it it (Array?.v v));
     with v1 . assert (cbor_match 1.0R c'.cbor v1 ** Trade.trade (cbor_match 1.0R c'.cbor v1) (freeable c'));
@@ -2065,13 +2059,13 @@ ensures
     match appended {
       Some acc' -> {
         List.Tot.append_assoc (Ghost.reveal l_acc) [Ghost.reveal v1]
-          (snd (List.Tot.splitAt (SZ.v i + 1) (Ghost.reveal (Array?.v v))));
+          (snd (List.Tot.splitAt (U64.v i + 1) (Ghost.reveal (Array?.v v))));
         arraygen_step l_acc v1 acc_cur acc' s_i c' bs bb ba ag ft;
         let head_cur = !phead;
         let new_head = arraygen_cons ({ age_footprint = c'.footprint; age_box_elt = bs; age_box_before = bb; age_box_after = ba } <: cbor_freeable_arraygen_elt) head_cur;
         phead := new_head;
         pacc := acc';
-        pi := (SZ.add i 1sz);
+        pi := (U64.add i 1uL);
       }
       None -> {
         assert (pure (List.Tot.length [Ghost.reveal v1] == 1));
@@ -2092,11 +2086,11 @@ ensures
     pts_to phead hd_g **
     arraygen_spine hd_g ag_g
   );
-  FStar.List.Tot.Base.lemma_splitAt_snd_length (SZ.v len) (Ghost.reveal (Array?.v v));
+  FStar.List.Tot.Base.lemma_splitAt_snd_length (U64.v count) (Ghost.reveal (Array?.v v));
   List.Tot.Properties.append_l_nil (Ghost.reveal l_acc_g);
   assert (pure (Ghost.reveal l_acc_g == Ghost.reveal (Array?.v v)));
-  assert (pure (List.Tot.length (Ghost.reveal l_acc_g) == SZ.v len));
-  assert (pure (U64.v (len64.value) == SZ.v len));
+  assert (pure (List.Tot.length (Ghost.reveal l_acc_g) == U64.v count));
+  assert (pure (U64.v (len64.value) == U64.v count));
   let acc = !pacc;
   let head_final = !phead;
   rewrite (arraygen_spine hd_g ag_g) as (arraygen_spine head_final ag_g);
@@ -2315,7 +2309,7 @@ fn cbor_copy_map_gen_d
   (#p: perm)
   (#v: Ghost.erased raw_data_item)
 requires
-    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Map_Gen? x /\ raw_data_item_size v <= Ghost.reveal depth /\ FStar.SizeT.fits (Ghost.reveal depth)))
+    (cbor_match_with_depth depth p x v ** pure (CBOR_Case_Map_Gen? x /\ raw_data_item_size v <= Ghost.reveal depth))
 returns res: cbor_freeable
 ensures
     (
@@ -2341,14 +2335,11 @@ ensures
   let it = cbor_map_iterator_init_with_depth depth x;
   with p_it . assert (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
   // --- pre-allocate destination vectors ---
-  // Discharge [SZ.fits (U64.v count)] soundly (no global size_t-width axiom):
-  // the entry count equals [List.length (Map?.v v)] <= [raw_data_item_size v]
-  // <= depth, and [SZ.fits depth] is threaded through the copy recursion.
+  // The entry count [count : U64.t] IS the loop bound: the fold iterates
+  // [count] times over a u64 counter, so no [size_t] conversion (and hence no
+  // [SZ.fits] bound on the whole value) is required.
   map_length_le_size v;
   assert (pure (U64.v count == List.Tot.length (Map?.v v)));
-  FStar.SizeT.fits_lte (raw_data_item_size v) (Ghost.reveal depth);
-  FStar.SizeT.fits_lte (U64.v count) (raw_data_item_size v);
-  let len = IO.u64_ops.to_sizet count;
   let len64 : raw_uint64 = { size = a.cbor_map_gen_length_size; value = count };
   assert (pure (len64 == Map?.len v));
   // === build a structural (_Gen) map by folding singletons via Append ===
@@ -2357,7 +2348,7 @@ ensures
   rewrite (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R (IT.Base IT.Empty <: IT.mixed_list U64.t cbor_map_entry) [])
     as (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc0 []);
   let mut pacc = acc0;
-  let mut pi = 0sz;
+  let mut pi = 0uL;
   let mut pit = it;
   // the footprint spine is a heap box-chain built up (one O(1) node per entry)
   // alongside the map; it starts empty and is captured into the destructor
@@ -2379,7 +2370,7 @@ ensures
   };
   while (
     let i = !pi;
-    (SZ.lt i len)
+    (U64.lt i count)
   ) invariant exists* i gi m pj acc l_acc mg ft hd_ptr . (
     pts_to pi i **
     pts_to pit gi **
@@ -2395,12 +2386,11 @@ ensures
       (I.mixed_list_match cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc l_acc)
       (SM.seq_list_match (Seq.seq_of_list mg) ft freeable_match_mapgen_elt) **
     pure (
-      SZ.v i <= SZ.v len /\
-      SZ.v len == List.Tot.length (Ghost.reveal (Map?.v v)) /\
-      U64.v count == SZ.v len /\
+      U64.v i <= U64.v count /\
+      U64.v count == List.Tot.length (Ghost.reveal (Map?.v v)) /\
       (len64 <: raw_uint64) == Map?.len v /\
-      List.Tot.length (Ghost.reveal l_acc) == SZ.v i /\
-      Ghost.reveal m == snd (List.Tot.splitAt (SZ.v i) (Ghost.reveal (Map?.v v))) /\
+      List.Tot.length (Ghost.reveal l_acc) == U64.v i /\
+      Ghost.reveal m == snd (List.Tot.splitAt (U64.v i) (Ghost.reveal (Map?.v v))) /\
       List.Tot.append (Ghost.reveal l_acc) (Ghost.reveal m) == Ghost.reveal (Map?.v v)
     )
   ) {
@@ -2421,12 +2411,11 @@ ensures
     );
     List.Tot.append_length (Ghost.reveal l_acc) (Ghost.reveal m);
     // identify the head entry with index i, and expose the one-step advance
-    splitAt_snd_cons (SZ.v i) (Map?.v v);
+    splitAt_snd_cons (U64.v i) (Map?.v v);
     let c = cbor_map_iterator_next_with_depth (nat_pred depth) pit;
     Trade.trans _ _ (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
     // size bounds for the recursive key/value copies
-    size_map_entry v (List.Tot.index (Map?.v v) (SZ.v i));
-    FStar.SizeT.fits_lte (Ghost.reveal (nat_pred depth)) (Ghost.reveal depth);
+    size_map_entry v (List.Tot.index (Map?.v v) (U64.v i));
     // the iterator yields Match's depth-entry predicate; unfold/copy/fold under
     // that (qualified) name to keep it matched against the iterator's trade.
     with pe a1 . assert (Match.cbor_match_map_entry_with_depth (nat_pred depth) pe c a1);
@@ -2468,13 +2457,13 @@ ensures
     I.mixed_list_match_length cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R s_i [a1];
     let acc' = Append.mixed_list_append cbor_match_map_entry IO.u64_ops map_entry_parser 1.0R acc_cur l_acc s_i [a1] (B.box_to_ref bb) (B.box_to_ref ba);
     List.Tot.append_assoc (Ghost.reveal l_acc) [a1]
-      (snd (List.Tot.splitAt (SZ.v i + 1) (Ghost.reveal (Map?.v v))));
+      (snd (List.Tot.splitAt (U64.v i + 1) (Ghost.reveal (Map?.v v))));
     mapgen_step l_acc a1 acc_cur acc' s_i cme' key' value' bs bb ba mg ft;
     let head_cur = !phead;
     let new_head = mapgen_cons ({ mge_key_footprint = key'.footprint; mge_val_footprint = value'.footprint; mge_box_elt = bs; mge_box_before = bb; mge_box_after = ba } <: cbor_freeable_mapgen_elt) head_cur;
     phead := new_head;
     pacc := acc';
-    pi := (SZ.add i 1sz);
+    pi := (U64.add i 1uL);
   };
   Trade.elim _ (cbor_map_iterator_match_with_depth (nat_pred depth) p_it it (Map?.v v));
   Trade.elim _ (cbor_match_with_depth depth p x v);
@@ -2488,12 +2477,12 @@ ensures
     pts_to phead hd_g **
     mapgen_spine hd_g mg_g
   );
-  FStar.List.Tot.Base.lemma_splitAt_snd_length (SZ.v len) (Ghost.reveal (Map?.v v));
-  List.Tot.Properties.append_length (Ghost.reveal l_acc_g) (snd (List.Tot.splitAt (SZ.v len) (Ghost.reveal (Map?.v v))));
+  FStar.List.Tot.Base.lemma_splitAt_snd_length (U64.v count) (Ghost.reveal (Map?.v v));
+  List.Tot.Properties.append_length (Ghost.reveal l_acc_g) (snd (List.Tot.splitAt (U64.v count) (Ghost.reveal (Map?.v v))));
   List.Tot.Properties.append_l_nil (Ghost.reveal l_acc_g);
   assert (pure (Ghost.reveal l_acc_g == Ghost.reveal (Map?.v v)));
-  assert (pure (List.Tot.length (Ghost.reveal l_acc_g) == SZ.v len));
-  assert (pure (U64.v (len64.value) == SZ.v len));
+  assert (pure (List.Tot.length (Ghost.reveal l_acc_g) == U64.v count));
+  assert (pure (U64.v (len64.value) == U64.v count));
   let acc = !pacc;
   let head_final = !phead;
   rewrite (mapgen_spine hd_g mg_g) as (mapgen_spine head_final mg_g);
@@ -2561,7 +2550,7 @@ fn cbor_copy0_body
   (x: cbor_raw)
   (#p: perm)
   (#v: Ghost.erased raw_data_item)
-requires cbor_match_with_depth depth p x v ** pure (raw_data_item_size v <= Ghost.reveal depth /\ FStar.SizeT.fits (Ghost.reveal depth))
+requires cbor_match_with_depth depth p x v ** pure (raw_data_item_size v <= Ghost.reveal depth)
 returns res: cbor_freeable
 ensures cbor_match_with_depth depth p x v ** cbor_match 1.0R res.cbor v ** Trade.trade (cbor_match 1.0R res.cbor v) (freeable res)
 {
@@ -2682,7 +2671,6 @@ ensures cbor_match_with_depth depth p x v ** cbor_match 1.0R res.cbor v ** Trade
       rewrite (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_tagged_payload_perm) c0 (Tagged?.v v))
         as (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_tagged_payload_perm) plc (Tagged?.v v));
       size_tagged_child v;
-      FStar.SizeT.fits_lte (Ghost.reveal (nat_pred depth)) (Ghost.reveal depth);
       let cpl' = copy (nat_pred depth) plc;
       rewrite (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_tagged_payload_perm) plc (Tagged?.v v))
         as (cbor_match_with_depth (nat_pred depth) (p `perm_mul` a.cbor_tagged_payload_perm) c0 (Tagged?.v v));
@@ -2932,7 +2920,7 @@ ensures cbor_match_with_depth depth p x v ** cbor_match 1.0R res.cbor v ** Trade
 }
 
 fn rec cbor_copy0_with_depth (depth: Ghost.erased nat) (x: cbor_raw) (#p: perm) (#v: Ghost.erased raw_data_item)
-  requires cbor_match_with_depth depth p x v ** pure (raw_data_item_size v <= Ghost.reveal depth /\ FStar.SizeT.fits (Ghost.reveal depth))
+  requires cbor_match_with_depth depth p x v ** pure (raw_data_item_size v <= Ghost.reveal depth)
   returns res: cbor_freeable
   ensures cbor_match_with_depth depth p x v ** cbor_match 1.0R res.cbor v ** Trade.trade (cbor_match 1.0R res.cbor v) (freeable res)
   decreases (Ghost.reveal depth)
@@ -2941,7 +2929,7 @@ fn rec cbor_copy0_with_depth (depth: Ghost.erased nat) (x: cbor_raw) (#p: perm) 
 }
 
 fn cbor_copy0 (x: cbor_raw) (#p: perm) (#v: Ghost.erased raw_data_item)
-  requires cbor_match p x v ** pure (FStar.SizeT.fits (raw_data_item_size v))
+  requires cbor_match p x v
   returns res: cbor_freeable
   ensures cbor_match p x v ** cbor_match 1.0R res.cbor v ** Trade.trade (cbor_match 1.0R res.cbor v) (freeable res)
 {
