@@ -122,6 +122,29 @@ cbor_det_array_iterator_truncate(cbor_det_array_iterator_t x0, uint64_t x1);
 
 extern cbor_det_t cbor_det_get_array_item(cbor_det_t x0, uint64_t x1);
 
+extern cbor_det_t
+cbor_det_array_slice(
+  cbor_det_t x,
+  uint64_t i,
+  uint64_t j,
+  cbor_det_array_append_cell_t *r1,
+  cbor_det_array_append_cell_t *r2,
+  cbor_det_array_append_cell_t *r3,
+  cbor_det_array_append_cell_t *r4
+);
+
+extern bool
+cbor_det_array_slice_safe(
+  cbor_det_t x,
+  uint64_t i,
+  uint64_t j,
+  cbor_det_t *dest,
+  cbor_det_array_append_cell_t *r1,
+  cbor_det_array_append_cell_t *r2,
+  cbor_det_array_append_cell_t *r3,
+  cbor_det_array_append_cell_t *r4
+);
+
 extern uint64_t cbor_det_get_map_length(cbor_det_t x0);
 
 extern cbor_det_map_iterator_t cbor_det_map_iterator_start(cbor_det_t x0);

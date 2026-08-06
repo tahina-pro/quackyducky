@@ -259,6 +259,29 @@ cbor_array_iterator cbor_det_array_iterator_truncate(cbor_array_iterator x, uint
 
 cbor_raw cbor_det_get_array_item(cbor_raw x, uint64_t i);
 
+cbor_raw
+cbor_det_array_slice(
+  cbor_raw x,
+  uint64_t i,
+  uint64_t j,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r2,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r3,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r4
+);
+
+bool
+cbor_det_array_slice_safe(
+  cbor_raw x,
+  uint64_t i,
+  uint64_t j,
+  cbor_raw *dest,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r2,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r3,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r4
+);
+
 uint64_t cbor_det_get_map_length(cbor_raw x);
 
 cbor_map_iterator cbor_det_map_iterator_start(cbor_raw x);
