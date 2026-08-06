@@ -123,3 +123,35 @@ ensures
       (cbor_det_array_owned y l')
       (Det.cbor_det_match p x l ** (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2)) **
     pure (Spec.CArray? (Spec.unpack l) /\ l' == Spec.CArray?.v (Spec.unpack l))
+
+(* Deterministic-CBOR slice spec: the sub-range [i,j) of the element list
+   (empty if the range is empty or out of bounds). *)
+let cbor_det_array_slice_spec (l: list Spec.cbor) (i j: U64.t) : list Spec.cbor =
+  if U64.v i < U64.v j && U64.v j <= L.length l
+  then fst (L.splitAt (U64.v j - U64.v i) (snd (L.splitAt (U64.v i) l)))
+  else []
+
+(* Slice: zero-copy sub-range [i,j) of a deterministic-CBOR ARRAY, as a
+   borrowed view with a trade back to the source.  Total over i,j: empty or
+   out-of-bounds ranges yield the empty array.  Wraps the raw
+   [AB.cbor_array_slice]. *)
+inline_for_extraction
+fn cbor_det_array_slice_bridge
+  (x: cbor_det_t) (i j: U64.t)
+  (r1 r2 r3 r4: R.ref cbor_det_array_append_cell_t)
+  (#p: perm) (#v: Ghost.erased Spec.cbor)
+  (#w1 #w2 #w3 #w4: Ghost.erased cbor_det_array_append_cell_t)
+requires
+  Det.cbor_det_match p x v **
+  R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 **
+  pure (Spec.CArray? (Spec.unpack v))
+returns res: cbor_det_t
+ensures exists* (v': Spec.cbor).
+  Det.cbor_det_match 1.0R res v' **
+  Trade.trade
+    (Det.cbor_det_match 1.0R res v')
+    (Det.cbor_det_match p x v **
+     (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+  pure (Spec.CArray? (Spec.unpack v) /\ Spec.CArray? (Spec.unpack v') /\
+        (Spec.CArray?.v (Spec.unpack v') <: list Spec.cbor) ==
+          cbor_det_array_slice_spec (Spec.CArray?.v (Spec.unpack v)) i j)

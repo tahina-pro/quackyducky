@@ -785,3 +785,164 @@ ensures
   res
 }
 #pop-options
+
+(* ================================================================ *)
+(* Slice: zero-copy sub-range [i,j) of a nondeterministic-CBOR ARRAY. *)
+(* Wraps the raw [AB.cbor_array_slice], bridging the raw slice-spec  *)
+(* [AB.array_slice_spec] to the nondeterministic-CBOR level via      *)
+(* [cbor_nondet_array_slice_spec] (which commutes with [mk_cbor]).   *)
+(* ================================================================ *)
+
+(* map commutes with the (fst of) splitAt *)
+let rec list_map_fst_splitAt (#t1 #t2: Type) (f: t1 -> t2) (l: list t1) (n: nat)
+: Lemma (ensures (L.map f (fst (L.splitAt n l)) == fst (L.splitAt n (L.map f l))))
+        (decreases n)
+= if n = 0 then () else (match l with | [] -> () | _ :: q -> list_map_fst_splitAt f q (n - 1))
+
+(* map commutes with the (snd of) splitAt *)
+let rec list_map_snd_splitAt (#t1 #t2: Type) (f: t1 -> t2) (l: list t1) (n: nat)
+: Lemma (ensures (L.map f (snd (L.splitAt n l)) == snd (L.splitAt n (L.map f l))))
+        (decreases n)
+= if n = 0 then () else (match l with | [] -> () | _ :: q -> list_map_snd_splitAt f q (n - 1))
+
+(* map commutes with the splitAt-based sub-range extraction *)
+let list_map_narrow (#t1 #t2: Type) (f: t1 -> t2) (l: list t1) (skip n: nat)
+: Lemma (ensures (L.map f (fst (L.splitAt n (snd (L.splitAt skip l)))) ==
+                  fst (L.splitAt n (snd (L.splitAt skip (L.map f l))))))
+= list_map_fst_splitAt f (snd (L.splitAt skip l)) n;
+  list_map_snd_splitAt f l skip
+
+(* for non-negative arguments, [list_narrow] is the splitAt-based range *)
+let list_narrow_nonneg (#a: Type) (l: list a) (skip n: nat)
+: Lemma (I.list_narrow l skip n == fst (L.splitAt n (snd (L.splitAt skip l))))
+= ()
+
+(* [L.for_all] is preserved by the (fst of) splitAt *)
+let rec for_all_fst_splitAt (#t: Type) (p: t -> bool) (l: list t) (n: nat)
+: Lemma (requires (L.for_all p l))
+        (ensures (L.for_all p (fst (L.splitAt n l))))
+        (decreases n)
+= if n = 0 then () else (match l with | [] -> () | _ :: q -> for_all_fst_splitAt p q (n - 1))
+
+(* [L.for_all] is preserved by the (snd of) splitAt *)
+let rec for_all_snd_splitAt (#t: Type) (p: t -> bool) (l: list t) (n: nat)
+: Lemma (requires (L.for_all p l))
+        (ensures (L.for_all p (snd (L.splitAt n l))))
+        (decreases n)
+= if n = 0 then () else (match l with | [] -> () | _ :: q -> for_all_snd_splitAt p q (n - 1))
+
+#push-options "--fuel 2 --ifuel 2"
+(* Slicing a raw list preserves validity of every element (the slice is a  *)
+(* sub-range of the original valid list).                                  *)
+let for_all_valid_array_slice_spec (l: list raw_data_item) (i j: U64.t)
+: Lemma (requires (L.for_all SpecRaw.valid_raw_data_item l))
+        (ensures (L.for_all SpecRaw.valid_raw_data_item (AB.array_slice_spec l i j)))
+= if (U64.v i < U64.v j && U64.v j <= L.length l)
+  then begin
+    list_narrow_nonneg l (U64.v i) (U64.v j - U64.v i);
+    for_all_snd_splitAt SpecRaw.valid_raw_data_item l (U64.v i);
+    for_all_fst_splitAt SpecRaw.valid_raw_data_item (snd (L.splitAt (U64.v i) l)) (U64.v j - U64.v i)
+  end
+  else ()
+
+(* Slicing the raw list [l] then mapping [mk_cbor] equals the             *)
+(* nondeterministic-CBOR slice of [map mk_cbor l]: the raw slice-spec     *)
+(* commutes with [map mk_cbor].                                           *)
+let cbor_nondet_array_slice_spec_commutes (l: list raw_data_item) (i j: U64.t)
+: Lemma (ensures
+    L.map SpecRaw.mk_cbor (AB.array_slice_spec l i j) ==
+    cbor_nondet_array_slice_spec (L.map SpecRaw.mk_cbor l) i j)
+= L.map_lemma SpecRaw.mk_cbor l;
+  if (U64.v i < U64.v j && U64.v j <= L.length l)
+  then begin
+    list_narrow_nonneg l (U64.v i) (U64.v j - U64.v i);
+    list_map_narrow SpecRaw.mk_cbor l (U64.v i) (U64.v j - U64.v i)
+  end
+  else ()
+#pop-options
+
+#push-options "--z3rlimit 30 --fuel 2 --ifuel 2"
+
+inline_for_extraction
+fn cbor_nondet_array_slice_bridge
+  (x: cbor_raw) (i j: U64.t)
+  (r1 r2 r3 r4: R.ref (IT.mixed_list U64.t cbor_raw))
+  (#p: perm) (#v: Ghost.erased Spec.cbor)
+  (#w1 #w2 #w3 #w4: Ghost.erased (IT.mixed_list U64.t cbor_raw))
+requires
+  Nondet.cbor_nondet_match p x v **
+  R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 **
+  pure (Spec.CArray? (Spec.unpack v))
+returns res: cbor_raw
+ensures exists* (v': Spec.cbor).
+  Nondet.cbor_nondet_match 1.0R res v' **
+  Trade.trade
+    (Nondet.cbor_nondet_match 1.0R res v')
+    (Nondet.cbor_nondet_match p x v **
+     (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+  pure (Spec.CArray? (Spec.unpack v) /\ Spec.CArray? (Spec.unpack v') /\
+        (Spec.CArray?.v (Spec.unpack v') <: list Spec.cbor) ==
+          cbor_nondet_array_slice_spec (Spec.CArray?.v (Spec.unpack v)) i j)
+{
+  (* 1. Eliminate the nondet match to a raw [cbor_match] on a valid raw item. *)
+  let vr = Nondet.cbor_nondet_match_elim x #p #v;
+  SpecRaw.mk_cbor_eq (Ghost.reveal vr);
+  Spec.pack_unpack (Ghost.reveal v);
+  Valid.valid_eq Valid.basic_data_model (Ghost.reveal vr);
+  (* [vr] is an [Array] whose element list [Array?.v vr] is a list of valid raw
+     items with [map mk_cbor (Array?.v vr) == CArray?.v (unpack v)]. *)
+  let xh : Ghost.erased (r: raw_data_item { Array? r }) = Ghost.hide (Ghost.reveal vr);
+  rewrite (cbor_match p x (Ghost.reveal vr)) as (cbor_match p x (Ghost.reveal xh));
+  (* 2. Call the raw slice. *)
+  let res = AB.cbor_array_slice p x i j r1 r2 r3 r4 #xh #w1 #w2 #w3 #w4;
+  with yh. assert (cbor_match 1.0R res yh);
+  (* Spec facts about [yh]: it is a valid [Array] whose element list is the raw
+     slice of [Array?.v xh], and [mk_cbor yh == pack (CArray ls)]. *)
+  Valid.valid_eq Valid.basic_data_model (Ghost.reveal yh);
+  for_all_valid_array_slice_spec (Array?.v (Ghost.reveal xh)) i j;
+  SpecRaw.mk_cbor_eq (Ghost.reveal yh);
+  Spec.pack_unpack (SpecRaw.mk_cbor (Ghost.reveal yh));
+  cbor_nondet_array_slice_spec_commutes (Array?.v (Ghost.reveal xh)) i j;
+  let ls : Ghost.erased (l'': list Spec.cbor { FStar.UInt.fits (L.length l'') U64.n }) =
+    Ghost.hide (cbor_nondet_array_slice_spec (Spec.CArray?.v (Spec.unpack (Ghost.reveal v))) i j);
+  Spec.unpack_pack (Spec.CArray (Ghost.reveal ls));
+  (* 3. Recover the nondet source from the raw slice trade (T_src). *)
+  Trade.intro_trade
+    (cbor_match 1.0R res (Ghost.reveal yh))
+    (Nondet.cbor_nondet_match p x v **
+     (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4))
+    (Trade.trade
+       (cbor_match 1.0R res (Ghost.reveal yh))
+       (cbor_match p x (Ghost.reveal xh) **
+        (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+     Trade.trade
+       (cbor_match p x (Ghost.reveal vr))
+       (Nondet.cbor_nondet_match p x v))
+    fn _ {
+      Trade.elim
+        (cbor_match 1.0R res (Ghost.reveal yh))
+        (cbor_match p x (Ghost.reveal xh) **
+         (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4));
+      rewrite (cbor_match p x (Ghost.reveal xh)) as (cbor_match p x (Ghost.reveal vr));
+      Trade.elim
+        (cbor_match p x (Ghost.reveal vr))
+        (Nondet.cbor_nondet_match p x v);
+    };
+  (* 4. Introduce the nondet match on [res] (half permission) and thread T_src. *)
+  Nondet.cbor_nondet_match_intro res #1.0R #(Ghost.reveal yh);
+  Trade.trans
+    (Nondet.cbor_nondet_match (1.0R /. 2.0R) res (SpecRaw.mk_cbor (Ghost.reveal yh)))
+    (cbor_match 1.0R res (Ghost.reveal yh))
+    (Nondet.cbor_nondet_match p x v **
+     (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4));
+  rewrite each (SpecRaw.mk_cbor (Ghost.reveal yh)) as (Spec.pack (Spec.CArray (Ghost.reveal ls)));
+  (* 5. Reset the permission to 1.0R (fresh handle) and thread T_src again. *)
+  let resF = Nondet.cbor_nondet_reset_perm () res 1.0R;
+  Trade.trans
+    (Nondet.cbor_nondet_match 1.0R resF (Spec.pack (Spec.CArray (Ghost.reveal ls))))
+    (Nondet.cbor_nondet_match (1.0R /. 2.0R) res (Spec.pack (Spec.CArray (Ghost.reveal ls))))
+    (Nondet.cbor_nondet_match p x v **
+     (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4));
+  resF
+}
+#pop-options

@@ -271,3 +271,39 @@ val cbor_array_init
       Trade.trade
         (cbor_array_owned y (Array?.v (Ghost.reveal xh)))
         (cbor_match pm x (Ghost.reveal xh) ** (exists* w1 w2. R.pts_to r1 w1 ** R.pts_to r2 w2)))
+
+(* ================================================================ *)
+(* Zero-copy sub-range [i,j) of an [_Gen] array VALUE.               *)
+(*                                                                  *)
+(* [array_slice_spec l i j] is the spec-level element list of the    *)
+(* slice: the sub-range [i,j) of [l] when [i < j <= length l],       *)
+(* otherwise the empty list (so the operation is TOTAL over i,j).    *)
+(* ================================================================ *)
+
+noextract [@@noextract_to "krml"]
+let array_slice_spec (l: list raw_data_item) (i j: U64.t) : list raw_data_item =
+  if U64.v i < U64.v j && U64.v j <= List.Tot.length l
+  then I.list_narrow l (U64.v i) (U64.v j - U64.v i)
+  else []
+
+(* [cbor_array_slice pm x i j r1 r2 r3 r4] produces a fully-owned      *)
+(* (1.0R) [_Gen] array VALUE [res] that is the sub-range [i,j) of the  *)
+(* input array [x] (a BORROWED VIEW), together with a trade returning  *)
+(* the borrow to the source [x] and the four scratch references.  The  *)
+(* result's length header is minimal ([raw_uint64_optimal]).           *)
+val cbor_array_slice
+  (pm: perm) (x: cbor_raw) (i j: U64.t)
+  (r1 r2 r3 r4: R.ref (IT.mixed_list U64.t cbor_raw))
+  (#xh: Ghost.erased (r: raw_data_item { Array? r }))
+  (#w1 #w2 #w3 #w4: Ghost.erased (IT.mixed_list U64.t cbor_raw))
+: stt cbor_raw
+    (cbor_match pm x (Ghost.reveal xh) **
+     R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)
+    (fun res -> exists* (yh: raw_data_item).
+      cbor_match 1.0R res yh **
+      Trade.trade
+        (cbor_match 1.0R res yh)
+        (cbor_match pm x (Ghost.reveal xh) **
+         (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+      pure (Array? yh /\ (Array?.v yh <: list raw_data_item) == array_slice_spec (Array?.v (Ghost.reveal xh)) i j /\
+            raw_uint64_optimal (Array?.len yh)))

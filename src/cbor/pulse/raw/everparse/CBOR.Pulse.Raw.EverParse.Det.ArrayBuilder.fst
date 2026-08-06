@@ -23,6 +23,7 @@ module AB = CBOR.Pulse.Raw.EverParse.ArrayBuilder
 module Trade = Pulse.Lib.Trade.Util
 module R = Pulse.Lib.Reference
 module IT = LowParse.PulseParse.Iterator.Type
+module I = LowParse.PulseParse.Iterator
 module U64 = FStar.UInt64
 module SZ = FStar.SizeT
 module L = FStar.List.Tot
@@ -373,6 +374,123 @@ ensures
       fold (Det.cbor_det_match p x l);
     };
   y
+}
+
+#pop-options
+
+(* ================================================================ *)
+(* Slice: zero-copy sub-range [i,j) of a deterministic-CBOR ARRAY.   *)
+(* Wraps the raw [AB.cbor_array_slice], bridging the raw slice-spec  *)
+(* [AB.array_slice_spec] to the deterministic-CBOR level via         *)
+(* [cbor_det_array_slice_spec] (the two commute).                    *)
+(* ================================================================ *)
+
+(* map commutes with the (fst of) splitAt *)
+let rec list_map_fst_splitAt (#t1 #t2: Type) (f: t1 -> t2) (l: list t1) (n: nat)
+: Lemma (ensures (L.map f (fst (L.splitAt n l)) == fst (L.splitAt n (L.map f l))))
+        (decreases n)
+= if n = 0 then () else (match l with | [] -> () | _ :: q -> list_map_fst_splitAt f q (n - 1))
+
+(* map commutes with the (snd of) splitAt *)
+let rec list_map_snd_splitAt (#t1 #t2: Type) (f: t1 -> t2) (l: list t1) (n: nat)
+: Lemma (ensures (L.map f (snd (L.splitAt n l)) == snd (L.splitAt n (L.map f l))))
+        (decreases n)
+= if n = 0 then () else (match l with | [] -> () | _ :: q -> list_map_snd_splitAt f q (n - 1))
+
+(* map commutes with the splitAt-based sub-range extraction *)
+let list_map_narrow (#t1 #t2: Type) (f: t1 -> t2) (l: list t1) (skip n: nat)
+: Lemma (ensures (L.map f (fst (L.splitAt n (snd (L.splitAt skip l)))) ==
+                  fst (L.splitAt n (snd (L.splitAt skip (L.map f l))))))
+= list_map_fst_splitAt f (snd (L.splitAt skip l)) n;
+  list_map_snd_splitAt f l skip
+
+(* for non-negative arguments, [list_narrow] is the splitAt-based range *)
+let list_narrow_nonneg (#a: Type) (l: list a) (skip n: nat)
+: Lemma (I.list_narrow l skip n == fst (L.splitAt n (snd (L.splitAt skip l))))
+= ()
+
+(* [cbor_det_array_slice_spec] is defined transparently in the interface. *)
+
+#push-options "--fuel 2 --ifuel 2"
+(* Slicing the raw list [det_raw_list l] equals [det_raw_list] of the   *)
+(* deterministic-CBOR slice: the raw slice-spec commutes with           *)
+(* [det_raw_list = map mk_det_raw_cbor].                                *)
+let cbor_det_array_slice_spec_commutes (l: list Spec.cbor) (i j: U64.t)
+: Lemma (ensures
+    AB.array_slice_spec (det_raw_list l) i j == det_raw_list (cbor_det_array_slice_spec l i j))
+= length_det_raw_list l;
+  if (U64.v i < U64.v j && U64.v j <= L.length l)
+  then begin
+    list_narrow_nonneg (det_raw_list l) (U64.v i) (U64.v j - U64.v i);
+    list_map_narrow SpecRaw.mk_det_raw_cbor l (U64.v i) (U64.v j - U64.v i)
+  end
+  else ()
+#pop-options
+
+#push-options "--z3rlimit 20 --fuel 2 --ifuel 2"
+
+inline_for_extraction
+fn cbor_det_array_slice_bridge
+  (x: cbor_raw) (i j: U64.t)
+  (r1 r2 r3 r4: R.ref (IT.mixed_list U64.t cbor_raw))
+  (#p: perm) (#v: Ghost.erased Spec.cbor)
+  (#w1 #w2 #w3 #w4: Ghost.erased (IT.mixed_list U64.t cbor_raw))
+requires
+  Det.cbor_det_match p x v **
+  R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 **
+  pure (Spec.CArray? (Spec.unpack v))
+returns res: cbor_raw
+ensures exists* (v': Spec.cbor).
+  Det.cbor_det_match 1.0R res v' **
+  Trade.trade
+    (Det.cbor_det_match 1.0R res v')
+    (Det.cbor_det_match p x v **
+     (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+  pure (Spec.CArray? (Spec.unpack v) /\ Spec.CArray? (Spec.unpack v') /\
+        (Spec.CArray?.v (Spec.unpack v') <: list Spec.cbor) ==
+          cbor_det_array_slice_spec (Spec.CArray?.v (Spec.unpack v)) i j)
+{
+  unfold (Det.cbor_det_match p x v);
+  let lw : Ghost.erased (l'': list Spec.cbor { FStar.UInt.fits (L.length l'') U64.n }) =
+    Ghost.hide (Spec.CArray?.v (Spec.unpack (Ghost.reveal v)));
+  mk_det_raw_cbor_array_eq (Ghost.reveal lw);
+  let xh : Ghost.erased (r: raw_data_item { Array? r }) =
+    Ghost.hide (SpecRaw.mk_det_raw_cbor (Ghost.reveal v));
+  rewrite (cbor_match p x (SpecRaw.mk_det_raw_cbor (Ghost.reveal v)))
+    as (cbor_match p x (Ghost.reveal xh));
+  let res = AB.cbor_array_slice p x i j r1 r2 r3 r4 #xh #w1 #w2 #w3 #w4;
+  with yh. assert (cbor_match 1.0R res yh);
+  cbor_det_array_slice_spec_commutes (Ghost.reveal lw) i j;
+  length_det_raw_list (cbor_det_array_slice_spec (Ghost.reveal lw) i j);
+  let ls : Ghost.erased (l'': list Spec.cbor { FStar.UInt.fits (L.length l'') U64.n }) =
+    Ghost.hide (cbor_det_array_slice_spec (Ghost.reveal lw) i j);
+  mk_det_raw_cbor_array_eq (Ghost.reveal ls);
+  RV.raw_uint64_optimal_unique (Array?.len yh)
+    (RV.mk_raw_uint64 (U64.uint_to_t (L.length (Ghost.reveal ls))));
+  rewrite (cbor_match 1.0R res yh)
+    as (cbor_match 1.0R res (SpecRaw.mk_det_raw_cbor (Spec.pack (Spec.CArray (Ghost.reveal ls)))));
+  fold (Det.cbor_det_match 1.0R res (Spec.pack (Spec.CArray (Ghost.reveal ls))));
+  Trade.intro_trade
+    (Det.cbor_det_match 1.0R res (Spec.pack (Spec.CArray (Ghost.reveal ls))))
+    (Det.cbor_det_match p x v **
+     (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4))
+    (Trade.trade
+       (cbor_match 1.0R res yh)
+       (cbor_match p x (Ghost.reveal xh) **
+        (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)))
+    fn _ {
+      unfold (Det.cbor_det_match 1.0R res (Spec.pack (Spec.CArray (Ghost.reveal ls))));
+      rewrite (cbor_match 1.0R res (SpecRaw.mk_det_raw_cbor (Spec.pack (Spec.CArray (Ghost.reveal ls)))))
+        as (cbor_match 1.0R res yh);
+      Trade.elim
+        (cbor_match 1.0R res yh)
+        (cbor_match p x (Ghost.reveal xh) **
+         (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4));
+      rewrite (cbor_match p x (Ghost.reveal xh))
+        as (cbor_match p x (SpecRaw.mk_det_raw_cbor (Ghost.reveal v)));
+      fold (Det.cbor_det_match p x v);
+    };
+  res
 }
 
 #pop-options

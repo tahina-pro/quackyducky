@@ -315,3 +315,99 @@ val cbor_nondet_map_entry_insert
             Spec.CMap? (Spec.unpack vres) /\
             (Spec.CMap?.c (Spec.unpack vres) <: Spec.cbor_map) ==
               Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv)))
+
+(* ================================================================== *)
+(* Zero-copy array sub-range (slice) — nondeterministic API.          *)
+(*                                                                    *)
+(* [cbor_nondet_array_slice x i j r1 r2 r3 r4] produces the           *)
+(* nondeterministic array whose elements are the sub-range [i, j) of  *)
+(* the input array [x], as a borrowed view (full-permission handle)   *)
+(* together with a trade returning the borrow (and the four scratch   *)
+(* references) to the source.  It is TOTAL over [i], [j]: if the      *)
+(* requested range is empty or out of bounds it produces the EMPTY    *)
+(* array.  Realized on top of the raw/ adapter                        *)
+(*   ANondet = CBOR.Pulse.Raw.EverParse.Nondet.ArrayBuilder.          *)
+(* ================================================================== *)
+
+(* Specification of the slice at the nondeterministic-CBOR level: the  *)
+(* sub-list of elements at indices [i, j) (empty when the range is     *)
+(* empty or out of bounds).                                            *)
+noextract [@@noextract_to "krml"]
+let cbor_nondet_array_slice_spec (l: list Spec.cbor) (i j: U64.t) : list Spec.cbor =
+  if U64.v i < U64.v j && U64.v j <= L.length l
+  then fst (L.splitAt (U64.v j - U64.v i) (snd (L.splitAt (U64.v i) l)))
+  else []
+
+val cbor_nondet_array_slice
+  (x: cbor_nondet_t) (i j: U64.t)
+  (r1 r2 r3 r4: R.ref cbor_nondet_array_append_cell_t)
+  (#p: perm) (#v: Ghost.erased Spec.cbor)
+  (#w1 #w2 #w3 #w4: Ghost.erased cbor_nondet_array_append_cell_t)
+: stt cbor_nondet_t
+    (cbor_nondet_match p x v ** R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4
+       ** pure (Spec.CArray? (Spec.unpack v)))
+    (fun res -> exists* (v': Spec.cbor).
+       cbor_nondet_match 1.0R res v' **
+       Trade.trade (cbor_nondet_match 1.0R res v')
+         (cbor_nondet_match p x v ** (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+       pure (Spec.CArray? (Spec.unpack v) /\ Spec.CArray? (Spec.unpack v') /\
+             (Spec.CArray?.v (Spec.unpack v') <: list Spec.cbor) == cbor_nondet_array_slice_spec (Spec.CArray?.v (Spec.unpack v)) i j))
+
+(* Safe (no-precondition) variant: checks at runtime that [dest] is a  *)
+(* non-null destination reference and that [x] is an array; on success *)
+(* writes the sliced array into [dest] and returns [true]; otherwise   *)
+(* leaves [dest] unchanged, retains ownership of [x] and the scratch   *)
+(* references, and returns [false].                                    *)
+let cbor_nondet_array_slice_safe_res
+  (dest: R.ref cbor_nondet_t)
+  (v: Spec.cbor)
+: GTot bool
+= not (R.is_null dest) && Spec.CArray? (Spec.unpack v)
+
+let cbor_nondet_array_slice_safe_post_true
+  (x: cbor_nondet_t) (i j: U64.t) (p: perm) (v: Spec.cbor)
+  (r1 r2 r3 r4: R.ref cbor_nondet_array_append_cell_t)
+  (vdest': cbor_nondet_t)
+: Tot slprop
+= exists* (v': Spec.cbor).
+    cbor_nondet_match 1.0R vdest' v' **
+    Trade.trade
+      (cbor_nondet_match 1.0R vdest' v')
+      (cbor_nondet_match p x v **
+       (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+    pure (Spec.CArray? (Spec.unpack v) /\ Spec.CArray? (Spec.unpack v') /\
+          (Spec.CArray?.v (Spec.unpack v') <: list Spec.cbor) == cbor_nondet_array_slice_spec (Spec.CArray?.v (Spec.unpack v)) i j)
+
+let cbor_nondet_array_slice_safe_post_false
+  (x: cbor_nondet_t) (p: perm) (v: Spec.cbor)
+  (r1 r2 r3 r4: R.ref cbor_nondet_array_append_cell_t)
+  (w1 w2 w3 w4: cbor_nondet_array_append_cell_t)
+  (vdest vdest': cbor_nondet_t)
+: Tot slprop
+= cbor_nondet_match p x v **
+  R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 **
+  pure (vdest' == vdest)
+
+let cbor_nondet_array_slice_safe_post
+  (x: cbor_nondet_t) (i j: U64.t) (dest: R.ref cbor_nondet_t) (p: perm) (v: Spec.cbor)
+  (r1 r2 r3 r4: R.ref cbor_nondet_array_append_cell_t)
+  (w1 w2 w3 w4: cbor_nondet_array_append_cell_t)
+  (vdest vdest': cbor_nondet_t)
+: Tot slprop
+= if cbor_nondet_array_slice_safe_res dest v
+  then cbor_nondet_array_slice_safe_post_true x i j p v r1 r2 r3 r4 vdest'
+  else cbor_nondet_array_slice_safe_post_false x p v r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest'
+
+val cbor_nondet_array_slice_safe
+  (x: cbor_nondet_t) (i j: U64.t)
+  (dest: R.ref cbor_nondet_t)
+  (r1 r2 r3 r4: R.ref cbor_nondet_array_append_cell_t)
+  (#p: perm) (#v: Ghost.erased Spec.cbor) (#vdest: Ghost.erased cbor_nondet_t)
+  (#w1 #w2 #w3 #w4: Ghost.erased cbor_nondet_array_append_cell_t)
+: stt bool
+    (cbor_nondet_match p x v ** ref_pts_to_or_null dest 1.0R vdest **
+     R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)
+    (fun res -> exists* (vdest': cbor_nondet_t).
+       ref_pts_to_or_null dest 1.0R vdest' **
+       cbor_nondet_array_slice_safe_post x i j dest p v r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest' **
+       pure (res == cbor_nondet_array_slice_safe_res dest v))

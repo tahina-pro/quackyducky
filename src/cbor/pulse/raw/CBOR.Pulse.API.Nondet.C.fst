@@ -540,3 +540,92 @@ ensures (match res with
     None #cbor_nondet_t
   }
 }
+
+(* ================================================================== *)
+(* Zero-copy array slice (sub-range) — nondeterministic API.          *)
+(* [cbor_nondet_array_slice] delegates to the structural adapter      *)
+(*   ANondet = CBOR.Pulse.Raw.EverParse.Nondet.ArrayBuilder           *)
+(* which bridges the raw slice op                                     *)
+(*   CBOR.Pulse.Raw.EverParse.ArrayBuilder.cbor_array_slice           *)
+(* back to [cbor_nondet_match].  Both this module's                   *)
+(* [cbor_nondet_array_slice_spec] and the adapter's have the same     *)
+(* ([FStar.List.Tot.splitAt]-based) body, so their applications are   *)
+(* provably equal.                                                    *)
+(* ================================================================== *)
+
+fn cbor_nondet_array_slice
+  (x: cbor_nondet_t) (i j: U64.t)
+  (r1 r2 r3 r4: R.ref cbor_nondet_array_append_cell_t)
+  (#p: perm) (#v: Ghost.erased Spec.cbor)
+  (#w1 #w2 #w3 #w4: Ghost.erased cbor_nondet_array_append_cell_t)
+requires
+  (cbor_nondet_match p x v ** R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4
+     ** pure (Spec.CArray? (Spec.unpack v)))
+returns res: cbor_nondet_t
+ensures
+  (exists* (v': Spec.cbor).
+     cbor_nondet_match 1.0R res v' **
+     Trade.trade (cbor_nondet_match 1.0R res v')
+       (cbor_nondet_match p x v ** (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+     pure (Spec.CArray? (Spec.unpack v) /\ Spec.CArray? (Spec.unpack v') /\
+           (Spec.CArray?.v (Spec.unpack v') <: list Spec.cbor) == cbor_nondet_array_slice_spec (Spec.CArray?.v (Spec.unpack v)) i j))
+{
+  ANondet.cbor_nondet_array_slice_bridge x i j r1 r2 r3 r4
+}
+
+(* Bridge: the major type of [y] decides whether [unpack y] is a [CArray]. *)
+let carray_of_major_type_nondet (y: Spec.cbor)
+: Lemma
+    (requires (cbor_major_type y == cbor_major_type_array))
+    (ensures (Spec.CArray? (Spec.unpack y)))
+= ()
+
+let not_carray_of_major_type_nondet (y: Spec.cbor)
+: Lemma
+    (requires (~ (cbor_major_type y == cbor_major_type_array)))
+    (ensures (~ (Spec.CArray? (Spec.unpack y))))
+= ()
+
+(* Safe (no-precondition) variant: runtime null-dest and array-tag checks. *)
+fn cbor_nondet_array_slice_safe
+  (x: cbor_nondet_t) (i j: U64.t)
+  (dest: R.ref cbor_nondet_t)
+  (r1 r2 r3 r4: R.ref cbor_nondet_array_append_cell_t)
+  (#p: perm) (#v: Ghost.erased Spec.cbor) (#vdest: Ghost.erased cbor_nondet_t)
+  (#w1 #w2 #w3 #w4: Ghost.erased cbor_nondet_array_append_cell_t)
+requires
+  (cbor_nondet_match p x v ** ref_pts_to_or_null dest 1.0R vdest **
+   R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)
+returns res: bool
+ensures
+  (exists* (vdest': cbor_nondet_t).
+     ref_pts_to_or_null dest 1.0R vdest' **
+     cbor_nondet_array_slice_safe_post x i j dest p v r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest' **
+     pure (res == cbor_nondet_array_slice_safe_res dest v))
+{
+  if (R.is_null dest) {
+    fold (cbor_nondet_array_slice_safe_post_false x p v r1 r2 r3 r4 w1 w2 w3 w4 (Ghost.reveal vdest) (Ghost.reveal vdest));
+    rewrite (cbor_nondet_array_slice_safe_post_false x p v r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest)
+      as (cbor_nondet_array_slice_safe_post x i j dest p v r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest);
+    false
+  } else {
+    let mt = cbor_nondet_major_type () x;
+    if (mt = cbor_major_type_array) {
+      carray_of_major_type_nondet v;
+      rewrite (ref_pts_to_or_null dest 1.0R vdest) as (pts_to dest vdest);
+      let sl = cbor_nondet_array_slice x i j r1 r2 r3 r4;
+      dest := sl;
+      rewrite (pts_to dest sl) as (ref_pts_to_or_null dest 1.0R sl);
+      fold (cbor_nondet_array_slice_safe_post_true x i j p v r1 r2 r3 r4 sl);
+      rewrite (cbor_nondet_array_slice_safe_post_true x i j p v r1 r2 r3 r4 sl)
+        as (cbor_nondet_array_slice_safe_post x i j dest p v r1 r2 r3 r4 w1 w2 w3 w4 vdest sl);
+      true
+    } else {
+      not_carray_of_major_type_nondet v;
+      fold (cbor_nondet_array_slice_safe_post_false x p v r1 r2 r3 r4 w1 w2 w3 w4 (Ghost.reveal vdest) (Ghost.reveal vdest));
+      rewrite (cbor_nondet_array_slice_safe_post_false x p v r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest)
+        as (cbor_nondet_array_slice_safe_post x i j dest p v r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest);
+      false
+    }
+  }
+}
