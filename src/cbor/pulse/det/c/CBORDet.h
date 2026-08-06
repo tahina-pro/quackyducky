@@ -308,6 +308,27 @@ cbor_det_map_entry_insert(
   cbor_map_entry *ry
 );
 
+cbor_raw
+cbor_det_map_remove(
+  cbor_raw x,
+  cbor_raw key,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r2,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r3,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r4
+);
+
+bool
+cbor_det_map_remove_safe(
+  cbor_raw x,
+  cbor_raw key,
+  cbor_raw *dest,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r2,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r3,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r4
+);
+
 size_t cbor_det_serialize_tag_to_array(uint64_t tag, uint8_t *out, size_t out_len);
 
 size_t

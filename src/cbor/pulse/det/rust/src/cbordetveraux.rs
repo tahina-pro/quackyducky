@@ -30231,16 +30231,6 @@ pub(crate) fn cbor_raw_sort(a: &mut [cbor_map_entry]) -> bool { cbor_raw_sort_au
 pub(crate) fn impl_cbor_det_compare(x1: cbor_raw, x2: cbor_raw) -> i16
 { impl_cbor_compare(x1, x2) }
 
-pub(crate) fn array_gen <'a>(arec: cbor_mixed_list_array <'a>) -> cbor_raw <'a>
-{ cbor_raw::CBOR_Case_Array_Gen { v: arec } }
-
-pub(crate) fn array_gen_recover <'a>(x: cbor_raw <'a>) -> cbor_mixed_list_array <'a>
-{
-    let x·: cbor_raw = x;
-    match x·
-    { cbor_raw::CBOR_Case_Array_Gen { v } => v, _ => panic!("Incomplete pattern matching") }
-}
-
 fn minimal_len_size(len: u64) -> u8 { (mk_raw_uint64(len)).size }
 
 fn cbor_mk_map_full <'a>(ml: mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry <'a>) ->
@@ -30312,6 +30302,16 @@ fn cbor_map_borrow_entries <'a>(x: cbor_raw <'a>) ->
         cbor_raw::CBOR_Case_Map_Gen { v } => v.cbor_map_gen_ptr,
         _ => panic!("Incomplete pattern matching")
     }
+}
+
+pub(crate) fn array_gen <'a>(arec: cbor_mixed_list_array <'a>) -> cbor_raw <'a>
+{ cbor_raw::CBOR_Case_Array_Gen { v: arec } }
+
+pub(crate) fn array_gen_recover <'a>(x: cbor_raw <'a>) -> cbor_mixed_list_array <'a>
+{
+    let x·: cbor_raw = x;
+    match x·
+    { cbor_raw::CBOR_Case_Array_Gen { v } => v, _ => panic!("Incomplete pattern matching") }
 }
 
 fn cbor_raw_map_key_present(

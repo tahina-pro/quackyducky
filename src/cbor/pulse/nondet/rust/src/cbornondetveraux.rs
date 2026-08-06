@@ -28990,49 +28990,6 @@ fn cbor_map_borrow_entries <'a>(x: cbor_raw <'a>) ->
     }
 }
 
-fn minimal_len_size0(len: u64) -> u8 { (mk_raw_uint64(len)).size }
-
-pub(crate) fn cbor_array_empty <'a>() -> cbor_mixed_list_array <'a>
-{
-    let mll: u64 = 0u64;
-    let res: cbor_mixed_list_array =
-        cbor_mixed_list_array
-        {
-            cbor_array_gen_length_size: minimal_len_size0(mll),
-            cbor_array_gen_ptr:
-            mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Base
-            { _0: base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Empty }
-        };
-    res
-}
-
-fn cbor_array_finalize <'a>(x: cbor_mixed_list_array <'a>) -> cbor_raw <'a>
-{
-    let len: raw_uint64 =
-        mk_raw_uint64(
-            match x.cbor_array_gen_ptr
-            {
-                mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Base { _0: bi } =>
-                  match bi
-                  {
-                      base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Empty => 0u64,
-                      base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Singleton { .. } =>
-                        1u64,
-                      base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Slice { count, .. } =>
-                        count,
-                      base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Serialized
-                      { count, .. }
-                      => count,
-                      _ => panic!("Incomplete pattern matching")
-                  },
-                mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Append { tot, .. } => tot,
-                _ => panic!("Incomplete pattern matching")
-            }
-        );
-    crate::lowstar::ignore::ignore::<raw_uint64>(len);
-    cbor_raw::CBOR_Case_Array_Gen { v: x }
-}
-
 fn uu___is_None__bool(projectee: option__bool) -> bool
 { match projectee { option__bool::None => true, _ => false } }
 
@@ -32771,6 +32728,49 @@ pub(crate) fn cbor_nondet_mk_map <'a>(a: &'a [cbor_map_entry <'a>]) ->
     }
     else
     { option__CBOR_Pulse_Raw_Type_cbor_raw::None }
+}
+
+fn minimal_len_size0(len: u64) -> u8 { (mk_raw_uint64(len)).size }
+
+pub(crate) fn cbor_array_empty <'a>() -> cbor_mixed_list_array <'a>
+{
+    let mll: u64 = 0u64;
+    let res: cbor_mixed_list_array =
+        cbor_mixed_list_array
+        {
+            cbor_array_gen_length_size: minimal_len_size0(mll),
+            cbor_array_gen_ptr:
+            mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Base
+            { _0: base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Empty }
+        };
+    res
+}
+
+fn cbor_array_finalize <'a>(x: cbor_mixed_list_array <'a>) -> cbor_raw <'a>
+{
+    let len: raw_uint64 =
+        mk_raw_uint64(
+            match x.cbor_array_gen_ptr
+            {
+                mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Base { _0: bi } =>
+                  match bi
+                  {
+                      base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Empty => 0u64,
+                      base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Singleton { .. } =>
+                        1u64,
+                      base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Slice { count, .. } =>
+                        count,
+                      base_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Serialized
+                      { count, .. }
+                      => count,
+                      _ => panic!("Incomplete pattern matching")
+                  },
+                mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw::Append { tot, .. } => tot,
+                _ => panic!("Incomplete pattern matching")
+            }
+        );
+    crate::lowstar::ignore::ignore::<raw_uint64>(len);
+    cbor_raw::CBOR_Case_Array_Gen { v: x }
 }
 
 pub(crate) fn array_gen <'a>(arec: cbor_mixed_list_array <'a>) -> cbor_raw <'a>

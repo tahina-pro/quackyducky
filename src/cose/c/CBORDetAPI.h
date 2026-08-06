@@ -178,6 +178,27 @@ cbor_det_map_entry_insert(
   cbor_det_map_entry_t *ry
 );
 
+extern cbor_det_t
+cbor_det_map_remove(
+  cbor_det_t x,
+  cbor_det_t key,
+  cbor_det_map_entry_insert_cell_t *r1,
+  cbor_det_map_entry_insert_cell_t *r2,
+  cbor_det_map_entry_insert_cell_t *r3,
+  cbor_det_map_entry_insert_cell_t *r4
+);
+
+extern bool
+cbor_det_map_remove_safe(
+  cbor_det_t x,
+  cbor_det_t key,
+  cbor_det_t *dest,
+  cbor_det_map_entry_insert_cell_t *r1,
+  cbor_det_map_entry_insert_cell_t *r2,
+  cbor_det_map_entry_insert_cell_t *r3,
+  cbor_det_map_entry_insert_cell_t *r4
+);
+
 extern size_t cbor_det_serialize_tag_to_array(uint64_t x0, uint8_t *x1, size_t x2);
 
 extern size_t

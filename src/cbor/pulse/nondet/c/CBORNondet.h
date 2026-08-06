@@ -206,6 +206,27 @@ cbor_nondet_array_slice_safe(
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r4
 );
 
+cbor_raw
+cbor_nondet_map_remove(
+  cbor_raw x,
+  cbor_raw key,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r2,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r3,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r4
+);
+
+bool
+cbor_nondet_map_remove_safe(
+  cbor_raw x,
+  cbor_raw key,
+  cbor_raw *dest,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r1,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r2,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r3,
+  LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r4
+);
+
 #if defined(__cplusplus)
 }
 #endif
