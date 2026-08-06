@@ -411,3 +411,117 @@ val cbor_nondet_array_slice_safe
        ref_pts_to_or_null dest 1.0R vdest' **
        cbor_nondet_array_slice_safe_post x i j dest p v r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest' **
        pure (res == cbor_nondet_array_slice_safe_res dest v))
+
+(* ================================================================== *)
+(* Structural map remove-by-key (nondeterministic).                   *)
+(*                                                                    *)
+(* [cbor_nondet_map_remove x key r1 r2 r3 r4] removes the (unique)    *)
+(* entry whose key equals [key] (up to the abstract equality on keys) *)
+(* from the nondeterministic-CBOR map [x], producing a borrowed       *)
+(* handle to the resulting map together with a trade returning the    *)
+(* borrow (and the four scratch references) to the source.  The       *)
+(* operation ALWAYS returns a map: if [key] is absent the result      *)
+(* equals [x].  The key's ownership [cbor_nondet_match pk key vk] is   *)
+(* returned OUTSIDE the trade (read-only).                            *)
+(*                                                                    *)
+(* Realized on top of the raw/ adapter                                *)
+(*   NMRS = CBOR.Pulse.Raw.EverParse.Nondet.MapRemoveSpec.            *)
+(* As for nondeterministic map insertion, the result is exposed at    *)
+(* SOME permission [p_res] (the [cbor_nondet_match_intro] round-trip   *)
+(* halves the borrow), unlike the deterministic API which returns a   *)
+(* full-permission handle.                                            *)
+(*                                                                    *)
+(* No heap allocation: the application provides four                  *)
+(* [cbor_nondet_map_entry_insert_cell_t] scratch references (the same *)
+(* abstract cell type used by map insertion).                         *)
+(* ================================================================== *)
+
+(* Specification of remove-by-key at the nondeterministic-CBOR level:  *)
+(* the sub-map of entries whose key differs from [k].  The filter      *)
+(* predicate closes over the CONCRETE key [k] (not a ghost value), so  *)
+(* it is [Tot] as [cbor_map_filter] requires.                          *)
+noextract [@@noextract_to "krml"]
+let cbor_nondet_map_remove_spec (k: Spec.cbor) (m: Spec.cbor_map) : Spec.cbor_map =
+  Spec.cbor_map_filter (fun (kv: (Spec.cbor & Spec.cbor)) -> not (fst kv = k)) m
+
+val cbor_nondet_map_remove
+  (x key: cbor_nondet_t)
+  (r1 r2 r3 r4: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (#p: perm) (#v: Ghost.erased Spec.cbor)
+  (#pk: perm) (#vk: Ghost.erased Spec.cbor)
+  (#w1 #w2 #w3 #w4: Ghost.erased cbor_nondet_map_entry_insert_cell_t)
+: stt cbor_nondet_t
+    (cbor_nondet_match p x v ** cbor_nondet_match pk key vk **
+     R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 **
+     pure (Spec.CMap? (Spec.unpack v)))
+    (fun res -> exists* (p_res: perm) (v': Spec.cbor).
+       cbor_nondet_match p_res res v' **
+       cbor_nondet_match pk key vk **
+       Trade.trade (cbor_nondet_match p_res res v')
+         (cbor_nondet_match p x v ** (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+       pure (Spec.CMap? (Spec.unpack v) /\ Spec.CMap? (Spec.unpack v') /\
+             (Spec.CMap?.c (Spec.unpack v') <: Spec.cbor_map) ==
+               cbor_nondet_map_remove_spec vk (Spec.CMap?.c (Spec.unpack v))))
+
+(* Safe (no-precondition) variant: checks at runtime that [dest] is a  *)
+(* non-null destination reference and that [x] is a map; on success    *)
+(* writes the removed map into [dest] and returns [true]; otherwise    *)
+(* leaves [dest] unchanged, retains ownership of [x], [key] and the    *)
+(* scratch references, and returns [false].                           *)
+let cbor_nondet_map_remove_safe_res
+  (dest: R.ref cbor_nondet_t)
+  (v: Spec.cbor)
+: GTot bool
+= not (R.is_null dest) && Spec.CMap? (Spec.unpack v)
+
+let cbor_nondet_map_remove_safe_post_true
+  (x key: cbor_nondet_t) (p: perm) (v: Spec.cbor) (pk: perm) (vk: Spec.cbor)
+  (r1 r2 r3 r4: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (vdest': cbor_nondet_t)
+: Tot slprop
+= exists* (p_res: perm) (v': Spec.cbor).
+    cbor_nondet_match p_res vdest' v' **
+    cbor_nondet_match pk key vk **
+    Trade.trade
+      (cbor_nondet_match p_res vdest' v')
+      (cbor_nondet_match p x v **
+       (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+    pure (Spec.CMap? (Spec.unpack v) /\ Spec.CMap? (Spec.unpack v') /\
+          (Spec.CMap?.c (Spec.unpack v') <: Spec.cbor_map) ==
+            cbor_nondet_map_remove_spec vk (Spec.CMap?.c (Spec.unpack v)))
+
+let cbor_nondet_map_remove_safe_post_false
+  (x key: cbor_nondet_t) (p: perm) (v: Spec.cbor) (pk: perm) (vk: Spec.cbor)
+  (r1 r2 r3 r4: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (w1 w2 w3 w4: cbor_nondet_map_entry_insert_cell_t)
+  (vdest vdest': cbor_nondet_t)
+: Tot slprop
+= cbor_nondet_match p x v **
+  cbor_nondet_match pk key vk **
+  R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 **
+  pure (vdest' == vdest)
+
+let cbor_nondet_map_remove_safe_post
+  (x key: cbor_nondet_t) (dest: R.ref cbor_nondet_t) (p: perm) (v: Spec.cbor) (pk: perm) (vk: Spec.cbor)
+  (r1 r2 r3 r4: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (w1 w2 w3 w4: cbor_nondet_map_entry_insert_cell_t)
+  (vdest vdest': cbor_nondet_t)
+: Tot slprop
+= if cbor_nondet_map_remove_safe_res dest v
+  then cbor_nondet_map_remove_safe_post_true x key p v pk vk r1 r2 r3 r4 vdest'
+  else cbor_nondet_map_remove_safe_post_false x key p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest'
+
+val cbor_nondet_map_remove_safe
+  (x key: cbor_nondet_t)
+  (dest: R.ref cbor_nondet_t)
+  (r1 r2 r3 r4: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (#p: perm) (#v: Ghost.erased Spec.cbor)
+  (#pk: perm) (#vk: Ghost.erased Spec.cbor) (#vdest: Ghost.erased cbor_nondet_t)
+  (#w1 #w2 #w3 #w4: Ghost.erased cbor_nondet_map_entry_insert_cell_t)
+: stt bool
+    (cbor_nondet_match p x v ** cbor_nondet_match pk key vk ** ref_pts_to_or_null dest 1.0R vdest **
+     R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)
+    (fun res -> exists* (vdest': cbor_nondet_t).
+       ref_pts_to_or_null dest 1.0R vdest' **
+       cbor_nondet_map_remove_safe_post x key dest p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest' **
+       pure (res == cbor_nondet_map_remove_safe_res dest v))

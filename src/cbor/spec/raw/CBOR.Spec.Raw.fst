@@ -320,6 +320,42 @@ let mk_det_raw_cbor_map_raw_snoc m key value =
 
 #pop-options
 
+let rec list_filter_ext
+  (#t: Type)
+  (p1 p2: t -> bool)
+  (l: list t)
+  (prf: (x: t { List.Tot.memP x l }) -> Lemma (p1 x == p2 x))
+: Lemma
+  (ensures (List.Tot.filter p1 l == List.Tot.filter p2 l))
+  (decreases l)
+= match l with
+  | [] -> ()
+  | a :: q ->
+    prf a;
+    list_filter_ext p1 p2 q (fun x -> prf x)
+
+#push-options "--z3rlimit 10"
+
+let mk_det_raw_cbor_map_raw_filter_neq m k =
+  let pred : (cbor & cbor) -> bool = (fun (kv: (cbor & cbor)) -> not (fst kv = k)) in
+  let raw_pred : (R.raw_data_item & R.raw_data_item) -> bool = (fun (e: (R.raw_data_item & R.raw_data_item)) -> not (RF.cbor_compare (fst e) (mk_det_raw_cbor k) = 0)) in
+  let prf (x: (R.raw_data_item & R.raw_data_item) { List.Tot.memP x m }) : Lemma
+    (DM.cbor_map_filter_f pred x == raw_pred x)
+  =
+    List.Tot.for_all_mem (U.holds_on_pair R.raw_data_item_ints_optimal) m;
+    List.Tot.for_all_mem (U.holds_on_pair (R.raw_data_item_sorted RF.deterministically_encoded_cbor_map_key_order)) m;
+    RF.cbor_compare_equal (fst x) k
+  in
+  list_filter_ext (DM.cbor_map_filter_f pred) raw_pred m (fun x -> prf x);
+  assert (mk_det_raw_cbor_map_raw m == m);
+  assert (cbor_map_filter pred m == List.Tot.filter (DM.cbor_map_filter_f pred) m)
+
+#pop-options
+
+let mk_det_raw_cbor_map_raw_length m =
+  DM.cbor_map_length_eq #RF.deterministically_encoded_cbor_map_key_order #RF.cbor_compare m;
+  assert (mk_det_raw_cbor_map_raw m == m)
+
 let mk_cbor_map_depth x =
   mk_cbor_equiv' x;
   map_depth_raw_equiv x (mk_cbor x)

@@ -10,6 +10,7 @@ let cbor_nondet_match = Rust.cbor_nondet_match
    CBOR.Pulse.Raw.Format.Match split). *)
 module ANondet = CBOR.Pulse.Raw.EverParse.Nondet.ArrayBuilder
 module NMIS = CBOR.Pulse.Raw.EverParse.Nondet.MapInsertSpec
+module NMRS = CBOR.Pulse.Raw.EverParse.Nondet.MapRemoveSpec
 module ML = CBOR.Pulse.Raw.Format.MixedList
 module RawT = CBOR.Pulse.Raw.Type
 
@@ -625,6 +626,85 @@ ensures
       fold (cbor_nondet_array_slice_safe_post_false x p v r1 r2 r3 r4 w1 w2 w3 w4 (Ghost.reveal vdest) (Ghost.reveal vdest));
       rewrite (cbor_nondet_array_slice_safe_post_false x p v r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest)
         as (cbor_nondet_array_slice_safe_post x i j dest p v r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest);
+      false
+    }
+  }
+}
+
+(* ================================================================== *)
+(* Structural map remove-by-key — nondeterministic API.               *)
+(* Delegates to the raw/ adapter                                      *)
+(*   NMRS = CBOR.Pulse.Raw.EverParse.Nondet.MapRemoveSpec             *)
+(* (implementation in everparse/).  The [CMap?] precondition makes    *)
+(* the runtime major-type check unnecessary, so we delegate directly. *)
+(* [NMRS.map_remove_key] and [cbor_nondet_map_remove_spec] have the   *)
+(* same ([cbor_map_filter]-based) body, so their applications agree.  *)
+(* ================================================================== *)
+
+fn cbor_nondet_map_remove
+  (x key: cbor_nondet_t)
+  (r1 r2 r3 r4: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (#p: perm) (#v: Ghost.erased Spec.cbor)
+  (#pk: perm) (#vk: Ghost.erased Spec.cbor)
+  (#w1 #w2 #w3 #w4: Ghost.erased cbor_nondet_map_entry_insert_cell_t)
+requires
+    (cbor_nondet_match p x v ** cbor_nondet_match pk key vk **
+     R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 **
+     pure (Spec.CMap? (Spec.unpack v)))
+returns res: cbor_nondet_t
+ensures
+    (exists* (p_res: perm) (v': Spec.cbor).
+       cbor_nondet_match p_res res v' **
+       cbor_nondet_match pk key vk **
+       Trade.trade (cbor_nondet_match p_res res v')
+         (cbor_nondet_match p x v ** (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+       pure (Spec.CMap? (Spec.unpack v) /\ Spec.CMap? (Spec.unpack v') /\
+             (Spec.CMap?.c (Spec.unpack v') <: Spec.cbor_map) ==
+               cbor_nondet_map_remove_spec vk (Spec.CMap?.c (Spec.unpack v))))
+{
+  NMRS.cbor_nondet_map_remove_bridge x key r1 r2 r3 r4
+}
+
+(* Safe (no-precondition) variant: runtime null-dest and map-tag checks. *)
+fn cbor_nondet_map_remove_safe
+  (x key: cbor_nondet_t)
+  (dest: R.ref cbor_nondet_t)
+  (r1 r2 r3 r4: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (#p: perm) (#v: Ghost.erased Spec.cbor)
+  (#pk: perm) (#vk: Ghost.erased Spec.cbor) (#vdest: Ghost.erased cbor_nondet_t)
+  (#w1 #w2 #w3 #w4: Ghost.erased cbor_nondet_map_entry_insert_cell_t)
+requires
+    (cbor_nondet_match p x v ** cbor_nondet_match pk key vk ** ref_pts_to_or_null dest 1.0R vdest **
+     R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)
+returns res: bool
+ensures
+    (exists* (vdest': cbor_nondet_t).
+       ref_pts_to_or_null dest 1.0R vdest' **
+       cbor_nondet_map_remove_safe_post x key dest p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest' **
+       pure (res == cbor_nondet_map_remove_safe_res dest v))
+{
+  if (R.is_null dest) {
+    fold (cbor_nondet_map_remove_safe_post_false x key p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 (Ghost.reveal vdest) (Ghost.reveal vdest));
+    rewrite (cbor_nondet_map_remove_safe_post_false x key p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest)
+      as (cbor_nondet_map_remove_safe_post x key dest p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest);
+    false
+  } else {
+    let mt = cbor_nondet_major_type () x;
+    if (mt = cbor_major_type_map) {
+      cmap_of_major_type_nondet v;
+      rewrite (ref_pts_to_or_null dest 1.0R vdest) as (pts_to dest vdest);
+      let sl = cbor_nondet_map_remove x key r1 r2 r3 r4;
+      dest := sl;
+      rewrite (pts_to dest sl) as (ref_pts_to_or_null dest 1.0R sl);
+      fold (cbor_nondet_map_remove_safe_post_true x key p v pk vk r1 r2 r3 r4 sl);
+      rewrite (cbor_nondet_map_remove_safe_post_true x key p v pk vk r1 r2 r3 r4 sl)
+        as (cbor_nondet_map_remove_safe_post x key dest p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest sl);
+      true
+    } else {
+      not_cmap_of_major_type_nondet v;
+      fold (cbor_nondet_map_remove_safe_post_false x key p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 (Ghost.reveal vdest) (Ghost.reveal vdest));
+      rewrite (cbor_nondet_map_remove_safe_post_false x key p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest)
+        as (cbor_nondet_map_remove_safe_post x key dest p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest);
       false
     }
   }

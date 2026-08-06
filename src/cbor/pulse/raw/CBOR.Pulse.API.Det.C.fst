@@ -20,6 +20,7 @@ let cbor_det_match = CBOR.Pulse.API.Det.Common.cbor_det_match
    CBOR.Pulse.Raw.Format.Match .fsti/.fst split. *)
 module ADet = CBOR.Pulse.Raw.EverParse.Det.ArrayBuilder
 module DMIS = CBOR.Pulse.Raw.EverParse.Det.MapInsertSpec
+module DMRS = CBOR.Pulse.Raw.EverParse.Det.MapRemoveSpec
 
 let cbor_det_reset_perm = CBOR.Pulse.API.Det.Common.cbor_det_reset_perm
 
@@ -612,6 +613,85 @@ ensures (match res with
   } else {
     not_cmap_of_major_type y;
     None #cbor_det_t
+  }
+}
+
+(* ================================================================ *)
+(* Structural map remove-by-key.                                     *)
+(* Realized on top of the raw/ adapter interface                     *)
+(*   DMRS = CBOR.Pulse.Raw.EverParse.Det.MapRemoveSpec               *)
+(* (implementation in everparse/).  The [CMap?] precondition makes    *)
+(* the runtime major-type check unnecessary, so we delegate directly. *)
+(* [DMRS.map_remove_key] and [cbor_det_map_remove_spec] have the same *)
+(* ([cbor_map_filter]-based) body, so their applications are equal.   *)
+(* ================================================================ *)
+
+fn cbor_det_map_remove
+  (x key: cbor_det_t)
+  (r1 r2 r3 r4: R.ref cbor_det_map_entry_insert_cell_t)
+  (#p: perm) (#v: Ghost.erased Spec.cbor)
+  (#pk: perm) (#vk: Ghost.erased Spec.cbor)
+  (#w1 #w2 #w3 #w4: Ghost.erased cbor_det_map_entry_insert_cell_t)
+requires
+    (cbor_det_match p x v ** cbor_det_match pk key vk **
+     R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 **
+     pure (Spec.CMap? (Spec.unpack v)))
+returns res: cbor_det_t
+ensures
+    (exists* (v': Spec.cbor).
+       cbor_det_match 1.0R res v' **
+       cbor_det_match pk key vk **
+       Trade.trade (cbor_det_match 1.0R res v')
+         (cbor_det_match p x v ** (exists* w1 w2 w3 w4. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)) **
+       pure (Spec.CMap? (Spec.unpack v) /\ Spec.CMap? (Spec.unpack v') /\
+             (Spec.CMap?.c (Spec.unpack v') <: Spec.cbor_map) ==
+               cbor_det_map_remove_spec vk (Spec.CMap?.c (Spec.unpack v))))
+{
+  DMRS.cbor_det_map_remove_bridge x key r1 r2 r3 r4
+}
+
+(* Safe (no-precondition) variant: runtime null-dest and map-tag checks. *)
+fn cbor_det_map_remove_safe
+  (x key: cbor_det_t)
+  (dest: R.ref cbor_det_t)
+  (r1 r2 r3 r4: R.ref cbor_det_map_entry_insert_cell_t)
+  (#p: perm) (#v: Ghost.erased Spec.cbor)
+  (#pk: perm) (#vk: Ghost.erased Spec.cbor) (#vdest: Ghost.erased cbor_det_t)
+  (#w1 #w2 #w3 #w4: Ghost.erased cbor_det_map_entry_insert_cell_t)
+requires
+    (cbor_det_match p x v ** cbor_det_match pk key vk ** ref_pts_to_or_null dest 1.0R vdest **
+     R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4)
+returns res: bool
+ensures
+    (exists* (vdest': cbor_det_t).
+       ref_pts_to_or_null dest 1.0R vdest' **
+       cbor_det_map_remove_safe_post x key dest p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest' **
+       pure (res == cbor_det_map_remove_safe_res dest v))
+{
+  if (R.is_null dest) {
+    fold (cbor_det_map_remove_safe_post_false x key p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 (Ghost.reveal vdest) (Ghost.reveal vdest));
+    rewrite (cbor_det_map_remove_safe_post_false x key p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest)
+      as (cbor_det_map_remove_safe_post x key dest p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest);
+    false
+  } else {
+    let mt = cbor_det_major_type () x;
+    if (mt = cbor_major_type_map) {
+      cmap_of_major_type v;
+      rewrite (ref_pts_to_or_null dest 1.0R vdest) as (pts_to dest vdest);
+      let sl = cbor_det_map_remove x key r1 r2 r3 r4;
+      dest := sl;
+      rewrite (pts_to dest sl) as (ref_pts_to_or_null dest 1.0R sl);
+      fold (cbor_det_map_remove_safe_post_true x key p v pk vk r1 r2 r3 r4 sl);
+      rewrite (cbor_det_map_remove_safe_post_true x key p v pk vk r1 r2 r3 r4 sl)
+        as (cbor_det_map_remove_safe_post x key dest p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest sl);
+      true
+    } else {
+      not_cmap_of_major_type v;
+      fold (cbor_det_map_remove_safe_post_false x key p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 (Ghost.reveal vdest) (Ghost.reveal vdest));
+      rewrite (cbor_det_map_remove_safe_post_false x key p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest)
+        as (cbor_det_map_remove_safe_post x key dest p v pk vk r1 r2 r3 r4 w1 w2 w3 w4 vdest vdest);
+      false
+    }
   }
 }
 

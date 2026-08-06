@@ -200,6 +200,20 @@ val mk_det_raw_cbor_map_raw_snoc
     mk_det_raw_cbor_map_raw_snoc_post m key value
   )
 
+val mk_det_raw_cbor_map_raw_filter_neq
+  (m: cbor_map)
+  (k: cbor)
+: Lemma
+  (ensures (
+    mk_det_raw_cbor_map_raw (cbor_map_filter (fun (kv: (cbor & cbor)) -> not (fst kv = k)) m)
+    == List.Tot.filter (fun (e: (R.raw_data_item & R.raw_data_item)) -> not (RF.cbor_compare (fst e) (mk_det_raw_cbor k) = 0)) (mk_det_raw_cbor_map_raw m)
+  ))
+
+val mk_det_raw_cbor_map_raw_length
+  (m: cbor_map)
+: Lemma
+  (ensures (List.Tot.length (mk_det_raw_cbor_map_raw m) == cbor_map_length m))
+
 let rec list_assoc_map_mk_cbor_map_entry'
   (l': list (raw_data_item & raw_data_item))
   (x: raw_data_item)
