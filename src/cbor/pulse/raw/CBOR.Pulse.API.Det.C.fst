@@ -252,27 +252,36 @@ let cbor_det_array_singleton = ADet.cbor_det_array_singleton
 (* [append] delegates to the structural adapter (no [SZ.fits_u64] needed). *)
 fn cbor_det_array_append
   (x1 x2: cbor_det_array_t)
+  (dest: R.ref cbor_det_array_t)
   (r_before r_after: R.ref cbor_det_array_append_cell_t)
   (#l1 #l2: Ghost.erased (list Spec.cbor))
+  (#vdest: Ghost.erased cbor_det_array_t)
   (#vb0 #va0: Ghost.erased cbor_det_array_append_cell_t)
 requires
   (cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
-   R.pts_to r_before vb0 ** R.pts_to r_after va0)
-returns res: option cbor_det_array_t
+   R.pts_to dest vdest ** R.pts_to r_before vb0 ** R.pts_to r_after va0)
+returns res: bool
 ensures
-  (match res with
-   | None ->
-     cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
-     (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va) **
-     pure (~ (FStar.UInt.fits (L.length (Ghost.reveal l1) + L.length (Ghost.reveal l2)) U64.n))
-   | Some r ->
-     cbor_det_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)) **
-     Trade.trade
-       (cbor_det_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
-       (cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
-        (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
+  (exists* (vdest': cbor_det_array_t).
+     R.pts_to dest vdest' **
+     cbor_det_array_append_post x1 x2 r_before r_after l1 l2 vdest vdest' res)
 {
-  ADet.cbor_det_array_append x1 x2 r_before r_after
+  let o = ADet.cbor_det_array_append x1 x2 r_before r_after;
+  match o {
+    Some r -> {
+      dest := r;
+      fold (cbor_det_array_append_post_true x1 x2 r_before r_after (Ghost.reveal l1) (Ghost.reveal l2) r);
+      rewrite (cbor_det_array_append_post_true x1 x2 r_before r_after (Ghost.reveal l1) (Ghost.reveal l2) r)
+        as (cbor_det_array_append_post x1 x2 r_before r_after l1 l2 vdest r true);
+      true
+    }
+    None -> {
+      fold (cbor_det_array_append_post_false x1 x2 r_before r_after (Ghost.reveal l1) (Ghost.reveal l2) (Ghost.reveal vdest) (Ghost.reveal vdest));
+      rewrite (cbor_det_array_append_post_false x1 x2 r_before r_after (Ghost.reveal l1) (Ghost.reveal l2) vdest vdest)
+        as (cbor_det_array_append_post x1 x2 r_before r_after l1 l2 vdest vdest false);
+      false
+    }
+  }
 }
 
 let cbor_det_array_finalize = ADet.cbor_det_array_finalize

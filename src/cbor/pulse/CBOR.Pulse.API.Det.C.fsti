@@ -189,26 +189,57 @@ val cbor_det_array_singleton
         (cbor_det_array_owned res [Ghost.reveal v])
         (cbor_det_match pm x v ** (exists* w. R.pts_to ry w)))
 
-val cbor_det_array_append
+(* [cbor_det_array_append] appends [x2] onto [x1], writing the combined
+   array into the outparameter [dest] and returning [true] on success.
+   On overflow (the combined element count would not fit in a [U64.t]) it
+   returns [false] and leaves [dest] unchanged. *)
+
+let cbor_det_array_append_post_true
   (x1 x2: cbor_det_array_t)
   (r_before r_after: R.ref cbor_det_array_append_cell_t)
-  (#l1 #l2: Ghost.erased (list Spec.cbor))
-  (#vb0 #va0: Ghost.erased cbor_det_array_append_cell_t)
-: stt (option cbor_det_array_t)
+  (l1 l2: list Spec.cbor)
+  (vdest': cbor_det_array_t)
+: Tot slprop
+= cbor_det_array_owned vdest' (L.append l1 l2) **
+  Trade.trade
+    (cbor_det_array_owned vdest' (L.append l1 l2))
     (cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
-     R.pts_to r_before vb0 ** R.pts_to r_after va0)
-    (fun res ->
-      match res with
-      | None ->
-        cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
-        (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va) **
-        pure (~ (FStar.UInt.fits (L.length (Ghost.reveal l1) + L.length (Ghost.reveal l2)) U64.n))
-      | Some r ->
-        cbor_det_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)) **
-        Trade.trade
-          (cbor_det_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
-          (cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
-           (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
+     (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va))
+
+let cbor_det_array_append_post_false
+  (x1 x2: cbor_det_array_t)
+  (r_before r_after: R.ref cbor_det_array_append_cell_t)
+  (l1 l2: list Spec.cbor)
+  (vdest vdest': cbor_det_array_t)
+: Tot slprop
+= cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
+  (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va) **
+  pure (vdest' == vdest /\ ~ (FStar.UInt.fits (L.length l1 + L.length l2) U64.n))
+
+let cbor_det_array_append_post
+  (x1 x2: cbor_det_array_t)
+  (r_before r_after: R.ref cbor_det_array_append_cell_t)
+  (l1 l2: list Spec.cbor)
+  (vdest vdest': cbor_det_array_t)
+  (res: bool)
+: Tot slprop
+= if res
+  then cbor_det_array_append_post_true x1 x2 r_before r_after l1 l2 vdest'
+  else cbor_det_array_append_post_false x1 x2 r_before r_after l1 l2 vdest vdest'
+
+val cbor_det_array_append
+  (x1 x2: cbor_det_array_t)
+  (dest: R.ref cbor_det_array_t)
+  (r_before r_after: R.ref cbor_det_array_append_cell_t)
+  (#l1 #l2: Ghost.erased (list Spec.cbor))
+  (#vdest: Ghost.erased cbor_det_array_t)
+  (#vb0 #va0: Ghost.erased cbor_det_array_append_cell_t)
+: stt bool
+    (cbor_det_array_owned x1 l1 ** cbor_det_array_owned x2 l2 **
+     R.pts_to dest vdest ** R.pts_to r_before vb0 ** R.pts_to r_after va0)
+    (fun res -> exists* (vdest': cbor_det_array_t).
+       R.pts_to dest vdest' **
+       cbor_det_array_append_post x1 x2 r_before r_after l1 l2 vdest vdest' res)
 
 val cbor_det_array_finalize
   (x: cbor_det_array_t)
