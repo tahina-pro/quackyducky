@@ -339,8 +339,6 @@ typedef cbor_freeable cbor_det_freeable_t;
 
 cbor_raw cbor_get_from_freeable(cbor_freeable x);
 
-typedef cbor_freeable (*cbor_det_copy_t)(cbor_raw x0);
-
 cbor_freeable cbor_copy(cbor_raw c);
 
 void cbor_free(cbor_freeable x);
