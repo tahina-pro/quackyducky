@@ -572,38 +572,22 @@ let not_cmap_of_major_type (y: Spec.cbor)
 
 fn cbor_det_map_entry_insert
   (x key value: cbor_det_t)
+  (dest: R.ref cbor_det_t)
   (r1 r2 r3 r4: R.ref cbor_det_map_entry_insert_cell_t)
   (ry: R.ref cbor_det_map_entry_t)
   (#p: perm) (#y: Ghost.erased Spec.cbor)
   (#pkv: perm) (#vk #vv: Ghost.erased Spec.cbor)
+  (#vdest: Ghost.erased cbor_det_t)
 requires
     (cbor_det_match p x y **
      cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+     R.pts_to dest vdest **
      cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry)
-returns res: option cbor_det_t
-ensures (match res with
-  | None ->
-    cbor_det_match p x y **
-    cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
-    cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry **
-    pure (
-      ~ (Spec.CMap? (Spec.unpack y)) \/
-      (Spec.CMap? (Spec.unpack y) /\
-        (Spec.cbor_map_defined vk (Spec.CMap?.c (Spec.unpack y)) \/
-         ~ (FStar.UInt.fits (Spec.cbor_map_length (Spec.CMap?.c (Spec.unpack y)) + 1) U64.n))))
-  | Some m ->
-    exists* (p_res: perm) (vres: Spec.cbor).
-      cbor_det_match p_res m vres **
-      Trade.trade
-        (cbor_det_match p_res m vres)
-        (cbor_det_match p x y **
-         cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
-         cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry) **
-      pure (
-        Spec.CMap? (Spec.unpack y) /\
-        Spec.CMap? (Spec.unpack vres) /\
-        (Spec.CMap?.c (Spec.unpack vres) <: Spec.cbor_map) ==
-          Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv)))
+returns res: bool
+ensures
+    (exists* (vdest': cbor_det_t).
+       R.pts_to dest vdest' **
+       cbor_det_map_entry_insert_post x key value r1 r2 r3 r4 ry p y pkv vk vv vdest vdest' res)
 {
   let mt = cbor_det_major_type () x;
   if (mt = cbor_major_type_map) {
@@ -612,16 +596,26 @@ ensures (match res with
     let res = DMIS.cbor_det_map_entry_insert_spec x key value r1 r2 r3 r4 ry;
     match res {
       None -> {
-        fold (cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry);
-        None #cbor_det_t
+        fold (cbor_det_map_entry_insert_post_false x key value r1 r2 r3 r4 ry p y pkv vk vv (Ghost.reveal vdest) (Ghost.reveal vdest));
+        rewrite (cbor_det_map_entry_insert_post_false x key value r1 r2 r3 r4 ry p y pkv vk vv vdest vdest)
+          as (cbor_det_map_entry_insert_post x key value r1 r2 r3 r4 ry p y pkv vk vv vdest vdest false);
+        false
       }
       Some m -> {
-        Some m
+        dest := m;
+        fold (cbor_det_map_entry_insert_post_true x key value r1 r2 r3 r4 ry p y pkv vk vv m);
+        rewrite (cbor_det_map_entry_insert_post_true x key value r1 r2 r3 r4 ry p y pkv vk vv m)
+          as (cbor_det_map_entry_insert_post x key value r1 r2 r3 r4 ry p y pkv vk vv vdest m true);
+        true
       }
     }
   } else {
     not_cmap_of_major_type y;
-    None #cbor_det_t
+    unfold (cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry);
+    fold (cbor_det_map_entry_insert_post_false x key value r1 r2 r3 r4 ry p y pkv vk vv (Ghost.reveal vdest) (Ghost.reveal vdest));
+    rewrite (cbor_det_map_entry_insert_post_false x key value r1 r2 r3 r4 ry p y pkv vk vv vdest vdest)
+      as (cbor_det_map_entry_insert_post x key value r1 r2 r3 r4 ry p y pkv vk vv vdest vdest false);
+    false
   }
 }
 

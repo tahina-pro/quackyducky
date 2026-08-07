@@ -451,9 +451,11 @@ val cbor_det_map_entry_gather () : gather_t cbor_det_map_entry_match
 val cbor_det_map_get () : map_get_by_ref_t cbor_det_match
 
 (* Structural map-entry insertion (sorted, deterministic) operating directly on
-   a [cbor_det_t]. The operation gracefully fails (returns [None]) if [x] is not
-   a map, if the key is already defined in the map, or if inserting the entry
-   would overflow a u64 length.
+   a [cbor_det_t]. On success the resulting map is written into the
+   outparameter [dest] and the operation returns [true]. It gracefully fails
+   (returns [false], leaving [dest] unchanged) if [x] is not a map, if the key
+   is already defined in the map, or if inserting the entry would overflow a
+   u64 length.
 
    The entry (key, value) is inserted in canonical (sorted) position so that the
    result is still a valid deterministically-encoded CBOR map.
@@ -471,40 +473,83 @@ let cbor_det_map_entry_insert_refs
     R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 **
     R.pts_to ry wy
 
+(* Post-condition helpers, following the [_safe]-variant convention: on
+   success ([res == true]) the outparameter holds the combined map together
+   with a borrow trade returning ownership to the inputs and scratch refs; on
+   failure ([res == false]) the inputs and scratch refs are retained and
+   [dest] is unchanged. *)
+let cbor_det_map_entry_insert_post_true
+  (x key value: cbor_det_t)
+  (r1 r2 r3 r4: R.ref cbor_det_map_entry_insert_cell_t)
+  (ry: R.ref cbor_det_map_entry_t)
+  (p: perm) (y: Spec.cbor)
+  (pkv: perm) (vk vv: Spec.cbor)
+  (vdest': cbor_det_t)
+: Tot slprop
+= exists* (p_res: perm) (vres: Spec.cbor).
+    cbor_det_match p_res vdest' vres **
+    Trade.trade
+      (cbor_det_match p_res vdest' vres)
+      (cbor_det_match p x y **
+       cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+       (exists* w1 w2 w3 w4 wy.
+          R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 **
+          R.pts_to ry wy)) **
+    pure (
+      Spec.CMap? (Spec.unpack y) /\
+      Spec.CMap? (Spec.unpack vres) /\
+      (Spec.CMap?.c (Spec.unpack vres) <: Spec.cbor_map) ==
+        Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv))
+
+let cbor_det_map_entry_insert_post_false
+  (x key value: cbor_det_t)
+  (r1 r2 r3 r4: R.ref cbor_det_map_entry_insert_cell_t)
+  (ry: R.ref cbor_det_map_entry_t)
+  (p: perm) (y: Spec.cbor)
+  (pkv: perm) (vk vv: Spec.cbor)
+  (vdest vdest': cbor_det_t)
+: Tot slprop
+= cbor_det_match p x y **
+  cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+  (exists* w1 w2 w3 w4 wy.
+     R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to r3 w3 ** R.pts_to r4 w4 **
+     R.pts_to ry wy) **
+  pure (
+    vdest' == vdest /\
+    (~ (Spec.CMap? (Spec.unpack y)) \/
+     (Spec.CMap? (Spec.unpack y) /\
+       (Spec.cbor_map_defined vk (Spec.CMap?.c (Spec.unpack y)) \/
+        ~ (FStar.UInt.fits (Spec.cbor_map_length (Spec.CMap?.c (Spec.unpack y)) + 1) U64.n)))))
+
+let cbor_det_map_entry_insert_post
+  (x key value: cbor_det_t)
+  (r1 r2 r3 r4: R.ref cbor_det_map_entry_insert_cell_t)
+  (ry: R.ref cbor_det_map_entry_t)
+  (p: perm) (y: Spec.cbor)
+  (pkv: perm) (vk vv: Spec.cbor)
+  (vdest vdest': cbor_det_t)
+  (res: bool)
+: Tot slprop
+= if res
+  then cbor_det_map_entry_insert_post_true x key value r1 r2 r3 r4 ry p y pkv vk vv vdest'
+  else cbor_det_map_entry_insert_post_false x key value r1 r2 r3 r4 ry p y pkv vk vv vdest vdest'
+
 val cbor_det_map_entry_insert
   (x key value: cbor_det_t)
+  (dest: R.ref cbor_det_t)
   (r1 r2 r3 r4: R.ref cbor_det_map_entry_insert_cell_t)
   (ry: R.ref cbor_det_map_entry_t)
   (#p: perm) (#y: Ghost.erased Spec.cbor)
   (#pkv: perm) (#vk #vv: Ghost.erased Spec.cbor)
-: stt (option cbor_det_t)
+  (#vdest: Ghost.erased cbor_det_t)
+: stt bool
     (cbor_det_match p x y **
      cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
+     R.pts_to dest vdest **
      cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry)
-    (fun res ->
-      match res with
-      | None ->
-        cbor_det_match p x y **
-        cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
-        cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry **
-        pure (
-          ~ (Spec.CMap? (Spec.unpack y)) \/
-          (Spec.CMap? (Spec.unpack y) /\
-            (Spec.cbor_map_defined vk (Spec.CMap?.c (Spec.unpack y)) \/
-             ~ (FStar.UInt.fits (Spec.cbor_map_length (Spec.CMap?.c (Spec.unpack y)) + 1) U64.n))))
-      | Some m ->
-        exists* (p_res: perm) (vres: Spec.cbor).
-          cbor_det_match p_res m vres **
-          Trade.trade
-            (cbor_det_match p_res m vres)
-            (cbor_det_match p x y **
-             cbor_det_match pkv key vk ** cbor_det_match pkv value vv **
-             cbor_det_map_entry_insert_refs r1 r2 r3 r4 ry) **
-          pure (
-            Spec.CMap? (Spec.unpack y) /\
-            Spec.CMap? (Spec.unpack vres) /\
-            (Spec.CMap?.c (Spec.unpack vres) <: Spec.cbor_map) ==
-              Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv)))
+    (fun res -> exists* (vdest': cbor_det_t).
+       R.pts_to dest vdest' **
+       cbor_det_map_entry_insert_post x key value r1 r2 r3 r4 ry p y pkv vk vv vdest vdest' res)
 
 (* ================================================================== *)
 (* Structural map remove-by-key (deterministic).                      *)

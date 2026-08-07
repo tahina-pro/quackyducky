@@ -287,9 +287,11 @@ type cbor_nondet_map_get_multiple_entry_t = cbor_map_get_multiple_entry_t cbor_n
 val cbor_nondet_map_get_multiple (_: unit) : cbor_map_get_multiple_as_arrayptr_t #_ cbor_nondet_match cbor_nondet_map_get_multiple_entry_t
 
 (* Structural map-entry insertion (prepend, nondeterministic) operating directly
-   on a [cbor_nondet_t]. The operation gracefully fails (returns [None]) if [x]
-   is not a map, if the key is already defined in the map (up to the abstract
-   equality on keys), or if inserting the entry would overflow a u64 length.
+   on a [cbor_nondet_t]. On success the resulting map is written into the
+   outparameter [dest] and the operation returns [true]. It gracefully fails
+   (returns [false], leaving [dest] unchanged) if [x] is not a map, if the key
+   is already defined in the map (up to the abstract equality on keys), or if
+   inserting the entry would overflow a u64 length.
 
    The entry (key, value) is prepended (the nondeterministic encoding does not
    require sorted keys).
@@ -312,40 +314,79 @@ let cbor_nondet_map_entry_insert_refs
 : Tot slprop
 = exists* w1 w2 wy. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to ry wy
 
+(* Post-condition helpers, following the [_safe]-variant convention: on
+   success ([res == true]) the outparameter holds the combined map together
+   with a borrow trade returning ownership to the inputs and scratch refs; on
+   failure ([res == false]) the inputs and scratch refs are retained and
+   [dest] is unchanged. *)
+let cbor_nondet_map_entry_insert_post_true
+  (x key value: cbor_nondet_t)
+  (r1 r2: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (ry: R.ref cbor_nondet_map_entry_t)
+  (p: perm) (y: Spec.cbor)
+  (pkv: perm) (vk vv: Spec.cbor)
+  (vdest': cbor_nondet_t)
+: Tot slprop
+= exists* (p_res: perm) (vres: Spec.cbor).
+    cbor_nondet_match p_res vdest' vres **
+    Trade.trade
+      (cbor_nondet_match p_res vdest' vres)
+      (cbor_nondet_match p x y **
+       cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+       (exists* w1 w2 wy. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to ry wy)) **
+    pure (
+      Spec.CMap? (Spec.unpack y) /\
+      Spec.CMap? (Spec.unpack vres) /\
+      (Spec.CMap?.c (Spec.unpack vres) <: Spec.cbor_map) ==
+        Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv))
+
+let cbor_nondet_map_entry_insert_post_false
+  (x key value: cbor_nondet_t)
+  (r1 r2: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (ry: R.ref cbor_nondet_map_entry_t)
+  (p: perm) (y: Spec.cbor)
+  (pkv: perm) (vk vv: Spec.cbor)
+  (vdest vdest': cbor_nondet_t)
+: Tot slprop
+= cbor_nondet_match p x y **
+  cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+  (exists* w1 w2 wy. R.pts_to r1 w1 ** R.pts_to r2 w2 ** R.pts_to ry wy) **
+  pure (
+    vdest' == vdest /\
+    (~ (Spec.CMap? (Spec.unpack y)) \/
+     (Spec.CMap? (Spec.unpack y) /\
+       (Spec.cbor_map_defined vk (Spec.CMap?.c (Spec.unpack y)) \/
+        ~ (FStar.UInt.fits (Spec.cbor_map_length (Spec.CMap?.c (Spec.unpack y)) + 1) U64.n)))))
+
+let cbor_nondet_map_entry_insert_post
+  (x key value: cbor_nondet_t)
+  (r1 r2: R.ref cbor_nondet_map_entry_insert_cell_t)
+  (ry: R.ref cbor_nondet_map_entry_t)
+  (p: perm) (y: Spec.cbor)
+  (pkv: perm) (vk vv: Spec.cbor)
+  (vdest vdest': cbor_nondet_t)
+  (res: bool)
+: Tot slprop
+= if res
+  then cbor_nondet_map_entry_insert_post_true x key value r1 r2 ry p y pkv vk vv vdest'
+  else cbor_nondet_map_entry_insert_post_false x key value r1 r2 ry p y pkv vk vv vdest vdest'
+
 val cbor_nondet_map_entry_insert
   (x key value: cbor_nondet_t)
+  (dest: R.ref cbor_nondet_t)
   (r1 r2: R.ref cbor_nondet_map_entry_insert_cell_t)
   (ry: R.ref cbor_nondet_map_entry_t)
   (#p: perm) (#y: Ghost.erased Spec.cbor)
   (#pkv: perm) (#vk #vv: Ghost.erased Spec.cbor)
-: stt (option cbor_nondet_t)
+  (#vdest: Ghost.erased cbor_nondet_t)
+: stt bool
     (cbor_nondet_match p x y **
      cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+     R.pts_to dest vdest **
      cbor_nondet_map_entry_insert_refs r1 r2 ry)
-    (fun res ->
-      match res with
-      | None ->
-        cbor_nondet_match p x y **
-        cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
-        cbor_nondet_map_entry_insert_refs r1 r2 ry **
-        pure (
-          ~ (Spec.CMap? (Spec.unpack y)) \/
-          (Spec.CMap? (Spec.unpack y) /\
-            (Spec.cbor_map_defined vk (Spec.CMap?.c (Spec.unpack y)) \/
-             ~ (FStar.UInt.fits (Spec.cbor_map_length (Spec.CMap?.c (Spec.unpack y)) + 1) U64.n))))
-      | Some m ->
-        exists* (p_res: perm) (vres: Spec.cbor).
-          cbor_nondet_match p_res m vres **
-          Trade.trade
-            (cbor_nondet_match p_res m vres)
-            (cbor_nondet_match p x y **
-             cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
-             cbor_nondet_map_entry_insert_refs r1 r2 ry) **
-          pure (
-            Spec.CMap? (Spec.unpack y) /\
-            Spec.CMap? (Spec.unpack vres) /\
-            (Spec.CMap?.c (Spec.unpack vres) <: Spec.cbor_map) ==
-              Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv)))
+    (fun res -> exists* (vdest': cbor_nondet_t).
+       R.pts_to dest vdest' **
+       cbor_nondet_map_entry_insert_post x key value r1 r2 ry p y pkv vk vv vdest vdest' res)
 
 (* ================================================================== *)
 (* Zero-copy array sub-range (slice) — nondeterministic API.          *)
