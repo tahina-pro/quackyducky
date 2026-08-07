@@ -150,21 +150,12 @@ extern cbor_det_t cbor_det_map_entry_value(cbor_det_map_entry_t x0);
 
 extern bool cbor_det_map_get(cbor_det_t x0, cbor_det_t x1, cbor_det_t *x2);
 
-typedef enum { FStar_Pervasives_Native_None, FStar_Pervasives_Native_Some }
-FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_t_tags;
-
-typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_t_s
-{
-  FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_t_tags tag;
-  cbor_det_t v;
-}
-FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_t;
-
-extern FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_t
+extern bool
 cbor_det_map_entry_insert(
   cbor_det_t x,
   cbor_det_t key,
   cbor_det_t value,
+  cbor_det_t *dest,
   cbor_det_map_entry_insert_cell_t *r1,
   cbor_det_map_entry_insert_cell_t *r2,
   cbor_det_map_entry_insert_cell_t *r3,

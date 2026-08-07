@@ -17,14 +17,6 @@ extern "C" {
 typedef uint8_t
 FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_tags;
 
-typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw_s
-{
-  FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_tags
-  tag;
-  cbor_raw v;
-}
-FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw;
-
 typedef struct cbor_freeable0_s cbor_freeable0;
 
 typedef struct cbor_freeable_box_s
@@ -289,11 +281,12 @@ cbor_raw cbor_det_map_entry_value(cbor_map_entry x2);
 
 bool cbor_det_map_get(cbor_raw x, cbor_raw k, cbor_raw *dest);
 
-FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw
+bool
 cbor_det_map_entry_insert(
   cbor_raw x,
   cbor_raw key,
   cbor_raw value,
+  cbor_raw *dest,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r1,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r2,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r3,

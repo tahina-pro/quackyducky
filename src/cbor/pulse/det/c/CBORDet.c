@@ -27808,6 +27808,14 @@ CBOR_Pulse_Raw_EverParse_Det_MapInsert_cbor_raw_map_key_present(
   return r_found;
 }
 
+typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw_s
+{
+  FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_tags
+  tag;
+  cbor_raw v;
+}
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw;
+
 static FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw
 CBOR_Pulse_Raw_EverParse_Det_MapInsert_cbor_raw_det_map_entry_insert(
   cbor_raw x,
@@ -30993,11 +31001,12 @@ bool cbor_det_map_get(cbor_raw x, cbor_raw k, cbor_raw *dest)
   }
 }
 
-FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw
+bool
 cbor_det_map_entry_insert(
   cbor_raw x,
   cbor_raw key,
   cbor_raw value,
+  cbor_raw *dest,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r1,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r2,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_map_entry *r3,
@@ -31038,20 +31047,12 @@ cbor_det_map_entry_insert(
         KRML_EABORT(FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw,
           "unreachable (pattern matches are exhaustive in F*)");
     if (scrut.tag == FStar_Pervasives_Native_None)
-      return
-        (
-          (FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw){
-            .tag = FStar_Pervasives_Native_None
-          }
-        );
+      return false;
     else if (scrut.tag == FStar_Pervasives_Native_Some)
-      return
-        (
-          (FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw){
-            .tag = FStar_Pervasives_Native_Some,
-            .v = scrut.v
-          }
-        );
+    {
+      *dest = scrut.v;
+      return true;
+    }
     else
     {
       KRML_HOST_EPRINTF("KaRaMeL abort at %s:%d\n%s\n",
@@ -31062,12 +31063,7 @@ cbor_det_map_entry_insert(
     }
   }
   else
-    return
-      (
-        (FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw){
-          .tag = FStar_Pervasives_Native_None
-        }
-      );
+    return false;
 }
 
 cbor_raw
