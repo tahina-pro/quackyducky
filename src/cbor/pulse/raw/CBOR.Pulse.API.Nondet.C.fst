@@ -126,27 +126,36 @@ let cbor_nondet_array_singleton = ANondet.cbor_nondet_array_singleton
 (* [append] delegates to the structural adapter (no [SZ.fits_u64] needed). *)
 fn cbor_nondet_array_append
   (x1 x2: cbor_nondet_array_t)
+  (dest: R.ref cbor_nondet_array_t)
   (r_before r_after: R.ref cbor_nondet_array_append_cell_t)
   (#l1 #l2: Ghost.erased (list Spec.cbor))
+  (#vdest: Ghost.erased cbor_nondet_array_t)
   (#vb0 #va0: Ghost.erased cbor_nondet_array_append_cell_t)
 requires
   (cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
-   R.pts_to r_before vb0 ** R.pts_to r_after va0)
-returns res: option cbor_nondet_array_t
+   R.pts_to dest vdest ** R.pts_to r_before vb0 ** R.pts_to r_after va0)
+returns res: bool
 ensures
-  (match res with
-   | None ->
-     cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
-     (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va) **
-     pure (~ (FStar.UInt.fits (L.length (Ghost.reveal l1) + L.length (Ghost.reveal l2)) U64.n))
-   | Some r ->
-     cbor_nondet_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)) **
-     Trade.trade
-       (cbor_nondet_array_owned r (L.append (Ghost.reveal l1) (Ghost.reveal l2)))
-       (cbor_nondet_array_owned x1 l1 ** cbor_nondet_array_owned x2 l2 **
-        (exists* vb va. R.pts_to r_before vb ** R.pts_to r_after va)))
+  (exists* (vdest': cbor_nondet_array_t).
+     R.pts_to dest vdest' **
+     cbor_nondet_array_append_post x1 x2 r_before r_after l1 l2 vdest vdest' res)
 {
-  ANondet.cbor_nondet_array_append x1 x2 r_before r_after
+  let o = ANondet.cbor_nondet_array_append x1 x2 r_before r_after;
+  match o {
+    Some r -> {
+      dest := r;
+      fold (cbor_nondet_array_append_post_true x1 x2 r_before r_after (Ghost.reveal l1) (Ghost.reveal l2) r);
+      rewrite (cbor_nondet_array_append_post_true x1 x2 r_before r_after (Ghost.reveal l1) (Ghost.reveal l2) r)
+        as (cbor_nondet_array_append_post x1 x2 r_before r_after l1 l2 vdest r true);
+      true
+    }
+    None -> {
+      fold (cbor_nondet_array_append_post_false x1 x2 r_before r_after (Ghost.reveal l1) (Ghost.reveal l2) (Ghost.reveal vdest) (Ghost.reveal vdest));
+      rewrite (cbor_nondet_array_append_post_false x1 x2 r_before r_after (Ghost.reveal l1) (Ghost.reveal l2) vdest vdest)
+        as (cbor_nondet_array_append_post x1 x2 r_before r_after l1 l2 vdest vdest false);
+      false
+    }
+  }
 }
 
 let cbor_nondet_array_finalize = ANondet.cbor_nondet_array_finalize
@@ -489,38 +498,22 @@ let not_cmap_of_major_type_nondet (y: Spec.cbor)
 
 fn cbor_nondet_map_entry_insert
   (x key value: cbor_nondet_t)
+  (dest: R.ref cbor_nondet_t)
   (r1 r2: R.ref cbor_nondet_map_entry_insert_cell_t)
   (ry: R.ref cbor_nondet_map_entry_t)
   (#p: perm) (#y: Ghost.erased Spec.cbor)
   (#pkv: perm) (#vk #vv: Ghost.erased Spec.cbor)
+  (#vdest: Ghost.erased cbor_nondet_t)
 requires
     (cbor_nondet_match p x y **
      cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
+     R.pts_to dest vdest **
      cbor_nondet_map_entry_insert_refs r1 r2 ry)
-returns res: option cbor_nondet_t
-ensures (match res with
-  | None ->
-    cbor_nondet_match p x y **
-    cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
-    cbor_nondet_map_entry_insert_refs r1 r2 ry **
-    pure (
-      ~ (Spec.CMap? (Spec.unpack y)) \/
-      (Spec.CMap? (Spec.unpack y) /\
-        (Spec.cbor_map_defined vk (Spec.CMap?.c (Spec.unpack y)) \/
-         ~ (FStar.UInt.fits (Spec.cbor_map_length (Spec.CMap?.c (Spec.unpack y)) + 1) U64.n))))
-  | Some m ->
-    exists* (p_res: perm) (vres: Spec.cbor).
-      cbor_nondet_match p_res m vres **
-      Trade.trade
-        (cbor_nondet_match p_res m vres)
-        (cbor_nondet_match p x y **
-         cbor_nondet_match pkv key vk ** cbor_nondet_match pkv value vv **
-         cbor_nondet_map_entry_insert_refs r1 r2 ry) **
-      pure (
-        Spec.CMap? (Spec.unpack y) /\
-        Spec.CMap? (Spec.unpack vres) /\
-        (Spec.CMap?.c (Spec.unpack vres) <: Spec.cbor_map) ==
-          Spec.cbor_map_union (Spec.CMap?.c (Spec.unpack y)) (Spec.cbor_map_singleton vk vv)))
+returns res: bool
+ensures
+    (exists* (vdest': cbor_nondet_t).
+       R.pts_to dest vdest' **
+       cbor_nondet_map_entry_insert_post x key value r1 r2 ry p y pkv vk vv vdest vdest' res)
 {
   let mt = cbor_nondet_major_type () x;
   if (mt = cbor_major_type_map) {
@@ -529,16 +522,26 @@ ensures (match res with
     let res = NMIS.cbor_nondet_map_entry_insert_spec x key value r1 r2 ry;
     match res {
       None -> {
-        fold (cbor_nondet_map_entry_insert_refs r1 r2 ry);
-        None #cbor_nondet_t
+        fold (cbor_nondet_map_entry_insert_post_false x key value r1 r2 ry p y pkv vk vv (Ghost.reveal vdest) (Ghost.reveal vdest));
+        rewrite (cbor_nondet_map_entry_insert_post_false x key value r1 r2 ry p y pkv vk vv vdest vdest)
+          as (cbor_nondet_map_entry_insert_post x key value r1 r2 ry p y pkv vk vv vdest vdest false);
+        false
       }
       Some m -> {
-        Some m
+        dest := m;
+        fold (cbor_nondet_map_entry_insert_post_true x key value r1 r2 ry p y pkv vk vv m);
+        rewrite (cbor_nondet_map_entry_insert_post_true x key value r1 r2 ry p y pkv vk vv m)
+          as (cbor_nondet_map_entry_insert_post x key value r1 r2 ry p y pkv vk vv vdest m true);
+        true
       }
     }
   } else {
     not_cmap_of_major_type_nondet y;
-    None #cbor_nondet_t
+    unfold (cbor_nondet_map_entry_insert_refs r1 r2 ry);
+    fold (cbor_nondet_map_entry_insert_post_false x key value r1 r2 ry p y pkv vk vv (Ghost.reveal vdest) (Ghost.reveal vdest));
+    rewrite (cbor_nondet_map_entry_insert_post_false x key value r1 r2 ry p y pkv vk vv vdest vdest)
+      as (cbor_nondet_map_entry_insert_post x key value r1 r2 ry p y pkv vk vv vdest vdest false);
+    false
   }
 }
 
