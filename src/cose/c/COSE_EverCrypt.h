@@ -62,7 +62,7 @@ typedef void *COSE_EverCrypt_good_signature;
 
 typedef struct FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice__uint8_t_s
 {
-  FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_array_t_tags tag;
+  FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_t_tags tag;
   Pulse_Lib_Slice_slice__uint8_t v;
 }
 FStar_Pervasives_Native_option__Pulse_Lib_Slice_slice__uint8_t;

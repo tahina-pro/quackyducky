@@ -28948,6 +28948,14 @@ CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_singleton(cbor_raw x, cbor_raw 
     );
 }
 
+typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array_s
+{
+  FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_tags
+  tag;
+  cbor_mixed_list_array v;
+}
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array;
+
 static FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array
 CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_append(
   cbor_mixed_list_array x1,
@@ -30547,31 +30555,44 @@ cbor_mixed_list_array cbor_det_array_singleton(cbor_raw x, cbor_raw *ry)
   return CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_singleton(x, ry);
 }
 
-FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array
+bool
 cbor_det_array_append(
   cbor_mixed_list_array x1,
   cbor_mixed_list_array x2,
+  cbor_mixed_list_array *dest,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r_before,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r_after
 )
 {
   FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array
-  scrut = CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_append(x1, x2, r_before, r_after);
-  if (scrut.tag == FStar_Pervasives_Native_None)
-    return
+  scrut0 = CBOR_Pulse_Raw_EverParse_ArrayBuilder_cbor_array_append(x1, x2, r_before, r_after);
+  FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array scrut;
+  if (scrut0.tag == FStar_Pervasives_Native_None)
+    scrut =
       (
         (FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array){
           .tag = FStar_Pervasives_Native_None
         }
       );
-  else if (scrut.tag == FStar_Pervasives_Native_Some)
-    return
+  else if (scrut0.tag == FStar_Pervasives_Native_Some)
+    scrut =
       (
         (FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array){
           .tag = FStar_Pervasives_Native_Some,
-          .v = scrut.v
+          .v = scrut0.v
         }
       );
+  else
+    scrut =
+      KRML_EABORT(FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array,
+        "unreachable (pattern matches are exhaustive in F*)");
+  if (scrut.tag == FStar_Pervasives_Native_Some)
+  {
+    *dest = scrut.v;
+    return true;
+  }
+  else if (scrut.tag == FStar_Pervasives_Native_None)
+    return false;
   else
   {
     KRML_HOST_EPRINTF("KaRaMeL abort at %s:%d\n%s\n",

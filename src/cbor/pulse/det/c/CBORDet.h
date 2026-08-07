@@ -25,14 +25,6 @@ typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw_s
 }
 FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_raw;
 
-typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array_s
-{
-  FStar_Pervasives_Native_option__LowParse_Pulse_Base_with_perm__Pulse_Lib_Slice_slice__CBOR_Pulse_Raw_Type_cbor_raw_tags
-  tag;
-  cbor_mixed_list_array v;
-}
-FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array;
-
 typedef struct cbor_freeable0_s cbor_freeable0;
 
 typedef struct cbor_freeable_box_s
@@ -213,10 +205,11 @@ cbor_mixed_list_array cbor_det_array_empty(void);
 
 cbor_mixed_list_array cbor_det_array_singleton(cbor_raw x, cbor_raw *ry);
 
-FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array
+bool
 cbor_det_array_append(
   cbor_mixed_list_array x1,
   cbor_mixed_list_array x2,
+  cbor_mixed_list_array *dest,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r_before,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r_after
 );

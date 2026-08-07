@@ -30050,6 +30050,13 @@ CBOR_Pulse_Raw_EverParse_Nondet_ArrayBuilder_cbor_nondet_array_singleton(
     );
 }
 
+typedef struct FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array_s
+{
+  FStar_Pervasives_Native_option__bool_tags tag;
+  cbor_mixed_list_array v;
+}
+FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array;
+
 static FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array
 CBOR_Pulse_Raw_EverParse_Nondet_ArrayBuilder_cbor_nondet_array_append(
   cbor_mixed_list_array x1,
@@ -30559,19 +30566,36 @@ cbor_mixed_list_array
 (*cbor_nondet_array_singleton)(cbor_raw x0, cbor_raw *x1) =
   CBOR_Pulse_Raw_EverParse_Nondet_ArrayBuilder_cbor_nondet_array_singleton;
 
-FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array
+bool
 cbor_nondet_array_append(
   cbor_mixed_list_array x1,
   cbor_mixed_list_array x2,
+  cbor_mixed_list_array *dest,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r_before,
   LowParse_PulseParse_Iterator_Type_mixed_list__uint64_t_CBOR_Pulse_Raw_Type_cbor_raw *r_after
 )
 {
-  return
+  FStar_Pervasives_Native_option__CBOR_Pulse_Raw_Type_cbor_mixed_list_array
+  scrut =
     CBOR_Pulse_Raw_EverParse_Nondet_ArrayBuilder_cbor_nondet_array_append(x1,
       x2,
       r_before,
       r_after);
+  if (scrut.tag == FStar_Pervasives_Native_Some)
+  {
+    *dest = scrut.v;
+    return true;
+  }
+  else if (scrut.tag == FStar_Pervasives_Native_None)
+    return false;
+  else
+  {
+    KRML_HOST_EPRINTF("KaRaMeL abort at %s:%d\n%s\n",
+      __FILE__,
+      __LINE__,
+      "unreachable (pattern matches are exhaustive in F*)");
+    KRML_HOST_EXIT(255U);
+  }
 }
 
 cbor_raw

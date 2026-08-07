@@ -105,7 +105,7 @@ uint8_t *Pulse_Lib_Slice_slice_to_arrayptr_intro__uint8_t(Pulse_Lib_Slice_slice_
 
 typedef struct option__size_t_s
 {
-  FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_array_t_tags tag;
+  FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_t_tags tag;
   size_t v;
 }
 option__size_t;
@@ -214,7 +214,7 @@ __CBOR_Pulse_API_Det_Type_cbor_det_t_Pulse_Lib_Slice_slice__uint8_t;
 
 typedef struct option___CBOR_Pulse_API_Det_Type_cbor_det_t___Pulse_Lib_Slice_slice__uint8_t__s
 {
-  FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_array_t_tags tag;
+  FStar_Pervasives_Native_option__CBOR_Pulse_API_Det_Type_cbor_det_t_tags tag;
   __CBOR_Pulse_API_Det_Type_cbor_det_t_Pulse_Lib_Slice_slice__uint8_t v;
 }
 option___CBOR_Pulse_API_Det_Type_cbor_det_t___Pulse_Lib_Slice_slice__uint8_t_;
