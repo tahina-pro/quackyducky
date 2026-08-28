@@ -23,7 +23,7 @@ env:
 
 jobs:
   advance-and-fix:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, ai]
     timeout-minutes: 1440
     steps:
       # ----------------------------------------------------------------
