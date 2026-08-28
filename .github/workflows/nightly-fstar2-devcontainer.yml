@@ -145,7 +145,8 @@ jobs:
             round=$((round + 1))
             echo "::group::make test (round $round)"
             # Step 7: run the test suite, logging stdout and stderr into test.log
-            if exec_in_container 'make -j$(nproc) -k test > test.log 2>&1' ; then
+            exec_in_container '{ make -j$(nproc) -k test 2>&1 ; echo "GitHub Actions run ${{ github.run_id }} exit code $?." ; } | tee test.log'
+            if exec_in_container 'grep "GitHub Actions run ${{ github.run_id }} exit code 0." test.log' ; then
               echo "::endgroup::"
               echo "::notice::Test suite passed on round $round."
               tests_green=true
