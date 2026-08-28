@@ -48,7 +48,7 @@ jobs:
           printf '%s\n' 'test.log' '.copilot-prompt.txt' >> .git/info/exclude
 
       - name: Install the devcontainer CLI
-        run: npm install -g @devcontainers/cli
+        run: which devcontainer || npm install -g @devcontainers/cli
 
       # ----------------------------------------------------------------
       # Step 2: Turn up a *fresh* devcontainer (never reuse an existing one)
