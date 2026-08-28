@@ -1,0 +1,238 @@
+name: Advance F* hashes and auto-fix in devcontainer (fstar2)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 01:00 PDT (UTC-7) == 08:00 UTC, every Monday and Thursday
+    - cron: "0 8 * * 1,4"
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  UPSTREAM_REPO: project-everest/everparse
+  UPSTREAM_BRANCH: fstar2
+  WORKSPACE: everparse
+  # Maximum number of `make test` / copilot repair rounds (steps 7-10)
+  MAX_FIX_ROUNDS: 5
+
+jobs:
+  advance-and-fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    steps:
+      # ----------------------------------------------------------------
+      # Step 1: Clone the fstar2 branch of project-everest/everparse
+      # ----------------------------------------------------------------
+      - name: Clone the fstar2 branch of the upstream repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.UPSTREAM_REPO }}
+          ref: ${{ env.UPSTREAM_BRANCH }}
+          path: ${{ env.WORKSPACE }}
+          submodules: true
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up git identity and local exclusions
+        working-directory: ${{ env.WORKSPACE }}
+        run: |
+          git config user.name "Dzomo, the Everest Yak"
+          git config user.email "24394600+dzomo@users.noreply.github.com"
+          # Never let these workflow-local artifacts end up in a commit.
+          printf '%s\n' 'test.log' '.copilot-prompt.txt' >> .git/info/exclude
+
+      - name: Install the devcontainer CLI
+        run: npm install -g @devcontainers/cli
+
+      # ----------------------------------------------------------------
+      # Step 2: Turn up a *fresh* devcontainer (never reuse an existing one)
+      # ----------------------------------------------------------------
+      - name: Turn up a fresh devcontainer
+        run: |
+          devcontainer up \
+            --workspace-folder "$WORKSPACE" \
+            --id-label "everparse-nightly=${{ github.run_id }}" \
+            --remove-existing-container \
+            --build-no-cache \
+            --skip-post-attach
+
+      - name: Trust the workspace inside the devcontainer
+        run: |
+          devcontainer exec \
+            --workspace-folder "$WORKSPACE" \
+            --id-label "everparse-nightly=${{ github.run_id }}" \
+            bash -lc 'git config --global --add safe.directory "*"'
+
+      # ----------------------------------------------------------------
+      # Step 3: make deps
+      # ----------------------------------------------------------------
+      - name: Build dependencies (make deps)
+        run: |
+          devcontainer exec \
+            --workspace-folder "$WORKSPACE" \
+            --id-label "everparse-nightly=${{ github.run_id }}" \
+            bash -lc 'make -j$(nproc) deps'
+
+      # ----------------------------------------------------------------
+      # Step 4: make -C opt advance
+      # ----------------------------------------------------------------
+      - name: Advance the F*/Karamel hashes (make -C opt advance)
+        run: |
+          devcontainer exec \
+            --workspace-folder "$WORKSPACE" \
+            --id-label "everparse-nightly=${{ github.run_id }}" \
+            bash -lc 'make -C opt advance'
+
+      # ----------------------------------------------------------------
+      # Step 5: stop and report success if nothing changed
+      # ----------------------------------------------------------------
+      - name: Check whether anything changed
+        id: changes
+        working-directory: ${{ env.WORKSPACE }}
+        run: |
+          if git diff --quiet && git diff --cached --quiet && [ -z "$(git status --porcelain)" ] ; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No changes after 'make -C opt advance'; nothing to do."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager status --short
+          fi
+
+      # ----------------------------------------------------------------
+      # Step 6: commit the changes
+      # ----------------------------------------------------------------
+      - name: Commit the advanced hashes
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: ${{ env.WORKSPACE }}
+        run: |
+          git add -A
+          git commit -m "Advance F*/Karamel hashes (automated, run ${{ github.run_id }})"
+
+      # ----------------------------------------------------------------
+      # Steps 7-10: test, and on failure ask Copilot to fix, then retry
+      # ----------------------------------------------------------------
+      - name: Test, and repair failures with Copilot until green
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.DZOMO_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.DZOMO_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          exec_in_container () {
+            devcontainer exec \
+              --workspace-folder "$WORKSPACE" \
+              --id-label "everparse-nightly=${{ github.run_id }}" \
+              --remote-env "GH_TOKEN=$GH_TOKEN" \
+              --remote-env "GITHUB_TOKEN=$GITHUB_TOKEN" \
+              bash -lc "$1"
+          }
+
+          # The Copilot prompt, written verbatim (no shell expansion).
+          cat > "$WORKSPACE/.copilot-prompt.txt" <<'COPILOT_PROMPT_EOF'
+          Using the proof-copilot plugin, and investigating the F* commits between the hashes recorded in opt/hashes.Makefile in the latest 2 commits, fix the test failures recorded in test.log, and once `make -j$(nproc) -k test` succeeds with exit code 0, commit your changes and append a detailed report of your fixes into the PR.md file, so that I can open a pull request myself.
+          COPILOT_PROMPT_EOF
+
+          round=0
+          tests_green=false
+          while [ "$round" -lt "$MAX_FIX_ROUNDS" ] ; do
+            round=$((round + 1))
+            echo "::group::make test (round $round)"
+            # Step 7: run the test suite, logging stdout and stderr into test.log
+            if exec_in_container 'make -j$(nproc) -k test > test.log 2>&1' ; then
+              echo "::endgroup::"
+              echo "::notice::Test suite passed on round $round."
+              tests_green=true
+              break   # Step 8: exit code 0 -> go to step 11
+            fi
+            echo "::endgroup::"
+
+            echo "::group::tail of test.log (round $round)"
+            tail -n 200 "$WORKSPACE/test.log" || true
+            echo "::endgroup::"
+
+            # Step 9: nonzero exit code -> ask Copilot to fix it
+            echo "::notice::Test suite failed on round $round; invoking Copilot."
+            exec_in_container 'copilot --yolo --autopilot -p "$(cat .copilot-prompt.txt)"'
+            # Step 10: loop back to step 7
+          done
+
+          rm -f "$WORKSPACE/.copilot-prompt.txt"
+
+          if [ "$tests_green" != true ] ; then
+            echo "::error::Test suite still failing after $MAX_FIX_ROUNDS repair rounds."
+            exit 1
+          fi
+
+      - name: Upload test.log
+        if: always() && steps.changes.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: ${{ env.WORKSPACE }}/test.log
+          if-no-files-found: ignore
+
+      # ----------------------------------------------------------------
+      # Step 11: push the branch, under a new name, to *this* repository
+      # ----------------------------------------------------------------
+      - name: Push the branch to this repository
+        id: push
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: ${{ env.WORKSPACE }}
+        env:
+          GH_TOKEN: ${{ secrets.DZOMO_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          branch="_dzomo_fstar2_advance_${{ github.run_id }}"
+          git checkout -b "$branch"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" 2>/dev/null \
+            || git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          git push origin "$branch"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      # ----------------------------------------------------------------
+      # Step 12: open a pull request into upstream fstar2
+      # ----------------------------------------------------------------
+      - name: Open a pull request into the upstream fstar2 branch
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: ${{ env.WORKSPACE }}
+        env:
+          GH_TOKEN: ${{ secrets.DZOMO_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          body_file="$RUNNER_TEMP/pr-body.md"
+          {
+            echo "Automated advance of the F*/Karamel hashes on \`${UPSTREAM_BRANCH}\`."
+            echo
+            echo "Produced by workflow run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
+            echo
+            if [ -f PR.md ] ; then
+              echo "## Report of the fixes"
+              echo
+              cat PR.md
+            else
+              echo "The test suite passed without any repair being necessary."
+            fi
+          } > "$body_file"
+          owner="${{ github.repository_owner }}"
+          gh pr create \
+            --repo "$UPSTREAM_REPO" \
+            --base "$UPSTREAM_BRANCH" \
+            --head "$owner:${{ steps.push.outputs.branch }}" \
+            --title "Advance F*/Karamel hashes (automated, run ${{ github.run_id }})" \
+            --body-file "$body_file"
+
+      # ----------------------------------------------------------------
+      # Always tear the container down.
+      # ----------------------------------------------------------------
+      - name: Tear down the devcontainer
+        if: always()
+        run: |
+          ids="$(docker ps -aq --filter "label=everparse-nightly=${{ github.run_id }}")"
+          if [ -n "$ids" ] ; then docker rm -f $ids ; fi
