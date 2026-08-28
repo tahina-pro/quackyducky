@@ -186,7 +186,7 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         working-directory: ${{ env.WORKSPACE }}
         env:
-          GH_TOKEN: ${{ secrets.DZOMO_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           branch="_dzomo_fstar2_advance_${{ github.run_id }}"
