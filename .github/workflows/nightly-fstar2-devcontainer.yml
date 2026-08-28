@@ -154,10 +154,6 @@ jobs:
             fi
             echo "::endgroup::"
 
-            echo "::group::tail of test.log (round $round)"
-            tail -n 200 "$WORKSPACE/test.log" || true
-            echo "::endgroup::"
-
             # Step 9: nonzero exit code -> ask Copilot to fix it
             echo "::notice::Test suite failed on round $round; invoking Copilot."
             exec_in_container 'copilot --yolo --autopilot -p "$(cat .copilot-prompt.txt)"'
@@ -170,14 +166,6 @@ jobs:
             echo "::error::Test suite still failing after $MAX_FIX_ROUNDS repair rounds."
             exit 1
           fi
-
-      - name: Upload test.log
-        if: always() && steps.changes.outputs.changed == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-log
-          path: ${{ env.WORKSPACE }}/test.log
-          if-no-files-found: ignore
 
       # ----------------------------------------------------------------
       # Step 11: push the branch, under a new name, to *this* repository
