@@ -193,7 +193,7 @@ jobs:
           git checkout -b "$branch"
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" 2>/dev/null \
             || git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-          git push origin "$branch"
+          git push --set-upstream origin "$branch"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
       # ----------------------------------------------------------------
