@@ -125,6 +125,20 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Workflow-command markers are only recognized at the start of a
+          # line.  Child processes often leave the cursor mid-line, so always
+          # emit a newline first; otherwise a group is never closed and the
+          # following groups end up rendered nested inside it.
+          begin_group () {
+            echo
+            echo "::group::$1"
+          }
+
+          end_group () {
+            echo
+            echo "::endgroup::"
+          }
+
           exec_in_container () {
             devcontainer exec \
               --workspace-folder "$WORKSPACE" \
@@ -143,20 +157,27 @@ jobs:
           tests_green=false
           while [ "$round" -lt "$MAX_FIX_ROUNDS" ] ; do
             round=$((round + 1))
-            echo "::group::make test (round $round)"
+
             # Step 7: run the test suite, logging stdout and stderr into test.log
+            begin_group "make test (round $round)"
             exec_in_container '{ make -j$(nproc) -k test 2>&1 ; echo "GitHub Actions run ${{ github.run_id }} exit code $?." ; } | tee test.log'
+            round_green=false
             if exec_in_container 'grep "GitHub Actions run ${{ github.run_id }} exit code 0." test.log' ; then
-              echo "::endgroup::"
+              round_green=true
+            fi
+            end_group
+
+            if [ "$round_green" = true ] ; then
               echo "::notice::Test suite passed on round $round."
               tests_green=true
               break   # Step 8: exit code 0 -> go to step 11
             fi
-            echo "::endgroup::"
 
             # Step 9: nonzero exit code -> ask Copilot to fix it
             echo "::notice::Test suite failed on round $round; invoking Copilot."
+            begin_group "copilot repair (round $round)"
             exec_in_container 'copilot --yolo --autopilot -p "$(cat .copilot-prompt.txt)"'
+            end_group
             # Step 10: loop back to step 7
           done
 
