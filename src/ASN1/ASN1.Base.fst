@@ -78,9 +78,9 @@ type asn1_bitstring_t =
 
 type asn1_octetstring_t = asn1_bytes
 
-type utf8_cp_t = (x : U32.t {U32.v x < pow2 21})
-
-type asn1_utf8string_t = list utf8_cp_t
+(* Well-formed UTF-8 (RFC 3629): no overlong forms, surrogates, or code
+   points above U+10FFFF. *)
+type asn1_utf8string_t = (b : asn1_bytes {LowParse.Spec.UTF8.correct b})
 
 let is_printable_char (ch : U8.t) : bool =
   let v = U8.v ch in
