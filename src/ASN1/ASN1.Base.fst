@@ -101,7 +101,7 @@ type asn1_ia5string_t = list (b : byte {is_ia5_char b})
 type asn1_null_t = unit
 
 let asn1_OID_wf' (value1 value2 : U32.t) =
-  (U32.v value1 < 2 && U32.v value2 < 40) || (U32.v value1 = 2 && U32.v value2 < 256 - 80)
+  (U32.v value1 < 2 && U32.v value2 < 40) || (U32.v value1 = 2 && U32.v value2 < pow2 32 - 80)
 
 let asn1_OID_wf (l : list U32.t) =
   List.length l >= 2 &&
