@@ -78,29 +78,9 @@ let is_valid_calendar_date4dy
         false
     end
 
-let is_valid_time_hh
-  (hh : U32.t)
-= (U32.lte hh 23ul)
-
-let is_valid_time_hhmm
-  (hh : U32.t)
-  (mm : U32.t)
-= (U32.lte hh 23ul) && (U32.lte mm 59ul)
-
 let is_valid_time_hhmmss
   (hh mm ss : U32.t)
 = (U32.lte hh 23ul) && (U32.lte mm 59ul) && (U32.lte ss 59ul)
-
-let is_valid_utc_positive_timezone
-  (hh mm : U32.t)
-= (U32.lte hh 12ul) && (U32.lte 1ul hh) && ((U32.eq mm 0ul) || (U32.eq mm 30ul && (U32.eq hh 9ul || U32.eq hh 3ul)))
-
-let is_valid_utc_negative_timezone
-  (hh mm : U32.t)
-= (U32.lte hh 14ul) && (U32.lte 1ul hh) && 
-  ((U32.eq mm 0ul) || 
-   (U32.eq mm 30ul && ((U32.lte 3ul hh && U32.lte hh 6ul) || (U32.eq hh 9ul) || (U32.eq hh 10ul))) || 
-   (U32.eq mm 45ul && ((U32.eq hh 5ul) || (U32.eq hh 8ul) || (U32.eq hh 12ul))))
 
 let is_valid_digit
   (ch : U8.t)
@@ -164,27 +144,6 @@ let is_valid_yyyymmdd
   else 
     false
 
-let is_valid_hh
-  (b : asn1_bytes)
-  (s : U32.t {U32.v s + 2 <= Seq.length b})
-= if (is_valid_digit_range b (U32.v s) 2) then begin
-    let hh = read_2dnum (Seq.index b (U32.v s))     (Seq.index b (U32.v s + 1)) in
-    is_valid_time_hh hh
-  end
-  else 
-    false
-
-let is_valid_hhmm
-  (b : asn1_bytes)
-  (s : U32.t {U32.v s + 4 <= Seq.length b})
-= if (is_valid_digit_range b (U32.v s) 4) then begin
-    let hh = read_2dnum (Seq.index b (U32.v s))     (Seq.index b (U32.v s + 1)) in
-    let mm = read_2dnum (Seq.index b (U32.v s + 2)) (Seq.index b (U32.v s + 3)) in
-    is_valid_time_hhmm hh mm
-  end
-  else 
-    false
-
 let is_valid_hhmmss
   (b : asn1_bytes)
   (s : U32.t {U32.v s + 6 <= Seq.length b})
@@ -197,62 +156,27 @@ let is_valid_hhmmss
   else 
     false
 
-let is_valid_utc_timezone
-  (b : asn1_bytes)
-  (s : U32.t {U32.v s + 5 <= Seq.length b})
-= if is_valid_digit_range b (U32.v s + 1) 4 then
-    let hh = read_2dnum (Seq.index b (U32.v s + 1)) (Seq.index b (U32.v s + 2)) in
-    let mm = read_2dnum (Seq.index b (U32.v s + 3)) (Seq.index b (U32.v s + 4)) in
-    let sign = Seq.index b (U32.v s) in
-    if (sign = 43uy) then // +
-      is_valid_utc_positive_timezone hh mm
-    else if (sign = 45uy) then // -
-      is_valid_utc_negative_timezone hh mm
-    else
-      false
-  else
-    false
-
+(* X.690 11.8: a DER UTCTime is exactly YYMMDDhhmmssZ. *)
 let is_valid_ASN1UTCTIME
   (b : asn1_bytes)
-= let len = Seq.length b in
-  if len = 11 then
-    is_valid_yymmdd b 0ul && is_valid_hhmm b 6ul && Seq.index b 10 = 90uy
-  else if len = 15 then
-    is_valid_yymmdd b 0ul && is_valid_hhmm b 6ul && is_valid_utc_timezone b 10ul
-  else if len = 13 then
-    is_valid_yymmdd b 0ul && is_valid_hhmmss b 6ul && Seq.index b 12 = 90uy
-  else if len = 17 then
-    is_valid_yymmdd b 0ul && is_valid_hhmmss b 6ul && is_valid_utc_timezone b 12ul
-  else
-    false
+= Seq.length b = 13 &&
+  is_valid_yymmdd b 0ul && is_valid_hhmmss b 6ul && Seq.index b 12 = 90uy // Z
 
-let is_valid_localtime
-  (b : asn1_bytes)
-  (len : nat {len <= Seq.length b})
-= if len = 10 then
-    is_valid_yyyymmdd b 0ul && is_valid_hh b 8ul
-  else if len = 12 then
-    is_valid_yyyymmdd b 0ul && is_valid_hhmm b 8ul
-  else if len = 14 then
-    is_valid_yyyymmdd b 0ul && is_valid_hhmmss b 8ul
-  else if 15 < len && len <= 18 then
-    is_valid_yyyymmdd b 0ul && is_valid_hhmmss b 8ul && (Seq.index b 14 = 46uy) && (Seq.index b (len - 1) <> 48uy)
-  else
-    false
-
+(* X.690 11.7: a DER GeneralizedTime is YYYYMMDDhhmmss[.f+]Z, where the
+   fractional part, if present, is non-empty and has no trailing zero. *)
 let is_valid_ASN1GENERALIZEDTIME
   (b : asn1_bytes)
 = let len = Seq.length b in
-  if len < 10 || len > 23 then
-    false
+  if len = 15 then
+    is_valid_yyyymmdd b 0ul && is_valid_hhmmss b 8ul && Seq.index b 14 = 90uy // Z
+  else if len >= 17 then
+    is_valid_yyyymmdd b 0ul && is_valid_hhmmss b 8ul &&
+    Seq.index b 14 = 46uy && // .
+    is_valid_digit_range b 15 (len - 16) &&
+    Seq.index b (len - 2) <> 48uy && // no trailing 0
+    Seq.index b (len - 1) = 90uy // Z
   else
-    if (Seq.index b (len - 1) = 90uy) then
-      is_valid_localtime b (len - 1)
-    else if (is_valid_digit (Seq.index b (len - 5))) then
-        is_valid_localtime b (len - 5) && is_valid_utc_timezone b (UInt32.uint_to_t (len - 5))
-      else
-        is_valid_localtime b len
+    false
 
 #pop-options
 
