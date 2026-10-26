@@ -182,6 +182,72 @@ let rec asn1_terminal_t (k : asn1_terminal_k) : eqtype =
   | ASN1_GENERALIZEDTIME -> asn1_generalizedtime_t
   | ASN1_PREFIXED_TERMINAL _ k -> asn1_terminal_t k
 
+// Generic ASN.1 values (for ANY)
+
+// Ref: X.680 8.4 Table 1
+// Universal types with a DER content parser. ENUMERATED (10) has the
+// same content encoding as INTEGER (X.690 8.4)
+let asn1_any_integer_bound : pos = 4294967295
+
+let asn1_universal_terminal (v : asn1_id_value_t) : option asn1_terminal_k =
+  match U32.v v with
+  | 1 -> Some ASN1_BOOLEAN
+  | 2 -> Some (ASN1_INTEGER asn1_any_integer_bound)
+  | 3 -> Some ASN1_BITSTRING
+  | 4 -> Some ASN1_OCTETSTRING
+  | 5 -> Some ASN1_NULL
+  | 6 -> Some ASN1_OID
+  | 10 -> Some (ASN1_INTEGER asn1_any_integer_bound)
+  | 12 -> Some ASN1_UTF8STRING
+  | 19 -> Some ASN1_PRINTABLESTRING
+  | 20 -> Some ASN1_TELETEXSTRING
+  | 22 -> Some ASN1_IA5STRING
+  | 23 -> Some ASN1_UTCTIME
+  | 24 -> Some ASN1_GENERALIZEDTIME
+  | 26 -> Some ASN1_VISIBLESTRING
+  | 28 -> Some ASN1_UNIVERSALSTRING
+  | 30 -> Some ASN1_BMPSTRING
+  | _ -> None
+
+// Universal types whose encoding is always constructed: EXTERNAL (8),
+// EMBEDDED PDV (11), SEQUENCE (16), SET (17), CHARACTER STRING (29)
+let asn1_universal_always_constructed (v : asn1_id_value_t) : bool =
+  let v = U32.v v in
+  v = 8 || v = 11 || v = 16 || v = 17 || v = 29
+
+// Ref: X.690 8.1.2, 10.2. Tag 0 is reserved for end-of-contents and tag
+// 15 is reserved. In DER, all universal types other than the above
+// always-constructed ones are primitive (in particular, no constructed
+// strings.) Unassigned universal tags (> 36) are accepted in either form.
+let asn1_any_id_valid (id : asn1_id_t) : bool =
+  match id with
+  | MK_ASN1_ID UNIVERSAL f v ->
+    let n = U32.v v in
+    n <> 0 && n <> 15 &&
+    begin match f with
+    | CONSTRUCTED -> asn1_universal_always_constructed v || n > 36
+    | PRIMITIVE -> not (asn1_universal_always_constructed v)
+    end
+  | _ -> true
+
+let asn1_any_id_t = (id : asn1_id_t { asn1_any_id_valid id == true })
+
+let asn1_any_leaf_t (id : asn1_id_t) : eqtype =
+  match id with
+  | MK_ASN1_ID UNIVERSAL _ v ->
+    begin match asn1_universal_terminal v with
+    | Some k -> asn1_terminal_t k
+    | None -> asn1_octetstring_t
+    end
+  | _ -> asn1_octetstring_t
+
+// A generic ASN.1 DER value: the identifier, and either the primitive
+// contents (parsed with the corresponding universal type, if known), or
+// the list of the values in the constructed contents
+type asn1_value =
+| ASN1_VALUE_PRIMITIVE : (id : asn1_any_id_t) -> (v : asn1_any_leaf_t id) -> asn1_value
+| ASN1_VALUE_CONSTRUCTED : (id : asn1_any_id_t) -> (l : list asn1_value) -> asn1_value
+
 type asn1_decorator : Type =
 | PLAIN
 | OPTION
@@ -412,7 +478,7 @@ and asn1_t (#s : _) (k : asn1_k s) : Tot Type (decreases k) =
   match k with
   | ASN1_ILC id k' -> asn1_content_t k'
   | ASN1_CHOICE_ILC lc pf -> make_gen_choice_type (asn1_lc_t lc)
-  | ASN1_ANY_ILC -> asn1_id_t & asn1_octetstring_t
+  | ASN1_ANY_ILC -> asn1_value
 
 and asn1_decorated_t_core #s #d (dk:asn1_decorated_k s d) : Tot Type  (decreases dk) =
   match dk with
