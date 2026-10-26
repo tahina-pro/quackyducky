@@ -15,6 +15,9 @@ open ASN1.Spec.Content.OCTETSTRING
 open ASN1.Spec.Content.UTF8STRING
 open ASN1.Spec.Content.PRINTABLESTRING
 open ASN1.Spec.Content.IA5STRING
+open ASN1.Spec.Content.VISIBLESTRING
+open ASN1.Spec.Content.BMPSTRING
+open ASN1.Spec.Content.UNIVERSALSTRING
 open ASN1.Spec.Content.NULL
 open ASN1.Spec.Content.OIDU32
 open ASN1.Spec.Content.TIME
@@ -43,18 +46,20 @@ let parse_debugf_and_then_cases_injective
     assert (and_then_cases_injective_precond fp x1 x2 b1 b2)
   )
 
-let parse_non_empty_list 
+let parse_sized_list
+  (nonempty : bool)
   (#k : parser_kind)
   (#t : Type)
   (p : parser k t {k.parser_kind_injective == true})
-: asn1_weak_parser (non_empty_list t)
-= weaken _ ((parse_list p) `parse_filter` isNonEmpty)
+: asn1_weak_parser (sized_list nonempty t)
+= weaken _ ((parse_list p) `parse_filter` list_size_ok nonempty)
 
-let parse_non_empty_set 
+let parse_sized_set
+  (nonempty : bool)
   (#t : Type)
   (p : asn1_strong_parser t)
-: asn1_weak_parser (non_empty_list t)
-= (parse_asn1_set_of p) `parse_filter` isNonEmpty
+: asn1_weak_parser (sized_list nonempty t)
+= (parse_asn1_set_of p) `parse_filter` list_size_ok nonempty
 
 let auto_asn1_sequence_t_core_equiv #id_decs (items:asn1_gen_items_l id_decs)
 : Lemma
@@ -106,6 +111,10 @@ let rec dasn1_terminal_as_parser (k : asn1_terminal_k) : asn1_weak_parser (asn1_
   | ASN1_UTF8STRING -> parse_asn1_utf8string
   | ASN1_PRINTABLESTRING -> parse_asn1_printablestring
   | ASN1_IA5STRING -> parse_asn1_ia5string
+  | ASN1_VISIBLESTRING -> parse_asn1_visiblestring
+  | ASN1_BMPSTRING -> parse_asn1_bmpstring
+  | ASN1_UNIVERSALSTRING -> parse_asn1_universalstring
+  | ASN1_TELETEXSTRING -> parse_asn1_octetstring
   | ASN1_NULL -> parse_asn1_null
   | ASN1_OID -> parse_asn1_OIDU32
   | ASN1_UTCTIME -> parse_asn1_UTCTIME
@@ -124,8 +133,8 @@ and dasn1_content_as_parser (k : asn1_content_k) : Tot (asn1_weak_parser (asn1_c
   | ASN1_RESTRICTED_TERMINAL k' is_valid -> weaken _ ((dasn1_terminal_as_parser k') `parse_filter` is_valid)
   | ASN1_TERMINAL k' -> dasn1_terminal_as_parser k'
   | ASN1_SEQUENCE gitems -> make_asn1_sequence_parser (dasn1_sequence_as_parser (dsnd gitems))
-  | ASN1_SEQUENCE_OF k' -> parse_non_empty_list (dasn1_as_parser k')
-  | ASN1_SET_OF k' -> parse_non_empty_set (dasn1_as_parser k')
+  | ASN1_SEQUENCE_OF ne k' -> parse_sized_list ne (dasn1_as_parser k')
+  | ASN1_SET_OF ne k' -> parse_sized_set ne (dasn1_as_parser k')
   | ASN1_PREFIXED k' -> weaken _ (dasn1_as_parser k')
   | ASN1_ANY_DEFINED_BY id_decs_prefix prefix id key_k ls ofb pf pf' -> 
     let itemtwins = dasn1_sequence_as_parser prefix in //(l_as_list prefix) in
@@ -239,6 +248,10 @@ let rec asn1_terminal_as_parser (k : asn1_terminal_k) : asn1_weak_parser (asn1_t
   | ASN1_UTF8STRING -> parse_asn1_utf8string
   | ASN1_PRINTABLESTRING -> parse_asn1_printablestring
   | ASN1_IA5STRING -> parse_asn1_ia5string
+  | ASN1_VISIBLESTRING -> parse_asn1_visiblestring
+  | ASN1_BMPSTRING -> parse_asn1_bmpstring
+  | ASN1_UNIVERSALSTRING -> parse_asn1_universalstring
+  | ASN1_TELETEXSTRING -> parse_asn1_octetstring
   | ASN1_NULL -> parse_asn1_null
   | ASN1_OID -> parse_asn1_OIDU32
   | ASN1_UTCTIME -> parse_asn1_UTCTIME
@@ -250,8 +263,8 @@ and asn1_content_as_parser (k : asn1_content_k) : Tot (asn1_weak_parser (asn1_co
   | ASN1_RESTRICTED_TERMINAL k' is_valid -> weaken _ ((asn1_terminal_as_parser k') `parse_filter` is_valid)
   | ASN1_TERMINAL k' -> asn1_terminal_as_parser k'
   | ASN1_SEQUENCE gitems -> make_asn1_sequence_parser (asn1_sequence_as_parser (dsnd gitems))
-  | ASN1_SEQUENCE_OF k' -> parse_non_empty_list (asn1_as_parser k')
-  | ASN1_SET_OF k' -> parse_non_empty_set (asn1_as_parser k')
+  | ASN1_SEQUENCE_OF ne k' -> parse_sized_list ne (asn1_as_parser k')
+  | ASN1_SET_OF ne k' -> parse_sized_set ne (asn1_as_parser k')
   | ASN1_PREFIXED k' -> weaken _ (asn1_as_parser k')
   | ASN1_ANY_DEFINED_BY id_decs_prefix prefix id key_k ls ofb pf pf' -> 
     let itemtwins = asn1_sequence_as_parser prefix in

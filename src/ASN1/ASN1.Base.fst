@@ -48,6 +48,10 @@ type asn1_terminal_k : Type =
 | ASN1_PRINTABLESTRING
 | ASN1_UTF8STRING
 | ASN1_IA5STRING
+| ASN1_VISIBLESTRING
+| ASN1_BMPSTRING
+| ASN1_UNIVERSALSTRING
+| ASN1_TELETEXSTRING
 | ASN1_NULL
 | ASN1_OID
 // | ASN1_ROID
@@ -98,6 +102,46 @@ let is_ia5_char (ch : U8.t) : bool = U8.v ch < 128
 
 type asn1_ia5string_t = list (b : byte {is_ia5_char b})
 
+(* X.680 §41.4: VisibleString is ISO 646 graphic characters plus space. *)
+let is_visible_char (ch : U8.t) : bool = 32 <= U8.v ch && U8.v ch <= 126
+
+type asn1_visiblestring_t = list (b : byte {is_visible_char b})
+
+(* BMPString (X.690 §8.23.8): big-endian UCS-2 code units. Surrogate code
+   points (U+D800..U+DFFF) are not characters, so they are rejected. *)
+let rec is_valid_bmp_from (b : asn1_bytes) (i : nat {i <= Seq.length b})
+: Tot bool (decreases (Seq.length b - i))
+= if i = Seq.length b then true
+  else if i + 2 > Seq.length b then false
+  else
+    let hi = U8.v (Seq.index b i) in
+    not (0xD8 <= hi && hi <= 0xDF) && is_valid_bmp_from b (i + 2)
+
+let is_valid_bmp (b : asn1_bytes) : bool = is_valid_bmp_from b 0
+
+type asn1_bmpstring_t = (b : asn1_bytes {is_valid_bmp b})
+
+(* UniversalString (X.690 §8.23.7): big-endian UCS-4 code units, each a
+   Unicode scalar value (at most U+10FFFF, not a surrogate). *)
+let rec is_valid_universal_from (b : asn1_bytes) (i : nat {i <= Seq.length b})
+: Tot bool (decreases (Seq.length b - i))
+= if i = Seq.length b then true
+  else if i + 4 > Seq.length b then false
+  else
+    let b0 = U8.v (Seq.index b i) in
+    let b1 = U8.v (Seq.index b (i + 1)) in
+    let b2 = U8.v (Seq.index b (i + 2)) in
+    b0 = 0 && b1 <= 0x10 && not (b1 = 0 && 0xD8 <= b2 && b2 <= 0xDF) &&
+    is_valid_universal_from b (i + 4)
+
+let is_valid_universal (b : asn1_bytes) : bool = is_valid_universal_from b 0
+
+type asn1_universalstring_t = (b : asn1_bytes {is_valid_universal b})
+
+(* TeletexString (T.61) has no practical validity rule; its content is kept
+   as raw bytes. *)
+type asn1_teletexstring_t = asn1_bytes
+
 type asn1_null_t = unit
 
 let asn1_OID_wf' (value1 value2 : U32.t) =
@@ -127,6 +171,10 @@ let rec asn1_terminal_t (k : asn1_terminal_k) : eqtype =
   | ASN1_UTF8STRING -> asn1_utf8string_t
   | ASN1_PRINTABLESTRING -> asn1_printablestring_t
   | ASN1_IA5STRING -> asn1_ia5string_t
+  | ASN1_VISIBLESTRING -> asn1_visiblestring_t
+  | ASN1_BMPSTRING -> asn1_bmpstring_t
+  | ASN1_UNIVERSALSTRING -> asn1_universalstring_t
+  | ASN1_TELETEXSTRING -> asn1_teletexstring_t
   | ASN1_NULL -> asn1_null_t
   | ASN1_OID -> asn1_oid_t
 //  | ASN1_ROID -> asn1_roid_t
@@ -190,9 +238,10 @@ type asn1_content_k : Type =
 | ASN1_RESTRICTED_TERMINAL : (k : asn1_terminal_k) -> (is_valid : (asn1_terminal_t k) -> bool) -> asn1_content_k
 | ASN1_TERMINAL : asn1_terminal_k -> asn1_content_k
 | ASN1_SEQUENCE : asn1_gen_items_lk -> asn1_content_k
-| ASN1_SEQUENCE_OF : #s : _ -> asn1_k s -> asn1_content_k
+// `nonempty = true` encodes the `SIZE (1..MAX)` constraint
+| ASN1_SEQUENCE_OF : nonempty : bool -> #s : _ -> asn1_k s -> asn1_content_k
 //| ASN1_SET : #s : _ -> asn1_set_k s -> asn1_content_k
-| ASN1_SET_OF : #s : _ -> asn1_k s -> asn1_content_k
+| ASN1_SET_OF : nonempty : bool -> #s : _ -> asn1_k s -> asn1_content_k
 | ASN1_PREFIXED : #s : _ -> asn1_k s -> asn1_content_k
 | ASN1_ANY_DEFINED_BY :
              id_decs_prefix : id_decs ->
@@ -325,15 +374,18 @@ let isNonEmpty (#t : Type) (l : list t)
   | [] -> false
   | _ -> true
 
-let non_empty_list (t : Type) = l : (list t) {isNonEmpty l}
+let list_size_ok (#t : Type) (nonempty : bool) (l : list t) : bool
+= not nonempty || isNonEmpty l
+
+let sized_list (nonempty : bool) (t : Type) = l : (list t) {list_size_ok nonempty l}
 
 let rec asn1_content_t (k : asn1_content_k) : Tot Type (decreases k) =
   match k with
   | ASN1_RESTRICTED_TERMINAL k' is_valid -> parse_filter_refine is_valid
   | ASN1_TERMINAL k' -> asn1_terminal_t k'
   | ASN1_SEQUENCE gitems -> asn1_sequence_t_core (dsnd gitems)
-  | ASN1_SEQUENCE_OF k' ->  non_empty_list (asn1_t k')
-  | ASN1_SET_OF k' -> non_empty_list (asn1_t k') 
+  | ASN1_SEQUENCE_OF ne k' -> sized_list ne (asn1_t k')
+  | ASN1_SET_OF ne k' -> sized_list ne (asn1_t k')
   | ASN1_PREFIXED k' -> asn1_t k'
   | ASN1_ANY_DEFINED_BY id_decs_prefix prefix id key_k ls ofb pf_wf pf_sup -> 
     let suffix_t =

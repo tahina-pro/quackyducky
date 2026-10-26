@@ -7,14 +7,98 @@ module T = FStar.Tactics
 
 // for identifiers
 
-let mk_constant_id (x : UInt.uint_t 32) : asn1_id_t
+// X.680 §8.6: UNIVERSAL 0 is reserved for use by the encoding rules.
+let id_value_ok (c : asn1_id_class_t) (v : U32.t) : bool
+= not (c = UNIVERSAL && U32.v v = 0)
+
+let mk_constant_id (x : UInt.uint_t 32 {x <> 0}) : asn1_id_t
 = MK_ASN1_ID UNIVERSAL PRIMITIVE (U32.uint_to_t x)
 
-let mk_constant_constructed_id (x : UInt.uint_t 32) : asn1_id_t
+let mk_constant_constructed_id (x : UInt.uint_t 32 {x <> 0}) : asn1_id_t
 = MK_ASN1_ID UNIVERSAL CONSTRUCTED (U32.uint_to_t x)
 
-let mk_custom_id (c : asn1_id_class_t) (f : asn1_id_flag_t) (x : UInt.uint_t 32) : asn1_id_t
+let mk_custom_id (c : asn1_id_class_t) (f : asn1_id_flag_t) (x : UInt.uint_t 32 {id_value_ok c (U32.uint_to_t x)}) : asn1_id_t
 = MK_ASN1_ID c f (U32.uint_to_t x)
+
+// X.690 §8.1.2.5: the primitive/constructed bit of an identifier is
+// determined by the encoding of its content.
+
+let terminal_flag (k : asn1_terminal_k) : asn1_id_flag_t
+= match k with
+  | ASN1_PREFIXED_TERMINAL _ _ -> CONSTRUCTED
+  | _ -> PRIMITIVE
+
+let content_flag (c : asn1_content_k) : asn1_id_flag_t
+= match c with
+  | ASN1_RESTRICTED_TERMINAL k _
+  | ASN1_TERMINAL k -> terminal_flag k
+  | _ -> CONSTRUCTED
+
+let id_ok (id : asn1_id_t) (f : asn1_id_flag_t) : bool
+= MK_ASN1_ID?.f id = f && id_value_ok (MK_ASN1_ID?.c id) (MK_ASN1_ID?.v id)
+
+// An OCTET STRING whose content is the DER encoding of a value (e.g. the
+// X.509 extnValue) is modeled as a PREFIXED content with a primitive tag.
+let is_octetstring_encapsulation (id : asn1_id_t) (c : asn1_content_k) : bool
+= match c with
+  | ASN1_PREFIXED _ -> id = MK_ASN1_ID UNIVERSAL PRIMITIVE 4ul
+  | _ -> false
+
+let id_content_ok (id : asn1_id_t) (c : asn1_content_k) : bool
+= id_ok id (content_flag c) || is_octetstring_encapsulation id c
+
+// Whole-schema check that every identifier is consistent with its content.
+let rec asn1_terminal_k_wf (k : asn1_terminal_k) : Tot bool (decreases k)
+= match k with
+  | ASN1_PREFIXED_TERMINAL id k' -> id_ok id (terminal_flag k') && asn1_terminal_k_wf k'
+  | _ -> true
+
+let rec asn1_content_k_wf (c : asn1_content_k) : Tot bool (decreases c)
+= match c with
+  | ASN1_RESTRICTED_TERMINAL k _
+  | ASN1_TERMINAL k -> asn1_terminal_k_wf k
+  | ASN1_SEQUENCE gitems -> asn1_gen_items_l_wf (dsnd gitems)
+  | ASN1_SEQUENCE_OF _ k
+  | ASN1_SET_OF _ k
+  | ASN1_PREFIXED k -> asn1_k_wf k
+  | ASN1_ANY_DEFINED_BY _ prefix id key_k supported fallback _ _ ->
+    asn1_gen_items_l_wf prefix &&
+    id_ok id (terminal_flag key_k) && asn1_terminal_k_wf key_k &&
+    asn1_supported_wf key_k supported &&
+    (match fallback with
+     | None -> true
+     | Some fb -> asn1_gen_items_l_wf (dsnd fb))
+
+and asn1_supported_wf (key_k : asn1_terminal_k) (l : list (asn1_terminal_t key_k & asn1_gen_items_lk)) : Tot bool (decreases l)
+= match l with
+  | [] -> true
+  | (_, gitems) :: tl -> asn1_gen_items_l_wf (dsnd gitems) && asn1_supported_wf key_k tl
+
+and asn1_lc_wf (l : list (asn1_id_t & asn1_content_k)) : Tot bool (decreases l)
+= match l with
+  | [] -> true
+  | (id, c) :: tl -> id_content_ok id c && asn1_content_k_wf c && asn1_lc_wf tl
+
+and asn1_k_wf (#s : _) (k : asn1_k s) : Tot bool (decreases k)
+= match k with
+  | ASN1_ILC id c -> id_content_ok id c && asn1_content_k_wf c
+  | ASN1_CHOICE_ILC lc _ -> asn1_lc_wf lc
+  | ASN1_ANY_ILC -> true
+
+and asn1_decorated_k_wf (#s : _) (#d : _) (k : asn1_decorated_k s d) : Tot bool (decreases k)
+= match k with
+  | ASN1_PLAIN_ILC k'
+  | ASN1_OPTION_ILC k' -> asn1_k_wf k'
+  | ASN1_DEFAULT_TERMINAL id #k' _
+  | ASN1_DEFAULT_RESTRICTED_TERMINAL id #k' _ _ -> id_ok id (terminal_flag k') && asn1_terminal_k_wf k'
+
+and asn1_gen_items_l_wf (#l : _) (items : asn1_gen_items_l l) : Tot bool (decreases items)
+= match items with
+  | ASN1_GEN_ITEMS_NIL -> true
+  | ASN1_GEN_ITEMS_CONS _ _ hd _ tl -> asn1_decorated_k_wf hd && asn1_gen_items_l_wf tl
+
+noextract
+let wf_tac () = T.norm [iota;zeta;delta;primops;simplify]; T.trivial ()
 
 // for OID definitions
 
@@ -41,10 +125,10 @@ let proj_content (#s) (x : asn1_k s {is_ILC x})
 = match x with
   | ASN1_ILC id c -> c
 
-let mk_prefixed (id : asn1_id_t) (#s) (x : asn1_k s)
+let mk_prefixed (id : asn1_id_t {id_ok id CONSTRUCTED}) (#s) (x : asn1_k s)
 = ASN1_ILC id (ASN1_PREFIXED x)
 
-let mk_retagged (id : asn1_id_t) (#s) (x : asn1_k s {is_ILC x})
+let mk_retagged (id : asn1_id_t) (#s) (x : asn1_k s {is_ILC x /\ id_content_ok id (proj_content x)})
 = ASN1_ILC id (proj_content x)
 
 let op_Star_Hat (name : string) (#t) (x : t)
@@ -145,11 +229,18 @@ let sequence_id = mk_constant_constructed_id 16
 let asn1_sequence (items : list asn1_gen_item_k) (pf : squash (asn1_sequence_k_wf (List.map proj2_of_3 items)))
 = ASN1_ILC sequence_id (ASN1_SEQUENCE (k_as_lk (| items, pf |) ))
 
-let asn1_sequence_of (#s) (item : asn1_k s) = ASN1_ILC sequence_id (ASN1_SEQUENCE_OF item)
+// SEQUENCE OF / SET OF, possibly empty
+let asn1_sequence_of (#s) (item : asn1_k s) = ASN1_ILC sequence_id (ASN1_SEQUENCE_OF false item)
+
+// SEQUENCE SIZE (1..MAX) OF
+let asn1_nonempty_sequence_of (#s) (item : asn1_k s) = ASN1_ILC sequence_id (ASN1_SEQUENCE_OF true item)
 
 let set_id = mk_constant_constructed_id 17
 
-let asn1_set_of (#s) (item : asn1_k s) = ASN1_ILC set_id (ASN1_SET_OF item)
+let asn1_set_of (#s) (item : asn1_k s) = ASN1_ILC set_id (ASN1_SET_OF false item)
+
+// SET SIZE (1..MAX) OF
+let asn1_nonempty_set_of (#s) (item : asn1_k s) = ASN1_ILC set_id (ASN1_SET_OF true item)
 
 let printablestring_id = mk_constant_id 19
 
@@ -157,7 +248,7 @@ let asn1_printablestring = ASN1_ILC printablestring_id (ASN1_TERMINAL ASN1_PRINT
 
 let teletexstring_id = mk_constant_id 20
 
-let asn1_teletexstring = ASN1_ILC teletexstring_id (ASN1_TERMINAL ASN1_OCTETSTRING)
+let asn1_teletexstring = ASN1_ILC teletexstring_id (ASN1_TERMINAL ASN1_TELETEXSTRING)
 
 let ia5string_id = mk_constant_id 22
 
@@ -173,15 +264,15 @@ let asn1_generalizedtime = ASN1_ILC generalizedtime_id (ASN1_TERMINAL ASN1_GENER
 
 let visiblestring_id = mk_constant_id 26
 
-let asn1_visiblestring = ASN1_ILC visiblestring_id (ASN1_TERMINAL ASN1_OCTETSTRING)
+let asn1_visiblestring = ASN1_ILC visiblestring_id (ASN1_TERMINAL ASN1_VISIBLESTRING)
 
 let universalstring_id = mk_constant_id 28
 
-let asn1_universalstring = ASN1_ILC universalstring_id (ASN1_TERMINAL ASN1_OCTETSTRING)
+let asn1_universalstring = ASN1_ILC universalstring_id (ASN1_TERMINAL ASN1_UNIVERSALSTRING)
 
 let bMPstring_id = mk_constant_id 30
 
-let asn1_bMPstring = ASN1_ILC bMPstring_id (ASN1_TERMINAL ASN1_OCTETSTRING)
+let asn1_bMPstring = ASN1_ILC bMPstring_id (ASN1_TERMINAL ASN1_BMPSTRING)
 
 // for any
 
