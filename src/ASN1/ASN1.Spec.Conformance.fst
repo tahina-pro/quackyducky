@@ -438,19 +438,15 @@ let rec list_sound_at (#t: Type) (p: asn1_strong_parser t) (b: bytes)
     | Some (_, n) -> list_ok b == true
     | None -> True))
   (decreases (Seq.length b))
-= tot_parse_list_eq p b;
-  tot_parse_list_eq pv b;
-  if Seq.length b = 0
-  then ()
-  else match parse p b with
-  | None -> ()
-  | Some (_, c) ->
-    if c = 0 then ()
-    else begin
-      let b' = Seq.slice b c (Seq.length b) in
-      assert (Seq.length b' < Seq.length b);
-      list_sound_at p b'
-    end
+= (* recurse first, so that the termination check does not see the
+     unfoldings of parse_list *)
+  (if Seq.length b > 0
+   then match parse p b with
+   | Some (_, c) ->
+     if c > 0 then list_sound_at p (Seq.slice b c (Seq.length b))
+   | None -> ());
+  tot_parse_list_eq p b;
+  tot_parse_list_eq pv b
 
 let sized_list_sound (ne: bool) (#t: Type) (p: asn1_strong_parser t)
 : Lemma

@@ -78,9 +78,15 @@ let is_valid_calendar_date4dy
         false
     end
 
+(* Leap seconds: UTCTime and GeneralizedTime are in UTC in DER (X.690 11.7,
+   11.8), where a leap second can only be 23:59:60. TIME-OF-DAY and DATE-TIME
+   are local times, where a leap second can occur at the end of any minute. *)
 let is_valid_time_hhmmss
+  (utc : bool)
   (hh mm ss : U32.t)
-= (U32.lte hh 23ul) && (U32.lte mm 59ul) && (U32.lte ss 59ul)
+= (U32.lte hh 23ul) && (U32.lte mm 59ul) &&
+  (U32.lte ss 59ul ||
+   (ss = 60ul && (not utc || (hh = 23ul && mm = 59ul))))
 
 let is_valid_digit
   (ch : U8.t)
@@ -145,13 +151,14 @@ let is_valid_yyyymmdd
     false
 
 let is_valid_hhmmss
+  (utc : bool)
   (b : asn1_bytes)
   (s : U32.t {U32.v s + 6 <= Seq.length b})
 = if (is_valid_digit_range b (U32.v s) 6) then begin
     let hh = read_2dnum (Seq.index b (U32.v s))     (Seq.index b (U32.v s + 1)) in
     let mm = read_2dnum (Seq.index b (U32.v s + 2)) (Seq.index b (U32.v s + 3)) in
     let ss = read_2dnum (Seq.index b (U32.v s + 4)) (Seq.index b (U32.v s + 5)) in
-    is_valid_time_hhmmss hh mm ss
+    is_valid_time_hhmmss utc hh mm ss
   end
   else 
     false
@@ -160,7 +167,7 @@ let is_valid_hhmmss
 let is_valid_ASN1UTCTIME
   (b : asn1_bytes)
 = Seq.length b = 13 &&
-  is_valid_yymmdd b 0ul && is_valid_hhmmss b 6ul && Seq.index b 12 = 90uy // Z
+  is_valid_yymmdd b 0ul && is_valid_hhmmss true b 6ul && Seq.index b 12 = 90uy // Z
 
 (* X.690 11.7: a DER GeneralizedTime is YYYYMMDDhhmmss[.f+]Z, where the
    fractional part, if present, is non-empty and has no trailing zero. *)
@@ -168,9 +175,9 @@ let is_valid_ASN1GENERALIZEDTIME
   (b : asn1_bytes)
 = let len = Seq.length b in
   if len = 15 then
-    is_valid_yyyymmdd b 0ul && is_valid_hhmmss b 8ul && Seq.index b 14 = 90uy // Z
+    is_valid_yyyymmdd b 0ul && is_valid_hhmmss true b 8ul && Seq.index b 14 = 90uy // Z
   else if len >= 17 then
-    is_valid_yyyymmdd b 0ul && is_valid_hhmmss b 8ul &&
+    is_valid_yyyymmdd b 0ul && is_valid_hhmmss true b 8ul &&
     Seq.index b 14 = 46uy && // .
     is_valid_digit_range b 15 (len - 16) &&
     Seq.index b (len - 2) <> 48uy && // no trailing 0
@@ -195,12 +202,12 @@ let is_valid_ASN1DATE
 let is_valid_ASN1TIMEOFDAY
   (b : asn1_bytes)
 = Seq.length b = 6 &&
-  is_valid_hhmmss b 0ul
+  is_valid_hhmmss false b 0ul
 
 let is_valid_ASN1DATETIME
   (b : asn1_bytes)
 = Seq.length b = 14 &&
-  is_valid_yyyymmdd b 0ul && is_valid_basic_year b 0ul && is_valid_hhmmss b 8ul
+  is_valid_yyyymmdd b 0ul && is_valid_basic_year b 0ul && is_valid_hhmmss false b 8ul
 
 #pop-options
 
