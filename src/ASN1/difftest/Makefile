@@ -1,8 +1,12 @@
 # ASN.1 DER differential tests: ours vs asn1tools vs rasn vs asn1-rs.
 # See README.md. Run from src/ASN1 via `make test` (target difftest).
 #
-#   make check        run every enabled implementation, then gate (default)
-#   make rebaseline   rewrite triage/known.json from the current results
+#   make check        run ours on every vector, and the other enabled
+#                     implementations only on the vectors not in
+#                     triage/known.json for them, then gate (default)
+#   make check-all    run every enabled implementation on every vector,
+#                     then gate, including the triage/known.json entries
+#   make rebaseline   rewrite triage/known.json from check-all's results
 #   make clean        remove out/, .venv/ and the Rust target/
 #
 # Opt-outs: ASN1_DIFFTEST_PY=0 skips asn1tools (no Python venv);
@@ -49,21 +53,25 @@ endif
 RUST_DIR := $(local_curdir)/harness/rust
 RUST_BIN := $(RUST_DIR)/target/release
 
-RESULTS := $(OUT)/ours.jsonl
-DISABLED :=
+# check-all writes every result to $(OUT); check writes the results of the
+# other implementations, on their filtered manifests, to $(NEW).
+NEW := $(OUT)/new
+KNOWN := triage/known.json
+OTHERS :=
 ifeq (1,$(ASN1_DIFFTEST_PY))
-RESULTS += $(OUT)/asn1tools.jsonl
-else
-DISABLED += $(OUT)/asn1tools.jsonl
+OTHERS += asn1tools
 endif
 ifeq (1,$(ASN1_DIFFTEST_RUST))
-RESULTS += $(OUT)/rasn.jsonl $(OUT)/asn1-rs.jsonl
-else
-DISABLED += $(OUT)/rasn.jsonl $(OUT)/asn1-rs.jsonl
+OTHERS += rasn asn1-rs
 endif
+DISABLED := $(filter-out $(OTHERS),asn1tools rasn asn1-rs)
+RESULTS := $(OUT)/ours.jsonl $(OTHERS:%=$(OUT)/%.jsonl)
+NEW_RESULTS := $(OUT)/ours.jsonl $(OTHERS:%=$(NEW)/%.jsonl)
 
 REPORT_ARGS = --manifest $(MANIFEST) --capabilities capabilities \
-  --known triage/known.json --results $(OUT)
+  --known $(KNOWN) --results $(OUT)
+NEW_REPORT_ARGS = --manifest $(MANIFEST) --capabilities capabilities \
+  --known $(KNOWN) --results $(NEW) --ours-results $(OUT) --new-only
 
 all: check
 
@@ -91,6 +99,13 @@ venv: $(VENV_STAMP)
 $(OUT)/asn1tools.jsonl: $(MANIFEST) $(VENV_STAMP) harness/asn1tools/runner.py $(wildcard schemas/*.asn)
 	$(VENV_PYTHON) harness/asn1tools/runner.py $(SCHEMAS) $(MANIFEST) $@
 
+$(NEW)/manifest.%.json: $(MANIFEST) $(KNOWN) report.py
+	mkdir -p $(NEW)
+	$(PYTHON) report.py filter --manifest $(MANIFEST) --known $(KNOWN) --impl $* $@
+
+$(NEW)/asn1tools.jsonl: $(NEW)/manifest.asn1tools.json $(VENV_STAMP) harness/asn1tools/runner.py $(wildcard schemas/*.asn)
+	$(VENV_PYTHON) harness/asn1tools/runner.py $(SCHEMAS) $< $@
+
 # cargo does its own dependency tracking, so always ask it.
 build-rust:
 	cd $(RUST_DIR) && $(CARGO) build --release --locked --quiet
@@ -101,10 +116,23 @@ $(OUT)/rasn.jsonl: $(MANIFEST) build-rust
 $(OUT)/asn1-rs.jsonl: $(MANIFEST) build-rust
 	$(RUST_BIN)/asn1rs-runner $(MANIFEST) $@
 
-run: $(RESULTS)
-	rm -f $(DISABLED)
+$(NEW)/rasn.jsonl: $(NEW)/manifest.rasn.json build-rust
+	$(RUST_BIN)/rasn-runner $< $@
 
-check: run
+$(NEW)/asn1-rs.jsonl: $(NEW)/manifest.asn1-rs.json build-rust
+	$(RUST_BIN)/asn1rs-runner $< $@
+
+# Results of disabled implementations are removed, so that they are not gated.
+run: $(RESULTS)
+	rm -f $(DISABLED:%=$(OUT)/%.jsonl)
+
+run-new: $(NEW_RESULTS)
+	rm -f $(DISABLED:%=$(NEW)/%.jsonl)
+
+check: run-new
+	$(PYTHON) report.py check $(NEW_REPORT_ARGS) --report $(REPORT)
+
+check-all: run
 	$(PYTHON) report.py check $(REPORT_ARGS) --report $(REPORT)
 
 rebaseline: run
@@ -114,4 +142,4 @@ clean:
 	rm -rf $(OUT) $(VENV_DIR)
 	-cd $(RUST_DIR) && $(CARGO) clean
 
-.PHONY: all venv build-rust run check rebaseline clean
+.PHONY: all venv build-rust run run-new check check-all rebaseline clean

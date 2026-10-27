@@ -56,16 +56,31 @@ input.
 
 ```sh
 make -C src/ASN1/difftest            # same as `check`
+make -C src/ASN1/difftest check-all
 make -C src/ASN1/difftest rebaseline
 make -C src/ASN1/difftest clean
 ```
 
-* `check` runs every enabled implementation, then gates. It fails if:
+* `check` is the default, and is what `make test` runs. Our parser runs on
+  every vector. Each other implementation runs only on the vectors that are
+  not in `triage/known.json` for it. The filtered manifests and results go to
+  `out/new/`. `check` fails if:
   1. our verdict differs from the expected verdict;
-  2. a discrepancy is new, or still `untriaged`;
-  3. a baseline entry no longer occurs (stale).
+  2. a discrepancy is new;
+  3. a baseline entry is still `untriaged`.
 
-  The full report is written to `out/report.md`.
+  Because the tool versions are pinned, the known results can only change
+  when the harness changes. Skipping them can therefore leave a stale entry,
+  but it cannot hide a bug in our parser.
+* `check-all` runs every enabled implementation on every vector. In addition
+  to the failures of `check`, it fails if a baseline entry no longer occurs
+  (stale), or if its verdict changed. Run it by hand:
+  * after bumping a pinned version (`requirements.txt`, `Cargo.lock`);
+  * after editing a runner or a `capabilities/*.json`;
+  * before `rebaseline`.
+
+The full report is written to `out/report.md`. Its "skipped (known)" column
+counts the known pairs that `check` did not run.
 * `rebaseline` rewrites `triage/known.json` from the current results:
   * stale entries are dropped;
   * existing classifications are kept;
@@ -197,3 +212,4 @@ because its UTF-8 decoding also rejects valid UCS-4 contents.
 4. Add vectors to `vectors/`, tagged with features from `features.json`.
    Each `accept` vector also yields generated mutations.
 5. Run `make -C src/ASN1 test`, then triage any new discrepancies.
+   Run `check-all` before `rebaseline`.

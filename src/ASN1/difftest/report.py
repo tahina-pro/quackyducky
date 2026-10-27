@@ -4,9 +4,15 @@
   report.py manifest VECTOR_DIR FEATURES OUT_MANIFEST [--gen DIR]...
       Merge and validate VECTOR_DIR/*.json (and DIR/*.json for each
       generated-vector directory DIR) into a single manifest.
-  report.py check   [common options]
+  report.py filter --manifest M --known FILE --impl IMPL OUT_MANIFEST
+      Write the vectors of M that are not in the baseline for IMPL.
+  report.py check   [common options] [--new-only] [--ours-results DIR]
       Compare all results with the expected verdicts and with the triaged
       baseline; write a markdown report; exit 1 on any regression.
+      With --new-only, the other implementations were run on `filter`ed
+      manifests: their baseline vectors are skipped, and rule (c) is not
+      checked. Our results are read from --ours-results (default
+      --results), and must cover every vector.
   report.py rebaseline [common options]
       Rewrite the baseline: drop stale entries, add new discrepancies as
       "untriaged" (which `check` rejects until they are classified).
@@ -18,7 +24,8 @@ Gating rules of `check`:
   (a) our verdict must equal the expected (X.690) verdict on every vector;
   (b) every discrepancy of another implementation must be in the baseline,
       with a class other than "untriaged";
-  (c) every baseline entry of an implementation that ran must still occur.
+  (c) every baseline entry of an implementation that ran must still occur
+      (not checked with --new-only).
 Implementations whose results file is absent (runner skipped) are ignored.
 """
 
@@ -89,10 +96,11 @@ def cmd_manifest(args):
     print(f'manifest: {len(vectors)} vectors -> {args.out}')
 
 
-def load_results(results_dir):
+def load_results(results_dir, ours_dir=None):
     results = {}
     for impl in IMPLS:
-        path = os.path.join(results_dir, f'{impl}.jsonl')
+        d = ours_dir if impl == 'ours' and ours_dir else results_dir
+        path = os.path.join(d, f'{impl}.jsonl')
         if os.path.exists(path):
             with open(path) as f:
                 results[impl] = {r['id']: r for r in map(json.loads, f)}
@@ -105,10 +113,11 @@ def load_capabilities(cap_dir, impl):
     return {f for f, c in caps.items() if c['status'] in ('supported', 'partial')}
 
 
-def collect(args):
-    """Return (ours_failures, discrepancies, stats, ran)."""
+def collect(args, skip=frozenset()):
+    """Return (ours_failures, discrepancies, stats, ran).
+    Pairs (impl, id) in `skip` are not checked (see --new-only)."""
     vectors = load_json(args.manifest)['vectors']
-    results = load_results(args.results)
+    results = load_results(args.results, getattr(args, 'ours_results', None))
     if 'ours' not in results:
         fail(f'no results for ours in {args.results}')
     ours_failures, discrepancies = [], {}
@@ -119,6 +128,9 @@ def collect(args):
         for v in vectors:
             if caps is not None and not set(v['features']) <= caps:
                 st['skipped (capabilities)'] += 1
+                continue
+            if (impl, v['id']) in skip:
+                st['skipped (known)'] += 1
                 continue
             r = res.get(v['id'])
             got = r['verdict'] if r else 'missing'
@@ -146,17 +158,17 @@ def load_known(path):
 
 def write_report(path, vectors_by_id, ours_failures, discrepancies, known, stats, problems):
     lines = ['# ASN.1 DER differential test report', '',
-             '| implementation | run | agree with X.690 | known discrepancies | new | skipped (capabilities) |',
-             '|---|---|---|---|---|---|']
+             '| implementation | run | agree with X.690 | known discrepancies | new | skipped (capabilities) | skipped (known) |',
+             '|---|---|---|---|---|---|---|']
     for impl in IMPLS:
         if impl not in stats:
-            lines.append(f'| {impl} | not run | | | | |')
+            lines.append(f'| {impl} | not run | | | | | |')
             continue
         st = stats[impl]
         nk = sum(1 for (i, vid) in discrepancies if i == impl and (i, vid) in known)
         nn = (len(ours_failures) if impl == 'ours' else
               sum(1 for (i, vid) in discrepancies if i == impl and (i, vid) not in known))
-        lines.append(f'| {impl} | {st["run"]} | {st["agree"]} | {nk} | {nn} | {st["skipped (capabilities)"]} |')
+        lines.append(f'| {impl} | {st["run"]} | {st["agree"]} | {nk} | {nn} | {st["skipped (capabilities)"]} | {st["skipped (known)"]} |')
     lines += ['', '## Problems (check fails)', '']
     lines += [f'- {p}' for p in problems] or ['None.']
     clusters = defaultdict(list)
@@ -180,8 +192,9 @@ def write_report(path, vectors_by_id, ours_failures, discrepancies, known, stats
 def cmd_check(args):
     vectors = load_json(args.manifest)['vectors']
     vectors_by_id = {v['id']: v for v in vectors}
-    ours_failures, discrepancies, stats, ran = collect(args)
     known = load_known(args.known)
+    skip = frozenset(known) if args.new_only else frozenset()
+    ours_failures, discrepancies, stats, ran = collect(args, skip)
     problems = []
     for v, r in ours_failures:
         problems.append(f'ours: `{v["id"]}` expected {v["expect"]} ({v["clause"]}), '
@@ -195,7 +208,10 @@ def cmd_check(args):
         elif e['class'] == 'untriaged':
             problems.append(f'{key[0]}: `{key[1]}` untriaged discrepancy')
     for key, e in sorted(known.items()):
-        if key[0] in ran and key not in discrepancies:
+        if args.new_only:
+            if key[0] in ran and e['class'] == 'untriaged':
+                problems.append(f'{key[0]}: `{key[1]}` untriaged discrepancy')
+        elif key[0] in ran and key not in discrepancies:
             problems.append(f'{key[0]}: `{key[1]}` stale baseline entry (no longer a discrepancy, '
                             f'or vector removed); run `make rebaseline`')
     if args.report:
@@ -204,7 +220,8 @@ def cmd_check(args):
         if impl in stats:
             st = stats[impl]
             print(f'{impl:10} run {st["run"]:4}  agree {st["agree"]:4}  '
-                  f'skipped {st["skipped (capabilities)"]:4}')
+                  f'skipped {st["skipped (capabilities)"]:4}'
+                  + (f'  known (not run) {st["skipped (known)"]:4}' if args.new_only else ''))
         else:
             print(f'{impl:10} not run')
     for p in problems:
@@ -215,7 +232,17 @@ def cmd_check(args):
     print('difftest: OK' + (f', report in {args.report}' if args.report else ''))
 
 
+def cmd_filter(args):
+    known = {vid for (impl, vid) in load_known(args.known) if impl == args.impl}
+    vectors = [v for v in load_json(args.manifest)['vectors'] if v['id'] not in known]
+    with open(args.out, 'w') as f:
+        json.dump({'vectors': vectors}, f, indent=1)
+    print(f'filter: {len(vectors)} vectors not in the {args.impl} baseline -> {args.out}')
+
+
 def cmd_rebaseline(args):
+    if args.new_only:
+        fail('rebaseline needs the results of every vector (no --new-only)')
     ours_failures, discrepancies, _, ran = collect(args)
     if ours_failures:
         fail('refusing to rebaseline while ours disagrees with the manifest')
@@ -245,6 +272,11 @@ def main():
     m.add_argument('features')
     m.add_argument('out')
     m.add_argument('--gen', action='append', default=[])
+    fl = sub.add_parser('filter')
+    fl.add_argument('--manifest', required=True)
+    fl.add_argument('--known', required=True)
+    fl.add_argument('--impl', required=True, choices=IMPLS[1:])
+    fl.add_argument('out')
     for name in ('check', 'rebaseline'):
         c = sub.add_parser(name)
         c.add_argument('--manifest', required=True)
@@ -252,8 +284,11 @@ def main():
         c.add_argument('--known', required=True)
         c.add_argument('--results', required=True)
         c.add_argument('--report')
+        c.add_argument('--ours-results')
+        c.add_argument('--new-only', action='store_true')
     args = p.parse_args()
-    {'manifest': cmd_manifest, 'check': cmd_check, 'rebaseline': cmd_rebaseline}[args.cmd](args)
+    {'manifest': cmd_manifest, 'filter': cmd_filter, 'check': cmd_check,
+     'rebaseline': cmd_rebaseline}[args.cmd](args)
 
 
 if __name__ == '__main__':
