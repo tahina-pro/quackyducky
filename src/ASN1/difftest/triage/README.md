@@ -98,18 +98,11 @@ Not documented anywhere, and so the first to file:
 
 ## Upstream report drafts
 
-Each draft is minimal, and its reproducer is a vector id. A draft with a
-prior report should be filed as a comment on that issue, or trimmed to the
-parts it does not cover.
-
-### asn1tools: infinite loop in DER SEQUENCE OF / SET OF
-
-`asn1tools.compile_string('M DEFINITIONS ::= BEGIN T ::= SEQUENCE OF INTEGER END', 'der').decode('T', bytes.fromhex('30030101ff'))`
-never returns, and its memory grows by gigabytes. `codecs/der.py:91-93`
-(`ArrayType.decode_content`) loops while `offset - start_offset < length`.
-The element decoder returns `TAG_MISMATCH` without advancing on a wrong tag
-(`codecs/ber.py:546`), so the loop never ends. Fix: raise a `DecodeTagError`
-when the element decoder returns `TAG_MISMATCH`, as the BER codec does.
+Each draft is minimal, and its reproducer is a vector id. Drafts already
+fully reported upstream are omitted: the asn1tools SEQUENCE OF infinite
+loop (eerimoq/asn1tools#180) and the asn1-rs empty-BOOLEAN panic
+(rusticata/asn1-rs#142). The others are trimmed to what prior reports do
+not cover.
 
 ### asn1tools: the `der` codec does not enforce DER
 
@@ -126,8 +119,9 @@ accepts:
 * explicitly encoded DEFAULTs (11.5);
 * unsorted SET OF (11.6).
 
-Invalid string and time contents raise `UnicodeDecodeError`/`ValueError`
-instead of `asn1tools.DecodeError`.
+Invalid time contents raise `ValueError`, and invalid BIT STRING and OID
+contents `IndexError`, instead of `asn1tools.DecodeError`. (The
+`UnicodeDecodeError` case is eerimoq/asn1tools#186.)
 
 ### rasn: UniversalString decoded as UTF-8
 
@@ -160,26 +154,27 @@ With `DecoderOptions::der()`, rasn accepts:
 * unsorted SET OF (11.6);
 * SET components out of canonical order (10.3).
 
-### asn1-rs: panic on an empty BOOLEAN
+### asn1-rs: valid SEQUENCE rejected after an absent OPTIONAL BOOLEAN
 
-`bool::from_der(&[0x01, 0x00])` panics with "index out of bounds".
-`src/traits.rs:192` runs `CheckDerConstraints::check_constraints` before
-`try_from`, which holds the length check, and `src/asn1_types/boolean.rs:117`
-reads `any.data[0]`. The same ordering makes the DER check of an OPTIONAL
-BOOLEAN reject the *next* component when its tag number is 1 in another
-class (`seq/accept/a-d`).
+The blanket `FromDer` runs `CheckDerConstraints::check_constraints`
+before the tag check in `try_from` (`src/traits.rs:192`). In a
+`DerSequence` with an absent OPTIONAL or DEFAULT BOOLEAN, the BOOLEAN's DER
+check therefore runs on the *next* component, which then fails when its
+tag number is 1 in another class (`seq/accept/a-d`). rusticata/asn1-rs#142
+reports the resulting panic on an empty BOOLEAN and mentions the ordering,
+but not this rejection of valid input.
 
-### asn1-rs: `Oid` checks neither its tag nor its contents
+### asn1-rs: `Oid` does not check its tag
 
-`Oid::try_from(&Any)` (`src/asn1_types/oid.rs:56-60`) checks neither the
-tag nor the subidentifiers. `Oid::from_der(&[0x05, 0x00])` (a NULL) succeeds,
-and so do an empty OID, a truncated subidentifier, and leading 0x80 octets
-(X.690 8.19.2).
+`Oid::try_from(&Any)` (`src/asn1_types/oid.rs:56-60`) does not check the
+tag, so `Oid::from_der(&[0x05, 0x00])` (a NULL) succeeds (`algid/reject/no-oid`).
+The empty OID is also accepted. rusticata/asn1-rs#150 covers the other
+content checks (leading 0x80, truncated subidentifier).
 
-### asn1-rs: DER checks missing in the header and derive
+### asn1-rs: DER checks missing in the derive and types
 
-* Length minimality is commented out (`src/header.rs:305-306`).
-* High-tag-number minimality is not checked (`src/ber/parser.rs:113-123`).
+Non-minimal lengths and tags are rusticata/asn1-rs#149. Not covered there:
+
 * The primitive/constructed bit is not checked for most types.
 * The `DerSequence`/`DerSet` derive and `TaggedExplicit` ignore trailing
   contents.
