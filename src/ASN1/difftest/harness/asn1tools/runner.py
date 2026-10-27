@@ -22,7 +22,7 @@ import sys
 
 import asn1tools
 
-TIMEOUT = 5
+TIMEOUT = 2
 
 
 class Timeout(Exception):

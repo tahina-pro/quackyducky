@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """ASN.1 DER differential tests: manifest assembly, reporting and gating.
 
-  report.py manifest VECTOR_DIR FEATURES OUT_MANIFEST
-      Merge and validate VECTOR_DIR/*.json into a single manifest.
+  report.py manifest VECTOR_DIR FEATURES OUT_MANIFEST [--gen DIR]...
+      Merge and validate VECTOR_DIR/*.json (and DIR/*.json for each
+      generated-vector directory DIR) into a single manifest.
   report.py check   [common options]
       Compare all results with the expected verdicts and with the triaged
       baseline; write a markdown report; exit 1 on any regression.
@@ -58,7 +59,9 @@ def load_json(path):
 def cmd_manifest(args):
     features = set(load_json(args.features)['features'])
     vectors, ids = [], set()
-    for path in sorted(glob.glob(os.path.join(args.vector_dir, '*.json'))):
+    paths = [path for d in [args.vector_dir] + args.gen
+             for path in sorted(glob.glob(os.path.join(d, '*.json')))]
+    for path in paths:
         for v in load_json(path)['vectors']:
             where = f'{path}: {v.get("id")}'
             for k in ('id', 'type', 'hex', 'expect', 'clause', 'features'):
@@ -241,6 +244,7 @@ def main():
     m.add_argument('vector_dir')
     m.add_argument('features')
     m.add_argument('out')
+    m.add_argument('--gen', action='append', default=[])
     for name in ('check', 'rebaseline'):
         c = sub.add_parser(name)
         c.add_argument('--manifest', required=True)

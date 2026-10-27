@@ -67,9 +67,12 @@ REPORT_ARGS = --manifest $(MANIFEST) --capabilities capabilities \
 
 all: check
 
-$(MANIFEST): $(VECTORS) features.json report.py
-	mkdir -p $(OUT)
-	$(PYTHON) report.py manifest vectors features.json $@
+GEN := $(OUT)/gen
+
+$(MANIFEST): $(VECTORS) features.json report.py gen/mutate.py
+	mkdir -p $(GEN)
+	$(PYTHON) gen/mutate.py vectors $(GEN)/mutations.json
+	$(PYTHON) report.py manifest vectors features.json $@ --gen $(GEN)
 
 $(OUT)/ours.jsonl: $(MANIFEST) $(OURS)
 	$(OURS) DIFFTEST $(MANIFEST) $@

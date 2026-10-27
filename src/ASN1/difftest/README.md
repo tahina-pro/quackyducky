@@ -33,13 +33,14 @@ They run as part of `make -C src/ASN1 test`, and so as part of the toplevel
 | `../ASN1.DiffTest.*.fst` | F\* translations of the schemas |
 | `../ASN1.DiffTest.fst` | name-based dispatch (`"Module.Type"`), extracted with the parser |
 | `features.json` | the catalog of feature tags |
-| `vectors/*.json` | test vectors: `id`, `type`, `hex`, `expect`, `clause`, `features`, optional `mutation`, `notes` |
+| `vectors/*.json` | hand-written test vectors: `id`, `type`, `hex`, `expect`, `clause`, `features`, optional `mutation`, `notes` |
+| `gen/mutate.py` | derives `reject` vectors from the hand-written `accept` vectors, into `out/gen/` |
 | `capabilities/<impl>.json` | per-implementation feature support, with the evidence for it |
 | `triage/known.json` | triaged discrepancies: `impl`, `id`, `got`, `class`, `clause`, `rationale`, `upstream` |
 | `harness/asn1tools/` | Python runner; `requirements.txt` pins the version |
 | `harness/rust/` | Cargo workspace (`rasn-runner`, `asn1rs-runner`); `Cargo.lock` pins the versions |
 | `report.py` | manifest assembly, report and gating |
-| `out/` | generated: `manifest.json`, `<impl>.jsonl` results, `report.md` |
+| `out/` | generated: `gen/mutations.json`, `manifest.json`, `<impl>.jsonl` results, `report.md` |
 
 Every runner shares one command line, `RUNNER MANIFEST RESULTS`. It writes one
 JSON object per vector:
@@ -127,6 +128,24 @@ Unsupported in each tool (see `capabilities/` for the evidence):
 * asn1-rs: the IRI types, the DATE types, EXTERNAL, CHARACTER STRING, and
   constraints.
 
+## Generated vectors
+
+`gen/mutate.py` runs at manifest time. It derives `reject` vectors
+(`mut/<mutation>/<base id>`) from every hand-written `accept` vector, using
+mutations that break DER whatever the type:
+
+* truncation;
+* non-minimal lengths, outer and on the first component;
+* a flipped primitive/constructed bit;
+* a low tag number in the high-tag form;
+* indefinite length;
+* an extra `00 00` component;
+* a last component that overruns its container.
+
+Nested mutations skip opaque contents (ANY, EXTERNAL and the like). The
+script docstring cites the X.690 clauses. There are currently 324
+hand-written and 594 generated vectors.
+
 ## Findings
 
 `triage/known.json` records each discrepancy with its evidence. The most
@@ -134,7 +153,7 @@ serious ones:
 
 * asn1tools: an infinite loop with unbounded memory growth on a SEQUENCE OF
   element with the wrong tag (`intseq/reject/wrong-element`). The runner
-  stops each decode after 5 seconds and reports `error`.
+  stops each decode after 2 seconds and reports `error`.
 * asn1tools: the `der` codec reuses BER SEQUENCE/SET decoding. It accepts
   components in any order, ignores unknown and trailing components, and
   accepts indefinite lengths. Invalid strings and times escape as uncaught
@@ -145,8 +164,10 @@ serious ones:
   `Oid::try_from` checks neither the tag nor the contents, so a NULL is
   accepted as an OBJECT IDENTIFIER. The SEQUENCE/SET derive ignores trailing
   components.
-* All three: non-minimal lengths and tags; unsorted SET OF; DEFAULT values
-  encoded explicitly.
+* rasn and asn1-rs ignore the primitive/constructed bit of most types, and
+  accept low tag numbers in the high-tag form.
+* All three: non-minimal lengths; unsorted SET OF; DEFAULT values encoded
+  explicitly.
 
 The `policy` entries are our 20-octet INTEGER bound and our 32-bit OID arcs.
 The `ambiguity` entries are leap seconds, BMPString surrogates, and the
@@ -161,4 +182,5 @@ express.
 3. Add each type to the dispatch in `harness/rust/rasn-runner/src/main.rs`,
    and translate it by hand in `harness/rust/asn1rs-runner/src/main.rs`.
 4. Add vectors to `vectors/`, tagged with features from `features.json`.
+   Each `accept` vector also yields generated mutations.
 5. Run `make -C src/ASN1 test`, then triage any new discrepancies.
