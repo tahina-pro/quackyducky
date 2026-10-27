@@ -174,6 +174,19 @@ The `ambiguity` entries are leap seconds, BMPString surrogates, and the
 AlgId table constraint, which the plain `ANY DEFINED BY` schema cannot
 express.
 
+`triage/README.md` groups the discrepancies by root cause, with counts, and
+drafts the upstream bug reports.
+
+## Limitations
+
+The tests compare verdicts only: a decode is `accept` only if it consumes
+the whole input. They do not compare decoded values. Comparing values would need a common value
+notation, such as JER (X.697), from every implementation. asn1tools and
+rasn have JER codecs, but asn1-rs does not, and our extracted parser has no
+value printer. So a decoder that accepts a valid encoding but returns the
+wrong value goes unnoticed. rasn's UniversalString bug is caught only
+because its UTF-8 decoding also rejects valid UCS-4 contents.
+
 ## Adding a test
 
 1. Add or extend a module in `schemas/`.

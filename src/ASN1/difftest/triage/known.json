@@ -2742,7 +2742,7 @@
    "id": "external/accept/single-asn1-type",
    "got": "reject",
    "class": "bug-asn1tools",
-   "rationale": "asn1tools 0.169.0 'der' reuses ber.Sequence/ber.Set (codecs/der.py:22-23): MembersType.decode_members accepts components in any order (codecs/ber.py:775), skips unmatched ones and ignores trailing data ('Extra data is allowed in cases of versioned additions', codecs/ber.py:769), even without an extension marker. Violates X.680 25/27 and X.690 10.3.",
+   "rationale": "X.690 8.18 / X.680 31.2.7: single-ASN1-type is [0] of an open type, so its tag is always EXPLICIT (constructed a0). asn1tools 0.169.0's built-in EXTERNAL expects [0] IMPLICIT (primitive 80) and rejects the valid encoding: \"Expected CHOICE(encoding) with tags ['80', '81', '82'], but got 'a0'\".",
    "clause": "X.690 8.18"
   },
   {
