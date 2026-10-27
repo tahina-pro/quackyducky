@@ -2,8 +2,9 @@
 
 `known.json` records every discrepancy between an implementation and the
 X.690 verdict, with its evidence. This file groups them by root cause and
-drafts upstream bug reports. None has been filed yet; `upstream` is `null`
-in every entry.
+drafts upstream bug reports. We have filed none of them; `upstream` is
+`null` in every entry. Some are already known upstream: see "Prior reports"
+below.
 
 Versions: asn1tools 0.169.0 (`der` codec), rasn 0.29.0 with rasn-compiler
 0.16, asn1-rs 0.7.2. The counts include the generated `mut/...` vectors.
@@ -66,9 +67,40 @@ The remaining entries are not bugs:
   * the AlgId table constraint (`algid/reject/123-*`), which the plain
     `ANY DEFINED BY` schema given to the other tools cannot express.
 
+## Prior reports
+
+We checked every issue (open and closed) in eerimoq/asn1tools,
+librasn/rasn, librasn/compiler and rusticata/asn1-rs on 2026-10-27, as well
+as the source comments and user documentation of the tested versions. No
+project's user documentation mentions any of these gaps.
+
+| Draft | GitHub issue | Source comment |
+|---|---|---|
+| asn1tools: SEQUENCE OF infinite loop | eerimoq/asn1tools#180 (open): the same root cause (`der.py:92`, `TAG_MISMATCH` without advancing), triggered there by valid CHOICE data | — |
+| asn1tools: `der` codec does not enforce DER | Partly: eerimoq/asn1tools#186 (open) covers only the uncaught `UnicodeDecodeError`. Related but different: eerimoq/asn1tools#162 (top-level trailing bytes; closed, use `decode_with_length`) and eerimoq/asn1tools#195 (SET OF *encoding* order) | `ber.py:769`: "Extra data is allowed in cases of versioned additions" |
+| rasn: UniversalString as UTF-8 | none | — |
+| rasn-compiler: RELATIVE-OID as OID | none | The type lexer maps both keywords to `ASN1Type::ObjectIdentifier` (`lexer/object_identifier.rs:47-55`). The only TODO is for OID *values*: "store info whether the object id is relative" (`:40`) |
+| rasn: `der()` does not enforce DER | none. Related but different: librasn/rasn#552 (top-level trailing bytes; fixed by librasn/rasn#562, after 0.29.0) | `src/ber/de.rs:347-349`: redundant INTEGER sign octets are accepted on purpose ("BER data in the wild carries them"), also in DER |
+| asn1-rs: empty BOOLEAN panic | rusticata/asn1-rs#142 (open): exact match, including the constraint-before-tag ordering; fix in rusticata/asn1-rs#145 (open) | — |
+| asn1-rs: `Oid` unchecked | Partly: rusticata/asn1-rs#150 (open) covers the subidentifiers (leading 0x80, truncated), not the missing tag check | `oid.rs:57`: "check that any.data.last().unwrap() >> 7 == 0u8" |
+| asn1-rs: header and derive | Partly: rusticata/asn1-rs#149 (open) covers non-minimal tags and lengths | `XXX` on length minimality (`header.rs:306`), derive trailing contents (asn1-rs-derive 0.6.0 `container.rs:171`, "XXX check if empty?"), IMPLICIT constructed bit (`tagged/implicit.rs:111-126`), UTCTime seconds (`utctime.rs:27`) |
+
+Not documented anywhere, and so the first to file:
+
+* rasn: UniversalString; RELATIVE-OID (rasn-compiler); length and tag
+  minimality; the constructed bit; unused bits; DEFAULT; SET and SET OF
+  order; GeneralizedTime fractions.
+* asn1tools: indefinite and non-minimal lengths; BOOLEAN; INTEGER; unused
+  bits; out-of-order and unknown components; DEFAULT; SET OF order.
+* asn1-rs: the `Oid` tag check; DEFAULT; `SetOf` order; the constructed bit
+  of SEQUENCE and NULL; BMPString odd length; VisibleString DEL;
+  ENUMERATED minimality; BIT STRING unused-bits octet > 7.
+
 ## Upstream report drafts
 
-Each draft is minimal, and its reproducer is a vector id.
+Each draft is minimal, and its reproducer is a vector id. A draft with a
+prior report should be filed as a comment on that issue, or trimmed to the
+parts it does not cover.
 
 ### asn1tools: infinite loop in DER SEQUENCE OF / SET OF
 
