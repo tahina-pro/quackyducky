@@ -5,3 +5,4 @@ module ASN1.ExtractionRoot
 
 noextract let crl = ASN1.CRL.parse_crl
 noextract let settest = ASN1.SetTest.parse_settest
+noextract let difftest = ASN1.DiffTest.parse

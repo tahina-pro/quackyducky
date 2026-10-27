@@ -1,0 +1,58 @@
+{
+ "discrepancies": [
+  {
+   "impl": "asn1-rs",
+   "id": "smoke/reject/length-long-form",
+   "got": "accept",
+   "class": "bug-asn1-rs",
+   "rationale": "X.690 10.1: DER lengths use the minimal number of octets. asn1-rs 0.7.2 src/header.rs:305-306 has the check commented out ('XXX der_constraint_fail_if!(i, l < 127)').",
+   "clause": "X.690 10.1",
+   "upstream": null
+  },
+  {
+   "impl": "asn1tools",
+   "id": "smoke/reject/boolean-01",
+   "got": "accept",
+   "class": "bug-asn1tools",
+   "rationale": "X.690 11.1: DER TRUE is 0xFF. The asn1tools 0.169.0 'der' codec decodes like BER (any non-zero octet is TRUE).",
+   "clause": "X.690 11.1",
+   "upstream": null
+  },
+  {
+   "impl": "asn1tools",
+   "id": "smoke/reject/integer-leading-00",
+   "got": "accept",
+   "class": "bug-asn1tools",
+   "rationale": "X.690 8.3.2: INTEGER contents must be minimal. The asn1tools 0.169.0 'der' codec does not check this.",
+   "clause": "X.690 8.3.2",
+   "upstream": null
+  },
+  {
+   "impl": "asn1tools",
+   "id": "smoke/reject/length-long-form",
+   "got": "accept",
+   "class": "bug-asn1tools",
+   "rationale": "X.690 10.1: DER lengths use the minimal number of octets. The asn1tools 0.169.0 'der' codec does not check this.",
+   "clause": "X.690 10.1",
+   "upstream": null
+  },
+  {
+   "impl": "rasn",
+   "id": "smoke/reject/integer-leading-00",
+   "got": "accept",
+   "class": "bug-rasn",
+   "rationale": "X.690 8.3.2: INTEGER contents must be minimal. rasn 0.29.0 src/ber/de.rs:347-351 drops redundant sign octets instead of rejecting them, even with DecoderOptions::der().",
+   "clause": "X.690 8.3.2",
+   "upstream": null
+  },
+  {
+   "impl": "rasn",
+   "id": "smoke/reject/length-long-form",
+   "got": "accept",
+   "class": "bug-rasn",
+   "rationale": "X.690 10.1: DER lengths use the minimal number of octets. rasn 0.29.0 src/ber/de/parser.rs:206-213 accepts any long-form length, even with DecoderOptions::der().",
+   "clause": "X.690 10.1",
+   "upstream": null
+  }
+ ]
+}

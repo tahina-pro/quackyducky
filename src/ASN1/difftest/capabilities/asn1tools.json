@@ -1,0 +1,25 @@
+{
+ "impl": "asn1tools",
+ "features": {
+  "SEQUENCE": {
+   "status": "supported",
+   "source": "asn1tools 0.169.0 README (supported types); smoke schema compiles and positives decode"
+  },
+  "OPTIONAL": {
+   "status": "supported",
+   "source": "asn1tools 0.169.0 README (supported types); smoke schema compiles and positives decode"
+  },
+  "INTEGER": {
+   "status": "supported",
+   "source": "asn1tools 0.169.0 README (supported types); smoke schema compiles and positives decode"
+  },
+  "BOOLEAN": {
+   "status": "supported",
+   "source": "asn1tools 0.169.0 README (supported types); smoke schema compiles and positives decode"
+  },
+  "OCTET STRING": {
+   "status": "supported",
+   "source": "asn1tools 0.169.0 README (supported types); smoke schema compiles and positives decode"
+  }
+ }
+}

@@ -1,0 +1,25 @@
+{
+ "impl": "asn1-rs",
+ "features": {
+  "SEQUENCE": {
+   "status": "supported",
+   "source": "asn1-rs 0.7.2 src/asn1_types; hand-written smoke type, positives decode"
+  },
+  "OPTIONAL": {
+   "status": "supported",
+   "source": "asn1-rs 0.7.2 src/asn1_types; hand-written smoke type, positives decode"
+  },
+  "INTEGER": {
+   "status": "supported",
+   "source": "asn1-rs 0.7.2 src/asn1_types; hand-written smoke type, positives decode"
+  },
+  "BOOLEAN": {
+   "status": "supported",
+   "source": "asn1-rs 0.7.2 src/asn1_types; hand-written smoke type, positives decode"
+  },
+  "OCTET STRING": {
+   "status": "supported",
+   "source": "asn1-rs 0.7.2 src/asn1_types; hand-written smoke type, positives decode"
+  }
+ }
+}

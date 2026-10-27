@@ -1,0 +1,25 @@
+{
+ "impl": "rasn",
+ "features": {
+  "SEQUENCE": {
+   "status": "supported",
+   "source": "rasn 0.29 / rasn-compiler 0.16 docs; smoke schema compiles and positives decode"
+  },
+  "OPTIONAL": {
+   "status": "supported",
+   "source": "rasn 0.29 / rasn-compiler 0.16 docs; smoke schema compiles and positives decode"
+  },
+  "INTEGER": {
+   "status": "supported",
+   "source": "rasn 0.29 / rasn-compiler 0.16 docs; smoke schema compiles and positives decode"
+  },
+  "BOOLEAN": {
+   "status": "supported",
+   "source": "rasn 0.29 / rasn-compiler 0.16 docs; smoke schema compiles and positives decode"
+  },
+  "OCTET STRING": {
+   "status": "supported",
+   "source": "rasn 0.29 / rasn-compiler 0.16 docs; smoke schema compiles and positives decode"
+  }
+ }
+}

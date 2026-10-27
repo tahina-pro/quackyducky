@@ -99,11 +99,47 @@ let get_failure_reason (s:string)
     else
       2
 
+(* Differential testing (../difftest): [DIFFTEST manifest.json results.jsonl]
+   runs every vector of the manifest through ASN1.DiffTest.parse and writes
+   one JSON object per line: {id, impl, verdict, consumed}. The verdict is
+   "accept" iff the whole input is consumed. *)
+let bytes_of_hex (h:string) : string =
+  let h = String.concat "" (String.split_on_char ' ' h) in
+  String.init (String.length h / 2)
+    (fun i -> Char.chr (int_of_string ("0x" ^ String.sub h (2 * i) 2)))
+
+let difftest (manifest:string) (results:string) : unit =
+  let open Yojson.Safe.Util in
+  let vectors = Yojson.Safe.from_file manifest |> member "vectors" |> to_list in
+  let oc = open_out_bin results in
+  List.iter (fun v ->
+      let id = v |> member "id" |> to_string in
+      let ty = v |> member "type" |> to_string in
+      let data = bytes_of_hex (v |> member "hex" |> to_string) in
+      let len = String.length data in
+      let verdict, consumed =
+        match ASN1_DiffTest.parse ty (lp_bytes_of_string data) with
+        | None -> "unsupported", `Null
+        | Some None -> "reject", `Null
+        | Some (Some n) ->
+          let n = Z.to_int n in
+          (if n = len then "accept" else "reject"), `Int n
+      in
+      let line = `Assoc [ ("id", `String id); ("impl", `String "ours");
+                          ("verdict", `String verdict); ("consumed", consumed) ] in
+      output_string oc (Yojson.Safe.to_string line);
+      output_char oc '\n')
+    vectors;
+  close_out oc
+
 let main = 
+  if Array.length Sys.argv = 4 && String.equal Sys.argv.(1) "DIFFTEST" then
+    (difftest Sys.argv.(2) Sys.argv.(3); exit 0);
   let argc = Array.length Sys.argv in
   if argc <> 3 && argc <> 4
   then (
      print_string "Usage: ASN1_Parser format filename [-debug]\n";
+     print_string "       ASN1_Parser DIFFTEST manifest.json results.jsonl\n";
      print_string "Supported format: X509 CRL SETTEST\n";
      exit 1
   )
