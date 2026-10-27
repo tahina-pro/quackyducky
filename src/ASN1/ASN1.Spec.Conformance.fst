@@ -359,6 +359,17 @@ let terminal_universal_parser_eq (k: asn1_terminal_k) (b: bytes)
   | ASN1_BMPSTRING -> ()
   | ASN1_UNIVERSALSTRING -> ()
   | ASN1_TELETEXSTRING -> ()
+  | ASN1_NUMERICSTRING -> ()
+  | ASN1_VIDEOTEXSTRING -> ()
+  | ASN1_GRAPHICSTRING -> ()
+  | ASN1_GENERALSTRING -> ()
+  | ASN1_OBJECTDESCRIPTOR -> ()
+  | ASN1_RELATIVE_OID -> ()
+  | ASN1_OID_IRI -> ()
+  | ASN1_RELATIVE_OID_IRI -> ()
+  | ASN1_DATE -> ()
+  | ASN1_TIME_OF_DAY -> ()
+  | ASN1_DATE_TIME -> ()
   | ASN1_NULL -> ()
   | ASN1_OID -> ()
   | ASN1_UTCTIME -> ()
@@ -435,7 +446,11 @@ let rec list_sound_at (#t: Type) (p: asn1_strong_parser t) (b: bytes)
   | None -> ()
   | Some (_, c) ->
     if c = 0 then ()
-    else list_sound_at p (Seq.slice b c (Seq.length b))
+    else begin
+      let b' = Seq.slice b c (Seq.length b) in
+      assert (Seq.length b' < Seq.length b);
+      list_sound_at p b'
+    end
 
 let sized_list_sound (ne: bool) (#t: Type) (p: asn1_strong_parser t)
 : Lemma

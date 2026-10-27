@@ -26,3 +26,17 @@ let crl_conformance (b: bytes)
   (conformance_spec ASN1.CRL.cRLCertificateList b)
 = crl_wf ();
   conformance_correct ASN1.CRL.cRLCertificateList b
+
+(* The library schemas for EXTERNAL, EMBEDDED PDV and CHARACTER STRING *)
+
+let external_wf () : Lemma (wf ASN1.UniversalTypes.asn1_external) =
+  assert (wf ASN1.UniversalTypes.asn1_external == true)
+    by (FStar.Tactics.norm [delta; zeta; iota; primops]; FStar.Tactics.trivial ())
+
+let embedded_pdv_wf () : Lemma (wf ASN1.UniversalTypes.asn1_embedded_pdv) =
+  assert (wf ASN1.UniversalTypes.asn1_embedded_pdv == true)
+    by (FStar.Tactics.norm [delta; zeta; iota; primops]; FStar.Tactics.trivial ())
+
+let character_string_wf () : Lemma (wf ASN1.UniversalTypes.asn1_character_string) =
+  assert (wf ASN1.UniversalTypes.asn1_character_string == true)
+    by (FStar.Tactics.norm [delta; zeta; iota; primops]; FStar.Tactics.trivial ())

@@ -220,9 +220,24 @@ let oid_id = mk_constant_id 6
 
 let asn1_oid = ASN1_ILC oid_id (ASN1_TERMINAL ASN1_OID)
 
+let objectdescriptor_id = mk_constant_id 7
+
+let asn1_objectdescriptor = ASN1_ILC objectdescriptor_id (ASN1_TERMINAL ASN1_OBJECTDESCRIPTOR)
+
+let enumerated_id = mk_constant_id 10
+
+(* ENUMERATED { ... } (X.680 20) with the given admissible values; its
+   contents are encoded as those of an INTEGER (X.690 8.4) *)
+let asn1_enumerated (values : list int)
+= ASN1_ILC enumerated_id (ASN1_RESTRICTED_TERMINAL (ASN1_INTEGER 20) (fun (x : asn1_integer_t 20) -> List.mem #int x values))
+
 let utf8string_id = mk_constant_id 12
 
 let asn1_utf8string = ASN1_ILC utf8string_id (ASN1_TERMINAL ASN1_UTF8STRING)
+
+let relative_oid_id = mk_constant_id 13
+
+let asn1_relative_oid = ASN1_ILC relative_oid_id (ASN1_TERMINAL ASN1_RELATIVE_OID)
 
 let sequence_id = mk_constant_constructed_id 16
 
@@ -242,6 +257,10 @@ let asn1_set_of (#s) (item : asn1_k s) = ASN1_ILC set_id (ASN1_SET_OF false item
 // SET SIZE (1..MAX) OF
 let asn1_nonempty_set_of (#s) (item : asn1_k s) = ASN1_ILC set_id (ASN1_SET_OF true item)
 
+let numericstring_id = mk_constant_id 18
+
+let asn1_numericstring = ASN1_ILC numericstring_id (ASN1_TERMINAL ASN1_NUMERICSTRING)
+
 let printablestring_id = mk_constant_id 19
 
 let asn1_printablestring = ASN1_ILC printablestring_id (ASN1_TERMINAL ASN1_PRINTABLESTRING)
@@ -249,6 +268,10 @@ let asn1_printablestring = ASN1_ILC printablestring_id (ASN1_TERMINAL ASN1_PRINT
 let teletexstring_id = mk_constant_id 20
 
 let asn1_teletexstring = ASN1_ILC teletexstring_id (ASN1_TERMINAL ASN1_TELETEXSTRING)
+
+let videotexstring_id = mk_constant_id 21
+
+let asn1_videotexstring = ASN1_ILC videotexstring_id (ASN1_TERMINAL ASN1_VIDEOTEXSTRING)
 
 let ia5string_id = mk_constant_id 22
 
@@ -262,9 +285,17 @@ let generalizedtime_id = mk_constant_id 24
 
 let asn1_generalizedtime = ASN1_ILC generalizedtime_id (ASN1_TERMINAL ASN1_GENERALIZEDTIME)
 
+let graphicstring_id = mk_constant_id 25
+
+let asn1_graphicstring = ASN1_ILC graphicstring_id (ASN1_TERMINAL ASN1_GRAPHICSTRING)
+
 let visiblestring_id = mk_constant_id 26
 
 let asn1_visiblestring = ASN1_ILC visiblestring_id (ASN1_TERMINAL ASN1_VISIBLESTRING)
+
+let generalstring_id = mk_constant_id 27
+
+let asn1_generalstring = ASN1_ILC generalstring_id (ASN1_TERMINAL ASN1_GENERALSTRING)
 
 let universalstring_id = mk_constant_id 28
 
@@ -273,6 +304,26 @@ let asn1_universalstring = ASN1_ILC universalstring_id (ASN1_TERMINAL ASN1_UNIVE
 let bMPstring_id = mk_constant_id 30
 
 let asn1_bMPstring = ASN1_ILC bMPstring_id (ASN1_TERMINAL ASN1_BMPSTRING)
+
+let date_id = mk_constant_id 31
+
+let asn1_date = ASN1_ILC date_id (ASN1_TERMINAL ASN1_DATE)
+
+let time_of_day_id = mk_constant_id 32
+
+let asn1_time_of_day = ASN1_ILC time_of_day_id (ASN1_TERMINAL ASN1_TIME_OF_DAY)
+
+let date_time_id = mk_constant_id 33
+
+let asn1_date_time = ASN1_ILC date_time_id (ASN1_TERMINAL ASN1_DATE_TIME)
+
+let oid_iri_id = mk_constant_id 35
+
+let asn1_oid_iri = ASN1_ILC oid_iri_id (ASN1_TERMINAL ASN1_OID_IRI)
+
+let relative_oid_iri_id = mk_constant_id 36
+
+let asn1_relative_oid_iri = ASN1_ILC relative_oid_iri_id (ASN1_TERMINAL ASN1_RELATIVE_OID_IRI)
 
 // for any
 

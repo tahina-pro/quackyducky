@@ -178,5 +178,29 @@ let is_valid_ASN1GENERALIZEDTIME
   else
     false
 
+(* X.680 38.4: DATE, TIME-OF-DAY and DATE-TIME are TIME subtypes with
+   "Year=Basic" (years 1582 to 9999) and "Time=HMS" settings, encoded as
+   YYYYMMDD, hhmmss and YYYYMMDDhhmmss respectively (X.690 8.26). *)
+let is_valid_basic_year
+  (b : asn1_bytes)
+  (s : U32.t {U32.v s + 4 <= Seq.length b})
+= is_valid_digit_range b (U32.v s) 4 &&
+  U32.lte 1582ul (read_4dnum (Seq.index b (U32.v s)) (Seq.index b (U32.v s + 1)) (Seq.index b (U32.v s + 2)) (Seq.index b (U32.v s + 3)))
+
+let is_valid_ASN1DATE
+  (b : asn1_bytes)
+= Seq.length b = 8 &&
+  is_valid_yyyymmdd b 0ul && is_valid_basic_year b 0ul
+
+let is_valid_ASN1TIMEOFDAY
+  (b : asn1_bytes)
+= Seq.length b = 6 &&
+  is_valid_hhmmss b 0ul
+
+let is_valid_ASN1DATETIME
+  (b : asn1_bytes)
+= Seq.length b = 14 &&
+  is_valid_yyyymmdd b 0ul && is_valid_basic_year b 0ul && is_valid_hhmmss b 8ul
+
 #pop-options
 

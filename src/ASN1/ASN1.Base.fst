@@ -4,6 +4,7 @@ open LowParse.Tot.Combinators
 
 open ASN1.Bytes
 open ASN1.Spec.Time
+open ASN1.Spec.IRI
 open ASN1.Spec.Content.INTEGER
 
 // ASN.1 Kinds
@@ -42,7 +43,8 @@ type asn1_id_t =
 type asn1_terminal_k : Type =
 | ASN1_BOOLEAN
 | ASN1_INTEGER : (bound : pos) -> asn1_terminal_k
-// | ASN1_ENUM
+// ENUMERATED has the contents encoding of INTEGER (X.690 8.4); see
+// ASN1.Syntax.asn1_enumerated
 | ASN1_BITSTRING
 | ASN1_OCTETSTRING
 | ASN1_PRINTABLESTRING
@@ -52,11 +54,21 @@ type asn1_terminal_k : Type =
 | ASN1_BMPSTRING
 | ASN1_UNIVERSALSTRING
 | ASN1_TELETEXSTRING
+| ASN1_NUMERICSTRING
+| ASN1_VIDEOTEXSTRING
+| ASN1_GRAPHICSTRING
+| ASN1_GENERALSTRING
+| ASN1_OBJECTDESCRIPTOR
 | ASN1_NULL
 | ASN1_OID
-// | ASN1_ROID
+| ASN1_RELATIVE_OID
+| ASN1_OID_IRI
+| ASN1_RELATIVE_OID_IRI
 | ASN1_UTCTIME
 | ASN1_GENERALIZEDTIME
+| ASN1_DATE
+| ASN1_TIME_OF_DAY
+| ASN1_DATE_TIME
 | ASN1_PREFIXED_TERMINAL : asn1_id_t -> asn1_terminal_k -> asn1_terminal_k
 
 type asn1_boolean_t = bool
@@ -142,6 +154,22 @@ type asn1_universalstring_t = (b : asn1_bytes {is_valid_universal b})
    as raw bytes. *)
 type asn1_teletexstring_t = asn1_bytes
 
+(* NumericString (X.680 41.2): digits and space. *)
+let is_numeric_char (ch : U8.t) : bool =
+  let v = U8.v ch in
+  (48 <= v && v <= 57) || v = 32
+
+type asn1_numericstring_t = list (b : byte {is_numeric_char b})
+
+(* VideotexString, GraphicString, GeneralString (ISO 2022 based, X.680 41)
+   and ObjectDescriptor ([UNIVERSAL 7] IMPLICIT GraphicString, X.680 48)
+   have no practical validity rule either; their contents are kept as raw
+   bytes. *)
+type asn1_videotexstring_t = asn1_bytes
+type asn1_graphicstring_t = asn1_bytes
+type asn1_generalstring_t = asn1_bytes
+type asn1_objectdescriptor_t = asn1_bytes
+
 type asn1_null_t = unit
 
 let asn1_OID_wf' (value1 value2 : U32.t) =
@@ -155,17 +183,29 @@ let asn1_OID_wf (l : list U32.t) =
 type asn1_oid_t = 
   (l : list U32.t {asn1_OID_wf l})
 
-// type asn1_roid_t = unit
+(* RELATIVE-OID (X.690 8.20): a non-empty list of subidentifiers. *)
+let asn1_relative_oid_wf (l : list U32.t) : bool = Cons? l
+
+type asn1_relative_oid_t = (l : list U32.t {asn1_relative_oid_wf l})
+
+type asn1_oid_iri_t = (b : asn1_bytes {is_valid_oid_iri b})
+
+type asn1_relative_oid_iri_t = (b : asn1_bytes {is_valid_relative_oid_iri b})
 
 type asn1_utctime_t = (b : asn1_bytes {is_valid_ASN1UTCTIME b})
 
 type asn1_generalizedtime_t = (b : asn1_bytes {is_valid_ASN1GENERALIZEDTIME b})
 
+type asn1_date_t = (b : asn1_bytes {is_valid_ASN1DATE b})
+
+type asn1_time_of_day_t = (b : asn1_bytes {is_valid_ASN1TIMEOFDAY b})
+
+type asn1_date_time_t = (b : asn1_bytes {is_valid_ASN1DATETIME b})
+
 let rec asn1_terminal_t (k : asn1_terminal_k) : eqtype =
   match k with
   | ASN1_BOOLEAN -> asn1_boolean_t
   | ASN1_INTEGER bound -> asn1_integer_t bound
-//  | ASN1_ENUM -> asn1_enum_t
   | ASN1_BITSTRING -> asn1_bitstring_t
   | ASN1_OCTETSTRING -> asn1_octetstring_t
   | ASN1_UTF8STRING -> asn1_utf8string_t
@@ -175,11 +215,21 @@ let rec asn1_terminal_t (k : asn1_terminal_k) : eqtype =
   | ASN1_BMPSTRING -> asn1_bmpstring_t
   | ASN1_UNIVERSALSTRING -> asn1_universalstring_t
   | ASN1_TELETEXSTRING -> asn1_teletexstring_t
+  | ASN1_NUMERICSTRING -> asn1_numericstring_t
+  | ASN1_VIDEOTEXSTRING -> asn1_videotexstring_t
+  | ASN1_GRAPHICSTRING -> asn1_graphicstring_t
+  | ASN1_GENERALSTRING -> asn1_generalstring_t
+  | ASN1_OBJECTDESCRIPTOR -> asn1_objectdescriptor_t
   | ASN1_NULL -> asn1_null_t
   | ASN1_OID -> asn1_oid_t
-//  | ASN1_ROID -> asn1_roid_t
+  | ASN1_RELATIVE_OID -> asn1_relative_oid_t
+  | ASN1_OID_IRI -> asn1_oid_iri_t
+  | ASN1_RELATIVE_OID_IRI -> asn1_relative_oid_iri_t
   | ASN1_UTCTIME -> asn1_utctime_t
   | ASN1_GENERALIZEDTIME -> asn1_generalizedtime_t
+  | ASN1_DATE -> asn1_date_t
+  | ASN1_TIME_OF_DAY -> asn1_time_of_day_t
+  | ASN1_DATE_TIME -> asn1_date_time_t
   | ASN1_PREFIXED_TERMINAL _ k -> asn1_terminal_t k
 
 // Generic ASN.1 values (for ANY)
@@ -197,16 +247,27 @@ let asn1_universal_terminal (v : asn1_id_value_t) : option asn1_terminal_k =
   | 4 -> Some ASN1_OCTETSTRING
   | 5 -> Some ASN1_NULL
   | 6 -> Some ASN1_OID
+  | 7 -> Some ASN1_OBJECTDESCRIPTOR
   | 10 -> Some (ASN1_INTEGER asn1_any_integer_bound)
   | 12 -> Some ASN1_UTF8STRING
+  | 13 -> Some ASN1_RELATIVE_OID
+  | 18 -> Some ASN1_NUMERICSTRING
   | 19 -> Some ASN1_PRINTABLESTRING
   | 20 -> Some ASN1_TELETEXSTRING
+  | 21 -> Some ASN1_VIDEOTEXSTRING
   | 22 -> Some ASN1_IA5STRING
   | 23 -> Some ASN1_UTCTIME
   | 24 -> Some ASN1_GENERALIZEDTIME
+  | 25 -> Some ASN1_GRAPHICSTRING
   | 26 -> Some ASN1_VISIBLESTRING
+  | 27 -> Some ASN1_GENERALSTRING
   | 28 -> Some ASN1_UNIVERSALSTRING
   | 30 -> Some ASN1_BMPSTRING
+  | 31 -> Some ASN1_DATE
+  | 32 -> Some ASN1_TIME_OF_DAY
+  | 33 -> Some ASN1_DATE_TIME
+  | 35 -> Some ASN1_OID_IRI
+  | 36 -> Some ASN1_RELATIVE_OID_IRI
   | _ -> None
 
 // Universal types whose encoding is always constructed: EXTERNAL (8),

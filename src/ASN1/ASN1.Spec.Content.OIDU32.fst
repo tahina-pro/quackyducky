@@ -55,3 +55,7 @@ let lemma_synth_OIDU32_inj () :
 let parse_asn1_OIDU32 : asn1_weak_parser asn1_oid_t =
   let _ = lemma_synth_OIDU32_inj () in
   weaken asn1_weak_parser_kind ((parse_asn1_identifier_U32_alt `nondep_then` parse_asn1_OIDU32_tail) `parse_synth` synth_OIDU32)
+
+(* X.690 8.20: RELATIVE-OID, a non-empty list of subidentifiers *)
+let parse_asn1_RELATIVE_OIDU32 : asn1_weak_parser asn1_relative_oid_t =
+  weaken asn1_weak_parser_kind (parse_asn1_OIDU32_tail `parse_filter` asn1_relative_oid_wf)

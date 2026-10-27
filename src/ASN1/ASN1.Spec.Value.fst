@@ -23,6 +23,8 @@ open ASN1.Spec.Content.UNIVERSALSTRING
 open ASN1.Spec.Content.NULL
 open ASN1.Spec.Content.OIDU32
 open ASN1.Spec.Content.TIME
+open ASN1.Spec.Content.NUMERICSTRING
+open ASN1.Spec.Content.IRI
 
 module RV = LowParse.Spec.RecursiveVLGen
 module U32 = FStar.UInt32
@@ -46,10 +48,21 @@ let asn1_universal_terminal_parser (k : asn1_terminal_k) : asn1_weak_parser (asn
   | ASN1_BMPSTRING -> parse_asn1_bmpstring
   | ASN1_UNIVERSALSTRING -> parse_asn1_universalstring
   | ASN1_TELETEXSTRING -> parse_asn1_octetstring
+  | ASN1_NUMERICSTRING -> parse_asn1_numericstring
+  | ASN1_VIDEOTEXSTRING -> parse_asn1_octetstring
+  | ASN1_GRAPHICSTRING -> parse_asn1_octetstring
+  | ASN1_GENERALSTRING -> parse_asn1_octetstring
+  | ASN1_OBJECTDESCRIPTOR -> parse_asn1_octetstring
   | ASN1_NULL -> parse_asn1_null
   | ASN1_OID -> parse_asn1_OIDU32
+  | ASN1_RELATIVE_OID -> parse_asn1_RELATIVE_OIDU32
+  | ASN1_OID_IRI -> parse_asn1_OID_IRI
+  | ASN1_RELATIVE_OID_IRI -> parse_asn1_RELATIVE_OID_IRI
   | ASN1_UTCTIME -> parse_asn1_UTCTIME
   | ASN1_GENERALIZEDTIME -> parse_asn1_GENERALIZEDTIME
+  | ASN1_DATE -> parse_asn1_DATE
+  | ASN1_TIME_OF_DAY -> parse_asn1_TIMEOFDAY
+  | ASN1_DATE_TIME -> parse_asn1_DATETIME
   | ASN1_PREFIXED_TERMINAL _ _ -> fail_parser _ _
 
 (* Whether the contents of a primitive value are valid for its identifier:
