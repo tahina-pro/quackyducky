@@ -232,20 +232,14 @@ let asn1_any_id_valid (id : asn1_id_t) : bool =
 
 let asn1_any_id_t = (id : asn1_id_t { asn1_any_id_valid id == true })
 
-let asn1_any_leaf_t (id : asn1_id_t) : eqtype =
-  match id with
-  | MK_ASN1_ID UNIVERSAL _ v ->
-    begin match asn1_universal_terminal v with
-    | Some k -> asn1_terminal_t k
-    | None -> asn1_octetstring_t
-    end
-  | _ -> asn1_octetstring_t
-
-// A generic ASN.1 DER value: the identifier, and either the primitive
-// contents (parsed with the corresponding universal type, if known), or
-// the list of the values in the constructed contents
+// A generic ASN.1 DER value: the identifier, and either the raw primitive
+// contents (which the ANY parser checks against the corresponding universal
+// type, if known), or the list of the values in the constructed contents.
+// Keeping the raw contents makes the value determine its DER encoding, so
+// that conformance to a schema is a Boolean predicate on values (see
+// ASN1.Spec.Conformance.)
 type asn1_value =
-| ASN1_VALUE_PRIMITIVE : (id : asn1_any_id_t) -> (v : asn1_any_leaf_t id) -> asn1_value
+| ASN1_VALUE_PRIMITIVE : (id : asn1_any_id_t) -> (v : asn1_octetstring_t) -> asn1_value
 | ASN1_VALUE_CONSTRUCTED : (id : asn1_any_id_t) -> (l : list asn1_value) -> asn1_value
 
 type asn1_decorator : Type =
