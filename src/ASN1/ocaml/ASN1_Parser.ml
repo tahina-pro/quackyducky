@@ -104,7 +104,7 @@ let main =
   if argc <> 3 && argc <> 4
   then (
      print_string "Usage: ASN1_Parser format filename [-debug]\n";
-     print_string "Supported format: X509 CRL\n";
+     print_string "Supported format: X509 CRL SETTEST\n";
      exit 1
   )
   else (
@@ -114,6 +114,8 @@ let main =
               (if debugflag then ASN1_X509.dparse_cert else ASN1_X509.parse_cert)
             else if String.equal formatname "CRL" then
               (if debugflag then ASN1_CRL.dparse_crl else ASN1_CRL.parse_crl)
+            else if String.equal formatname "SETTEST" then
+              (if debugflag then ASN1_SetTest.dparse_settest else ASN1_SetTest.parse_settest)
             else 
               fun _ -> None
     in

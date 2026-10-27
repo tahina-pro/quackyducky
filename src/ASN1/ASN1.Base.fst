@@ -32,6 +32,24 @@ type asn1_id_value_t = U32.t
 type asn1_id_t =
 | MK_ASN1_ID : c : asn1_id_class_t -> f : asn1_id_flag_t -> v : asn1_id_value_t -> asn1_id_t
 
+// The canonical order of tags (X.690 10.3, 8.6): by class (UNIVERSAL,
+// APPLICATION, CONTEXT-SPECIFIC, PRIVATE), then by tag number. The
+// primitive/constructed flag is not part of the tag.
+let asn1_id_class_rank (c : asn1_id_class_t) : nat =
+  match c with
+  | UNIVERSAL -> 0
+  | APPLICATION -> 1
+  | CONTEXT_SPECIFIC -> 2
+  | PRIVATE -> 3
+
+let asn1_tag_lt (a b : asn1_id_t) : bool =
+  let ra = asn1_id_class_rank a.c in
+  let rb = asn1_id_class_rank b.c in
+  ra < rb || (ra = rb && U32.lt a.v b.v)
+
+let asn1_same_tag (a b : asn1_id_t) : bool =
+  a.c = b.c && a.v = b.v
+
 //TODO: constant tables (Currently in X.509)
 
 //ASN.1 kinds and High-level types
@@ -354,6 +372,25 @@ and asn1_any_prefix_k_wf (ks : Set.set asn1_id_t) (li : id_decs) : prop =
     | PLAIN -> asn1_any_prefix_k_wf ks tl
     | OPTION | DEFAULT -> asn1_any_prefix_k_wf' ks tl s'
 
+// The components of a SET have distinct tags (X.680 27.3), regardless of the
+// primitive/constructed flag.
+let asn1_set_disjoint (s1 s2 : Set.set asn1_id_t) : prop =
+  forall (i1 i2 : asn1_id_t) . (Set.mem i1 s1 /\ Set.mem i2 s2) ==> ~ (asn1_same_tag i1 i2)
+
+let rec asn1_set_k_wf' (s : Set.set asn1_id_t) (li : id_decs) : prop =
+  match li with
+  | [] -> True
+  | hd :: tl ->
+    let (s', _) = hd in
+    asn1_set_disjoint s s' /\ asn1_set_k_wf' s tl
+
+let rec asn1_set_k_wf (li : id_decs) : prop =
+  match li with
+  | [] -> True
+  | hd :: tl ->
+    let (s, _) = hd in
+    asn1_set_k_wf' s tl /\ asn1_set_k_wf tl
+
 noeq //noextract
 type asn1_content_k : Type =
 | ASN1_RESTRICTED_TERMINAL : (k : asn1_terminal_k) -> (is_valid : (asn1_terminal_t k) -> bool) -> asn1_content_k
@@ -361,7 +398,10 @@ type asn1_content_k : Type =
 | ASN1_SEQUENCE : asn1_gen_items_lk -> asn1_content_k
 // `nonempty = true` encodes the `SIZE (1..MAX)` constraint
 | ASN1_SEQUENCE_OF : nonempty : bool -> #s : _ -> asn1_k s -> asn1_content_k
-//| ASN1_SET : #s : _ -> asn1_set_k s -> asn1_content_k
+// SET: the components are encoded in the canonical order of their tags
+// (X.690 10.3), so the order of the components in the value (the same as
+// for SEQUENCE) is the order of the declaration, not of the encoding.
+| ASN1_SET : id_decs : id_decs -> items : asn1_gen_items_l id_decs -> pf : squash (asn1_set_k_wf id_decs) -> asn1_content_k
 | ASN1_SET_OF : nonempty : bool -> #s : _ -> asn1_k s -> asn1_content_k
 | ASN1_PREFIXED : #s : _ -> asn1_k s -> asn1_content_k
 | ASN1_ANY_DEFINED_BY :
@@ -505,6 +545,7 @@ let rec asn1_content_t (k : asn1_content_k) : Tot Type (decreases k) =
   | ASN1_RESTRICTED_TERMINAL k' is_valid -> parse_filter_refine is_valid
   | ASN1_TERMINAL k' -> asn1_terminal_t k'
   | ASN1_SEQUENCE gitems -> asn1_sequence_t_core (dsnd gitems)
+  | ASN1_SET _ items _ -> asn1_sequence_t_core items
   | ASN1_SEQUENCE_OF ne k' -> sized_list ne (asn1_t k')
   | ASN1_SET_OF ne k' -> sized_list ne (asn1_t k')
   | ASN1_PREFIXED k' -> asn1_t k'

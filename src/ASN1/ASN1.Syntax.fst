@@ -58,6 +58,7 @@ let rec asn1_content_k_wf (c : asn1_content_k) : Tot bool (decreases c)
   | ASN1_RESTRICTED_TERMINAL k _
   | ASN1_TERMINAL k -> asn1_terminal_k_wf k
   | ASN1_SEQUENCE gitems -> asn1_gen_items_l_wf (dsnd gitems)
+  | ASN1_SET _ items _ -> asn1_gen_items_l_wf items
   | ASN1_SEQUENCE_OF _ k
   | ASN1_SET_OF _ k
   | ASN1_PREFIXED k -> asn1_k_wf k
@@ -188,6 +189,8 @@ let op_Hat_Colon (#s : Set.set asn1_id_t)
 noextract
 let seq_tac () =  T.norm[iota;zeta;delta;primops;simplify]; T.smt()
 
+let set_tac () = seq_tac ()
+
 let mk_gen_items (items : list asn1_gen_item_k) (pf : squash (asn1_sequence_k_wf (List.map proj2_of_3 items)))
 : asn1_gen_items_lk
 = k_as_lk (| items, pf |)
@@ -256,6 +259,10 @@ let asn1_set_of (#s) (item : asn1_k s) = ASN1_ILC set_id (ASN1_SET_OF false item
 
 // SET SIZE (1..MAX) OF
 let asn1_nonempty_set_of (#s) (item : asn1_k s) = ASN1_ILC set_id (ASN1_SET_OF true item)
+
+// SET { ... }: the components must have distinct tags (use `set_tac`)
+let asn1_set (items : list asn1_gen_item_k) (pf : squash (asn1_set_k_wf (List.map proj2_of_3 items)))
+= ASN1_ILC set_id (ASN1_SET _ (list_as_l items) pf)
 
 let numericstring_id = mk_constant_id 18
 

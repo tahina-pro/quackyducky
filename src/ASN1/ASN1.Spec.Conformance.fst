@@ -29,6 +29,7 @@ open ASN1.Spec.Value.Enc
 open ASN1.Spec.ILC
 open ASN1.Spec.Choice
 open ASN1.Spec.Sequence
+open ASN1.Spec.SetComponents
 open ASN1.Spec.Any
 open ASN1.Spec.Set
 open ASN1.Spec.Interpreter
@@ -1122,6 +1123,7 @@ let rec wf_content (id: asn1_id_t) (k: asn1_content_k) : Tot bool (decreases k) 
    | ASN1_RESTRICTED_TERMINAL k' _ -> wf_terminal id k'
    | ASN1_TERMINAL k' -> wf_terminal id k'
    | ASN1_SEQUENCE gitems -> CONSTRUCTED? id.f && wf_items (dsnd gitems)
+   | ASN1_SET _ items _ -> CONSTRUCTED? id.f && wf_items items
    | ASN1_SEQUENCE_OF _ k' -> CONSTRUCTED? id.f && wf k'
    | ASN1_SET_OF _ k' -> CONSTRUCTED? id.f && wf k'
    | ASN1_PREFIXED k' -> encap_ok id && wf k'
@@ -1181,6 +1183,74 @@ let any_parser_sound (its: list gen_decorated_parser_twin) (#t: Type) (sfx: pars
   = any_machine its sfx None b
   in
   Classical.forall_intro prf
+
+(* SET components *)
+
+#push-options "--z3rlimit 32 --fuel 1 --ifuel 1"
+let rec set_elem_twin_at (its: list gen_decorated_parser_twin) (id: asn1_id_t) (b: bytes)
+: Lemma
+  (requires (items_sound its))
+  (ensures (match parse (parse_set_elem_twin its id) b with
+    | Some (_, n) -> twin_at id b n == true
+    | None -> True))
+  (decreases its)
+= match its with
+  | [] -> ()
+  | hd :: tl ->
+    let (| s, _, _ |) = Mkgendcparser?.d hd in
+    if FStar.Set.mem id s
+    then begin
+      item_twin_at hd id b;
+      parse_synth_eq (parse_asn1_sequence_item_twin hd id) (Inl #_ #(set_elem_t tl)) b
+    end
+    else begin
+      set_elem_twin_at tl id b;
+      parse_synth_eq (parse_set_elem_twin tl id) (Inr #(asn1_decorated_t (Mkgendcparser?.d hd))) b
+    end
+#pop-options
+
+#push-options "--z3rlimit 64 --fuel 1 --ifuel 1"
+let set_elem_value_at (its: list gen_decorated_parser_twin) (b: bytes)
+: Lemma
+  (requires (items_sound its))
+  (ensures (match parse (parse_set_elem its) b with
+    | Some (_, n) -> value_at b n == true
+    | None -> True))
+= parse_set_elem_twin_cases_injective its;
+  and_then_eq parse_asn1_identifier_U32 (parse_set_elem_twin its) b;
+  match parse parse_asn1_identifier_U32 b with
+  | Some (id, c1) ->
+    let b1 = Seq.slice b c1 (Seq.length b) in
+    set_elem_twin_at its id b1;
+    (match parse (parse_set_elem_twin its id) b1 with
+     | Some (_, n2) -> value_of_twin b c1 id n2
+     | None -> ())
+  | None -> ()
+#pop-options
+
+#push-options "--z3rlimit 64 --fuel 1 --ifuel 1"
+let set_parser_sound (its: list gen_decorated_parser_twin)
+: Lemma
+  (requires (items_sound its))
+  (ensures (seq_sound (make_asn1_set_parser its)))
+= Classical.forall_intro (Classical.move_requires (set_elem_value_at its));
+  assert (sound (parse_set_elem its));
+  set_to_tuple_injective its;
+  let pl = parse_list (parse_set_elem its) in
+  let pf = pl `parse_filter` set_ok its in
+  let prf (b: bytes) : Lemma (match parse (make_asn1_set_parser its) b with
+    | Some (_, n) -> list_ok (Seq.slice b 0 n) == true
+    | None -> True)
+  = parse_synth_eq pf (set_to_tuple its) b;
+    parse_filter_eq pl (set_ok its) b;
+    list_sound_at (parse_set_elem its) b;
+    parser_kind_prop_equiv (parse_list_kind true) pl;
+    match parse pl b with
+    | Some (_, n) -> list_ok_slice_0 b n
+    | None -> ()
+  in
+  Classical.forall_intro prf
+#pop-options
 
 let value_sound () : Lemma (sound parse_asn1_value /\ sound_twin parse_asn1_value_twin) = ()
 
@@ -1243,6 +1313,10 @@ let rec content_lemma (id: asn1_id_t) (k: asn1_content_k)
     items_lemma (dsnd gitems);
     seq_parser_sound (asn1_sequence_as_parser (dsnd gitems));
     content_sound_list id (make_asn1_sequence_parser (asn1_sequence_as_parser (dsnd gitems)))
+  | ASN1_SET _ items _ ->
+    items_lemma items;
+    set_parser_sound (asn1_sequence_as_parser items);
+    content_sound_list id (make_asn1_set_parser (asn1_sequence_as_parser items))
   | ASN1_SEQUENCE_OF ne k' ->
     top_lemma k';
     sized_list_sound ne (asn1_as_parser k')
@@ -1373,3 +1447,253 @@ let conformance_correct (#s: _) (k: asn1_k s) (b: bytes)
   | Some (_, n1), None -> assert (value_at b n1)
   | None, None -> ()
 #pop-options
+
+(* DER order of SET components: whenever the typed SET parser accepts some
+   contents, the identifiers of the generic values in those contents are
+   strictly increasing in the canonical order of tags (X.690 10.3.) *)
+
+let asn1_value_id (v: asn1_value) : Tot asn1_id_t =
+  match v with
+  | ASN1_VALUE_PRIMITIVE id _ -> id
+  | ASN1_VALUE_CONSTRUCTED id _ -> id
+
+let rec value_ids_sorted (l: list asn1_value) : Tot bool =
+  match l with
+  | x :: y :: q -> asn1_tag_lt (asn1_value_id x) (asn1_value_id y) && value_ids_sorted (y :: q)
+  | _ -> true
+
+let pv_value_id (b: bytes)
+: Lemma
+  (match parse pv b with
+   | Some (v, _) -> (match parse parse_asn1_identifier_U32 b with
+     | Some (id, _) -> asn1_value_id v == id
+     | None -> False)
+   | None -> True)
+= RV.parse_rec_vlgen_eq asn1_value_param b;
+  parse_any_identifier_consumed b
+
+let choice_twin_tag (lp: list (asn1_id_t & gen_parser asn1_strong_parser_kind)) (id: asn1_id_t) (b: bytes)
+: Lemma
+  (match parse (parse_tagged_union_payload (project_tags lp) (make_gen_choice_strong_payload_parser lp) id) b with
+   | Some (v, _) -> project_tags lp v == id
+   | None -> True)
+= LowParse.Spec.Combinators.parse_synth_eq #asn1_strong_parser_kind (make_gen_choice_strong_payload_parser lp id) (synth_tagged_union_data (project_tags lp) id) b
+
+#push-options "--fuel 1 --ifuel 1"
+let any_twin_tag (id: asn1_id_t) (b: bytes)
+: Lemma
+  (match parse (parse_asn1_value_twin id) b with
+   | Some (v, _) -> asn1_value_id v == id
+   | None -> True)
+= if asn1_any_id_valid id
+  then begin
+    let pp = RV.rec_vlgen_payload_parser asn1_value_param (RV.parse_rec_vlgen asn1_value_param) id in
+    parse_synth_eq pp (synth_asn1_value_twin id) b;
+    match parse pp b with
+    | Some (x, _) ->
+      (match x with
+       | RV.RNode _ -> ()
+       | RV.RLeaf _ -> ())
+    | None -> ()
+  end
+#pop-options
+
+#push-options "--z3rlimit 32 --fuel 1 --ifuel 1"
+let k_twin_tag (#s: _) (k: asn1_k s) (id: asn1_id_t) (b: bytes)
+: Lemma
+  (match parse (snd (asn1_as_parser_twin k) id) b with
+   | Some (v, _) -> asn1_k_tag k v == id
+   | None -> True)
+= match k with
+  | ASN1_ILC _ _ -> ()
+  | ASN1_CHOICE_ILC lc pf ->
+    let lp = asn1_lc_as_parser lc in
+    assert (snd (asn1_as_parser_twin k) id == make_asn1_choice_parser_twin_cases lc pf k lp id);
+    choice_twin_tag lp id b
+  | ASN1_ANY_ILC ->
+    assert (snd (asn1_as_parser_twin k) id == parse_asn1_value_twin id);
+    any_twin_tag id b
+#pop-options
+
+#push-options "--z3rlimit 64 --fuel 1 --ifuel 2"
+let dec_twin_tag (#s: _) (#d: _) (dk: asn1_decorated_k s d) (id: asn1_id_t) (b: bytes)
+: Lemma
+  (let item = asn1_decorated_as_parser_twin dk in
+   match parse (parse_asn1_sequence_item_twin item id) b with
+   | Some (v, _) -> decorated_tag (Mkgendcparser?.d item) v == Some id
+   | None -> True)
+= let item = asn1_decorated_as_parser_twin dk in
+  match dk with
+  | ASN1_PLAIN_ILC k -> k_twin_tag k id b
+  | ASN1_OPTION_ILC k ->
+    k_twin_tag k id b;
+    parse_synth_eq (Mkgendcparser?.fp item id) Some b
+  | ASN1_DEFAULT_TERMINAL id0 #k defv ->
+    let fp = Mkgendcparser?.fp item in
+    parse_synth_eq ((fp id) `parse_filter` (defaultv_filter defv)) (defaultv_synth defv) b;
+    parse_filter_eq (fp id) (defaultv_filter defv) b
+  | ASN1_DEFAULT_RESTRICTED_TERMINAL id0 #k is_valid defv ->
+    let fp = Mkgendcparser?.fp item in
+    let d = Mkgendcparser?.d item in
+    parse_synth_eq (((fp id) `parse_filter` is_valid) `parse_filter` (defaultv_filter #(asn1_decorated_pure_t d) defv)) (defaultv_synth #(asn1_decorated_pure_t d) defv) b;
+    parse_filter_eq ((fp id) `parse_filter` is_valid) (defaultv_filter #(asn1_decorated_pure_t d) defv) b;
+    parse_filter_eq (fp id) is_valid b
+#pop-options
+
+let item_tagged (item: gen_decorated_parser_twin) : prop =
+  forall id b. match parse (parse_asn1_sequence_item_twin item id) b with
+  | Some (v, _) -> decorated_tag (Mkgendcparser?.d item) v == Some id
+  | None -> True
+
+let rec items_tagged (its: list gen_decorated_parser_twin) : Tot prop (decreases its) =
+  match its with
+  | [] -> True
+  | hd :: tl -> item_tagged hd /\ items_tagged tl
+
+#push-options "--z3rlimit 32 --fuel 2 --ifuel 1"
+let rec items_tagged_intro (#ids: _) (ls: asn1_gen_items_l ids)
+: Lemma
+  (ensures (items_tagged (asn1_sequence_as_parser ls)))
+  (decreases ls)
+= match ls with
+  | ASN1_GEN_ITEMS_NIL -> ()
+  | ASN1_GEN_ITEMS_CONS _ _ dk _ tl ->
+    Classical.forall_intro_2 (dec_twin_tag dk);
+    assert (item_tagged (asn1_decorated_as_parser_twin dk));
+    items_tagged_intro tl;
+    assert (asn1_sequence_as_parser ls == asn1_decorated_as_parser_twin dk :: asn1_sequence_as_parser tl)
+#pop-options
+
+#push-options "--z3rlimit 64 --fuel 2 --ifuel 2"
+let rec set_elem_twin_tag (its: list gen_decorated_parser_twin) (id: asn1_id_t) (b: bytes)
+: Lemma
+  (requires (items_tagged its))
+  (ensures (match parse (parse_set_elem_twin its id) b with
+    | Some (e, _) -> elem_tag its e == Some id
+    | None -> True))
+  (decreases its)
+= match its with
+  | [] -> ()
+  | hd :: tl ->
+    let (| s, _, _ |) = Mkgendcparser?.d hd in
+    assert (item_tagged hd);
+    if FStar.Set.mem id s
+    then begin
+      parse_synth_eq (parse_asn1_sequence_item_twin hd id) (Inl #_ #(set_elem_t tl)) b;
+      match parse (parse_asn1_sequence_item_twin hd id) b with
+      | Some (v, _) ->
+        assert (decorated_tag (Mkgendcparser?.d hd) v == Some id);
+        let e : set_elem_t its = Inl #_ #(set_elem_t tl) v in
+        assert (elem_tag its e == decorated_tag (Mkgendcparser?.d hd) v)
+      | None -> ()
+    end
+    else begin
+      set_elem_twin_tag tl id b;
+      parse_synth_eq (parse_set_elem_twin tl id) (Inr #(asn1_decorated_t (Mkgendcparser?.d hd))) b;
+      match parse (parse_set_elem_twin tl id) b with
+      | Some (e', _) ->
+        let e : set_elem_t its = Inr #(asn1_decorated_t (Mkgendcparser?.d hd)) e' in
+        assert (elem_tag its e == elem_tag tl e')
+      | None -> ()
+    end
+#pop-options
+
+#push-options "--z3rlimit 64 --fuel 1 --ifuel 1"
+let set_elem_pv (its: list gen_decorated_parser_twin) (b: bytes)
+: Lemma
+  (requires (items_sound its /\ items_tagged its))
+  (ensures (match parse (parse_set_elem its) b with
+    | Some (e, n) -> (match parse pv b with
+      | Some (v, n') -> n' == n /\ elem_tag its e == Some (asn1_value_id v)
+      | None -> False)
+    | None -> True))
+= set_elem_value_at its b;
+  pv_value_id b;
+  parse_set_elem_twin_cases_injective its;
+  and_then_eq parse_asn1_identifier_U32 (parse_set_elem_twin its) b;
+  match parse parse_asn1_identifier_U32 b with
+  | Some (id, c1) -> set_elem_twin_tag its id (Seq.slice b c1 (Seq.length b))
+  | None -> ()
+#pop-options
+
+let value_tag (v: asn1_value) : Tot (option asn1_id_t) = Some (asn1_value_id v)
+
+#push-options "--z3rlimit 64 --fuel 2 --ifuel 1"
+let rec set_list_pv (its: list gen_decorated_parser_twin) (b: bytes)
+: Lemma
+  (requires (items_sound its /\ items_tagged its))
+  (ensures (match parse (parse_list (parse_set_elem its)) b with
+    | Some (le, _) -> (match parse (tot_parse_list pv) b with
+      | Some (lv, _) -> List.Tot.map (elem_tag its) le == List.Tot.map value_tag lv
+      | None -> False)
+    | None -> True))
+  (decreases (Seq.length b))
+= tot_parse_list_eq (parse_set_elem its) b;
+  tot_parse_list_eq pv b;
+  if Seq.length b = 0 then ()
+  else begin
+    set_elem_pv its b;
+    match parse (parse_set_elem its) b with
+    | Some (e, c) ->
+      if c = 0 then ()
+      else begin
+        let b' = Seq.slice b c (Seq.length b) in
+        set_list_pv its b';
+        match parse (tot_parse_list (parse_set_elem its)) b' with
+        | Some (le', _) ->
+          let Some (v, _) = parse pv b in
+          let Some (lv', _) = parse (tot_parse_list pv) b' in
+          assert (List.Tot.map (elem_tag its) (e :: le') == List.Tot.map value_tag (v :: lv'))
+        | None -> ()
+      end
+    | None -> ()
+  end
+#pop-options
+
+let rec tags_sorted_value_ids (#t: Type) (key: t -> Tot (option asn1_id_t)) (le: list t) (lv: list asn1_value)
+: Lemma
+  (requires (tags_sorted key le /\ List.Tot.map key le == List.Tot.map value_tag lv))
+  (ensures (value_ids_sorted lv))
+  (decreases lv)
+= match le, lv with
+  | _ :: y :: q, _ :: v :: r -> tags_sorted_value_ids key (y :: q) (v :: r)
+  | _ -> ()
+
+#push-options "--z3rlimit 64 --fuel 1 --ifuel 1"
+let set_der_sorted (its: list gen_decorated_parser_twin) (b: bytes)
+: Lemma
+  (requires (items_sound its /\ items_tagged its))
+  (ensures (match parse (make_asn1_set_parser its) b with
+    | Some (_, n) -> (match parse (tot_parse_list pv) (Seq.slice b 0 n) with
+      | Some (l, _) -> value_ids_sorted l
+      | None -> False)
+    | None -> True))
+= set_to_tuple_injective its;
+  let pl = parse_list (parse_set_elem its) in
+  let pf = pl `parse_filter` set_ok its in
+  parse_synth_eq pf (set_to_tuple its) b;
+  parse_filter_eq pl (set_ok its) b;
+  set_list_pv its b;
+  parser_kind_prop_equiv (parse_list_kind true) pl;
+  match parse pl b with
+  | Some (le, n) ->
+    Seq.lemma_eq_elim b (Seq.slice b 0 n);
+    (match parse (tot_parse_list pv) b with
+     | Some (lv, _) -> if set_ok its le then tags_sorted_value_ids (elem_tag its) le lv
+     | None -> ())
+  | None -> ()
+#pop-options
+
+(* For a well-formed schema, the contents accepted by a SET are a list of
+   generic values sorted in DER order *)
+let set_content_der_sorted (ids: id_decs) (items: asn1_gen_items_l ids) (pf: squash (asn1_set_k_wf ids)) (b: bytes)
+: Lemma
+  (requires (wf_items items))
+  (ensures (match parse (asn1_content_as_parser (ASN1_SET ids items pf)) b with
+    | Some (_, n) -> (match parse (tot_parse_list pv) (Seq.slice b 0 n) with
+      | Some (l, _) -> value_ids_sorted l
+      | None -> False)
+    | None -> True))
+= items_lemma items;
+  items_tagged_intro items;
+  set_der_sorted (asn1_sequence_as_parser items) b

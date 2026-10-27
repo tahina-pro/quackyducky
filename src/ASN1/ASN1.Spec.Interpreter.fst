@@ -27,6 +27,7 @@ open ASN1.Spec.Content.IRI
 open ASN1.Spec.ILC
 open ASN1.Spec.Choice
 open ASN1.Spec.Sequence
+open ASN1.Spec.SetComponents
 open ASN1.Spec.Any
 open ASN1.Spec.Set
 
@@ -146,6 +147,7 @@ and dasn1_content_as_parser (k : asn1_content_k) : Tot (asn1_weak_parser (asn1_c
   | ASN1_RESTRICTED_TERMINAL k' is_valid -> weaken _ ((dasn1_terminal_as_parser k') `parse_filter` is_valid)
   | ASN1_TERMINAL k' -> dasn1_terminal_as_parser k'
   | ASN1_SEQUENCE gitems -> make_asn1_sequence_parser (dasn1_sequence_as_parser (dsnd gitems))
+  | ASN1_SET _ items _ -> make_asn1_set_parser (dasn1_sequence_as_parser items)
   | ASN1_SEQUENCE_OF ne k' -> parse_sized_list ne (dasn1_as_parser k')
   | ASN1_SET_OF ne k' -> parse_sized_set ne (dasn1_as_parser k')
   | ASN1_PREFIXED k' -> weaken _ (dasn1_as_parser k')
@@ -287,6 +289,7 @@ and asn1_content_as_parser (k : asn1_content_k) : Tot (asn1_weak_parser (asn1_co
   | ASN1_RESTRICTED_TERMINAL k' is_valid -> weaken _ ((asn1_terminal_as_parser k') `parse_filter` is_valid)
   | ASN1_TERMINAL k' -> asn1_terminal_as_parser k'
   | ASN1_SEQUENCE gitems -> make_asn1_sequence_parser (asn1_sequence_as_parser (dsnd gitems))
+  | ASN1_SET _ items _ -> make_asn1_set_parser (asn1_sequence_as_parser items)
   | ASN1_SEQUENCE_OF ne k' -> parse_sized_list ne (asn1_as_parser k')
   | ASN1_SET_OF ne k' -> parse_sized_set ne (asn1_as_parser k')
   | ASN1_PREFIXED k' -> weaken _ (asn1_as_parser k')
