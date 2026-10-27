@@ -1,0 +1,14 @@
+-- Differential testing: ANY and ANY DEFINED BY (X.208).
+-- F* translation: src/ASN1/ASN1.DiffTest.Any.fst
+-- Our schema additionally fixes the parameters of algorithm 1.2.3 to NULL,
+-- which cannot be expressed with ANY DEFINED BY.
+DiffAny DEFINITIONS ::= BEGIN
+
+AnyT ::= ANY
+
+AlgId ::= SEQUENCE {
+  algorithm OBJECT IDENTIFIER,
+  parameters ANY DEFINED BY algorithm OPTIONAL
+}
+
+END

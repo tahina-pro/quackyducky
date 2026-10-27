@@ -6,17 +6,31 @@ Usage: runner.py SCHEMA_DIR MANIFEST RESULTS
 Compiles every SCHEMA_DIR/*.asn module separately with the 'der' codec, then
 decodes each manifest vector ("type" is "Module.Type") and writes one JSON
 object per line to RESULTS: {id, impl, verdict, consumed[, error]}.
-The verdict is "accept" iff decoding succeeds and consumes the whole input;
-"unsupported" if the module does not compile or lacks the type; "error" if
-the decoder raised something other than an asn1tools error (a crash).
+The verdict is "accept" iff decoding (with constraint checking) succeeds and
+consumes the whole input; "unsupported" if the module does not compile or
+lacks the type; "error" if the decoder raised something other than an
+asn1tools error (a crash) or did not finish within TIMEOUT seconds
+(asn1tools 0.169.0's DER SEQUENCE OF / SET OF decoder loops forever, growing
+memory, when an element has the wrong tag).
 """
 
 import glob
 import json
 import os
+import signal
 import sys
 
 import asn1tools
+
+TIMEOUT = 5
+
+
+class Timeout(Exception):
+    pass
+
+
+def _on_alarm(signum, frame):
+    raise Timeout()
 
 
 def compile_modules(schema_dir):
@@ -38,19 +52,26 @@ def run_vector(specs, v):
     if spec is None or ty not in spec.types:
         return {'verdict': 'unsupported', 'consumed': None}
     data = bytes.fromhex(v['hex'])
+    signal.alarm(TIMEOUT)
     try:
-        _, n = spec.decode_with_length(ty, data)
+        _, n = spec.decode_with_length(ty, data, check_constraints=True)
+    except Timeout:
+        return {'verdict': 'error', 'consumed': None,
+                'error': f'timeout after {TIMEOUT}s'}
     except asn1tools.Error as e:
         return {'verdict': 'reject', 'consumed': None, 'error': str(e)}
     except Exception as e:
         return {'verdict': 'error', 'consumed': None,
                 'error': f'{type(e).__name__}: {e}'}
+    finally:
+        signal.alarm(0)
     return {'verdict': 'accept' if n == len(data) else 'reject',
             'consumed': n}
 
 
 def main():
     schema_dir, manifest, results = sys.argv[1:4]
+    signal.signal(signal.SIGALRM, _on_alarm)
     specs = compile_modules(schema_dir)
     with open(manifest) as f:
         vectors = json.load(f)['vectors']

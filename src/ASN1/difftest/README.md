@@ -99,6 +99,60 @@ Implementations that were not run are not gated.
 
 A majority vote among the implementations is a hint, never a verdict.
 
+## Coverage
+
+Each type that some tool cannot handle sits alone in its own module, so the
+other types still run.
+
+| Schema | Types |
+|---|---|
+| `DiffSmoke` | the walking-skeleton SEQUENCE |
+| `DiffPrim` | BOOLEAN, INTEGER, ENUMERATED, BIT STRING, OCTET STRING, NULL, OBJECT IDENTIFIER |
+| `DiffRelOid`, `DiffIRI`, `DiffDesc` | RELATIVE-OID; OID-IRI and RELATIVE-OID-IRI; ObjectDescriptor |
+| `DiffStrings`, `DiffStrings2`, `DiffVideotex` | the restricted character string types |
+| `DiffTime`, `DiffTime2` | UTCTime, GeneralizedTime; DATE, TIME-OF-DAY, DATE-TIME |
+| `DiffConstructed` | SEQUENCE with OPTIONAL/DEFAULT/IMPLICIT/EXPLICIT, SEQUENCE OF, SET OF, CHOICE, APPLICATION/PRIVATE and high tag numbers, nesting |
+| `DiffSet` | SET (canonical order) |
+| `DiffAny` | ANY, ANY DEFINED BY |
+| `DiffExternal`, `DiffPdv`, `DiffCharStr` | EXTERNAL, EMBEDDED PDV, CHARACTER STRING |
+| `DiffConstraints` | SIZE and value constraints |
+
+Unsupported in each tool (see `capabilities/` for the evidence):
+
+* asn1tools: RELATIVE-OID, the IRI types, VideotexString, EMBEDDED PDV,
+  CHARACTER STRING. It runs with `check_constraints=True`.
+* rasn: the IRI types, the DATE types, CHARACTER STRING, VideotexString,
+  ObjectDescriptor. rasn-compiler maps EXTERNAL and EMBEDDED PDV to an
+  untagged `Any`, so those are not run.
+* asn1-rs: the IRI types, the DATE types, EXTERNAL, CHARACTER STRING, and
+  constraints.
+
+## Findings
+
+`triage/known.json` records each discrepancy with its evidence. The most
+serious ones:
+
+* asn1tools: an infinite loop with unbounded memory growth on a SEQUENCE OF
+  element with the wrong tag (`intseq/reject/wrong-element`). The runner
+  stops each decode after 5 seconds and reports `error`.
+* asn1tools: the `der` codec reuses BER SEQUENCE/SET decoding. It accepts
+  components in any order, ignores unknown and trailing components, and
+  accepts indefinite lengths. Invalid strings and times escape as uncaught
+  `UnicodeDecodeError`/`ValueError`.
+* rasn: UniversalString contents are decoded as UTF-8. rasn-compiler
+  generates RELATIVE-OID with the OBJECT IDENTIFIER tag.
+* asn1-rs: a panic on an empty BOOLEAN (`bool/reject/empty`).
+  `Oid::try_from` checks neither the tag nor the contents, so a NULL is
+  accepted as an OBJECT IDENTIFIER. The SEQUENCE/SET derive ignores trailing
+  components.
+* All three: non-minimal lengths and tags; unsorted SET OF; DEFAULT values
+  encoded explicitly.
+
+The `policy` entries are our 20-octet INTEGER bound and our 32-bit OID arcs.
+The `ambiguity` entries are leap seconds, BMPString surrogates, and the
+AlgId table constraint, which the plain `ANY DEFINED BY` schema cannot
+express.
+
 ## Adding a test
 
 1. Add or extend a module in `schemas/`.
