@@ -144,5 +144,18 @@ test-corpus-%: $(C_OUTPUT_DIR)/corpus_%.exe $(SPEC_RUNNER) $(EVALUATION_DIR)/dat
 
 test-corpus: $(addprefix test-corpus-,$(CORPUS_TESTS))
 
+# Deeply nested ANY (constant stack: run with a 64 KiB stack limit)
+DEEP_ANY_DEPTH := 4000
+test-deep-any: $(C_OUTPUT_DIR)/test_Any_AnyT.exe
+	python3 test/deep_any.py $(DEEP_ANY_DEPTH) | (ulimit -s 64 && $<)
+
+# Static stack bound: no recursion, and a bounded worst case, for the X.509
+# and CRL entry points (from the gcc call graph, at -O0 = no inlining)
+STACK_BUDGET := 32768
+stack-check: $(C_OUTPUT_DIR)/ASN1.Pulse.X509.c test/stack.py
+	cd $(C_OUTPUT_DIR) && $(CC) -std=c11 -O0 -fcallgraph-info=su -c ASN1.Pulse.X509.c -o stack.o
+	python3 test/stack.py --budget $(STACK_BUDGET) $(C_OUTPUT_DIR)/ASN1.Pulse.X509.ci \
+	  ASN1_Pulse_X509_validate_certificate ASN1_Pulse_X509_validate_crl
+
 .PRECIOUS: $(C_OUTPUT_DIR)/%.c $(C_OUTPUT_DIR)/%.h $(C_OUTPUT_DIR)/test_%.exe $(C_OUTPUT_DIR)/corpus_%.exe
-.PHONY: test test-oracle test-corpus FORCE
+.PHONY: test test-oracle test-corpus test-deep-any stack-check FORCE

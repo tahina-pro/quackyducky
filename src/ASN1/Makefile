@@ -43,6 +43,14 @@ evaluation/ASN1_Parser.exe: $(CUSTARD_STAMP)
 
 test: eval difftest
 
+# Pulse validators extracted to C with Custard (pulse/README.md)
+ifeq (,$(NO_PULSE))
+test: pulse-test
+endif
+
+pulse-test: compile
+	+$(MAKE) -C pulse test test-oracle test-corpus test-deep-any stack-check
+
 eval: compile
 	$(MAKE) -C evaluation
 
@@ -60,4 +68,4 @@ clean-files:
 
 .PHONY: %.clean
 
-.PHONY: all compile test eval difftest
+.PHONY: all compile test eval difftest pulse-test
