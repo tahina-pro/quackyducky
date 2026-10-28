@@ -20,6 +20,7 @@ module C = ASN1.Pulse.Constructed
 module SO = ASN1.Pulse.SetOf
 module Rs = ASN1.Pulse.Restrict
 module SC = ASN1.Pulse.SetComp
+module Any = ASN1.Pulse.Any
 module U32 = FStar.UInt32
 module U64 = FStar.UInt64
 
@@ -70,7 +71,7 @@ and supported_k (#s: _) (k: asn1_k s) : Tot bool (decreases k) =
   match k with
   | ASN1_ILC _ k' -> supported_content k'
   | ASN1_CHOICE_ILC lc _ -> supported_lc lc
-  | _ -> false
+  | ASN1_ANY_ILC -> true
 
 and supported_lc (lc: list (asn1_id_t & asn1_content_k)) : Tot bool (decreases lc) =
   match lc with
@@ -122,6 +123,7 @@ let has_id_k (#s: _) (k: asn1_k s) (u: squash (supported_k k)) (id: asn1_id_t)
 = match k with
   | ASN1_ILC id0 _ -> ILC.asn1_id_eq id id0
   | ASN1_CHOICE_ILC lc _ -> has_id_lc lc id
+  | ASN1_ANY_ILC -> true
 
 inline_for_extraction
 fn validate_fail
@@ -285,6 +287,7 @@ and validate_k (#s: _) (k: asn1_k s) (u: squash (supported_k k))
   | ASN1_CHOICE_ILC lc pf ->
     C.asn1_choice_id_then lc pf;
     C.validate_id_then (asn1_as_parser k) (Ghost.hide (snd (asn1_as_parser_twin k))) (fun id -> validate_k_twin k () id) ()
+  | ASN1_ANY_ILC -> Any.validate_any
 
 and validate_k_twin (#s: _) (k: asn1_k s) (u: squash (supported_k k)) (id: asn1_id_t)
 : Tot (LPS.validator #(asn1_t k) #asn1_strong_parser_kind (snd (asn1_as_parser_twin k) id))
@@ -297,6 +300,7 @@ and validate_k_twin (#s: _) (k: asn1_k s) (u: squash (supported_k k)) (id: asn1_
   | ASN1_CHOICE_ILC lc pf ->
     Classical.forall_intro (C.asn1_choice_twin_consumed lc pf id);
     validate_ext_consumed (validate_choice_payload lc () id) (snd (asn1_as_parser_twin k) id)
+  | ASN1_ANY_ILC -> Any.validate_any_twin id
 
 and validate_choice_payload (lc: list (asn1_id_t & asn1_content_k)) (u: squash (supported_lc lc)) (id: asn1_id_t)
 : Tot (LPS.validator #_ #asn1_strong_parser_kind (ASN1.Spec.Choice.make_gen_choice_strong_payload_parser (asn1_lc_as_parser lc) id))

@@ -90,6 +90,7 @@ $(eval $(call difftest_case,Constraints_Byte,Constraints,constraints.json,DiffCo
 $(eval $(call difftest_case,Constraints_NonEmptySeqOf,Constraints,constraints.json,DiffConstraints.NonEmptySeqOf,validate_nonEmptySeqOf))
 $(eval $(call difftest_case,Constraints_NonEmptySetOf,Constraints,constraints.json,DiffConstraints.NonEmptySetOf,validate_nonEmptySetOf))
 $(eval $(call difftest_case,Set_Set,Set,set.json,DiffSet.Set,validate_set))
+$(eval $(call difftest_case,Any_AnyT,Any,any.json,DiffAny.AnyT,validate_anyT))
 
 .SECONDEXPANSION:
 $(C_OUTPUT_DIR)/test_%.exe: $(C_OUTPUT_DIR)/ASN1.Pulse.DiffTest.$$($$*.module).c test/driver.c
