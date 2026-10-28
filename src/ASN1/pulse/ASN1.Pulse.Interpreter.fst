@@ -17,6 +17,7 @@ module SB = LowParse.Spec.Base
 module ILC = ASN1.Pulse.ILC
 module Term = ASN1.Pulse.Terminal
 module C = ASN1.Pulse.Constructed
+module SO = ASN1.Pulse.SetOf
 
 (* Definitions tagged with this attribute are unfolded when specializing
    the interpreter to a given schema. *)
@@ -41,6 +42,7 @@ let rec supported_content (k: asn1_content_k) : Tot bool (decreases k) =
   | ASN1_TERMINAL k' -> supported_terminal k'
   | ASN1_SEQUENCE gitems -> supported_items (dsnd gitems)
   | ASN1_SEQUENCE_OF _ k' -> supported_k k'
+  | ASN1_SET_OF _ k' -> supported_k k'
   | ASN1_PREFIXED k' -> supported_k k'
   | _ -> false
 
@@ -176,6 +178,8 @@ let rec validate_content (k: asn1_content_k) (u: squash (supported_content k))
     LPS.validate_ext (validate_seq (dsnd gitems) () None) #asn1_weak_parser_kind (asn1_content_as_parser k)
   | ASN1_SEQUENCE_OF ne k' ->
     C.validate_sized_list ne (validate_k k' ())
+  | ASN1_SET_OF ne k' ->
+    SO.validate_sized_set ne (validate_k k' ())
   | ASN1_PREFIXED k' ->
     LPS.validate_weaken asn1_weak_parser_kind (validate_k k' ())
 

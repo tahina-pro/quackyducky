@@ -8,7 +8,7 @@ module LPS = LowParse.Pulse.Base
 module D = ASN1.DiffTest.Constructed
 
 (* Extraction roots: one C validator per difftest type of
-   ASN1.DiffTest.Constructed (except OctetsSet: SET OF is not supported yet) *)
+   ASN1.DiffTest.Constructed *)
 
 [@@normalize_for_extraction [
   delta_attr [`%asn1_pulse_attr];
@@ -73,3 +73,11 @@ let validate_highApp : LPS.validator #(asn1_t D.highApp) #asn1_strong_parser_kin
   zeta; iota; primops]]
 let validate_nested : LPS.validator #(asn1_t D.nested) #asn1_strong_parser_kind (asn1_as_parser D.nested) =
   validate_k D.nested (_ by (FStar.Tactics.norm [delta; zeta; iota; primops]; FStar.Tactics.trivial ()))
+
+[@@normalize_for_extraction [
+  delta_attr [`%asn1_pulse_attr];
+  delta_namespace ["ASN1.DiffTest.Constructed"; "ASN1.Syntax"];
+  delta_only [`%dfst; `%dsnd; `%Mkdtuple2?._1; `%Mkdtuple2?._2; `%ASN1.Base.k_as_lk; `%ASN1.Base.list_as_l; `%ASN1.Base.mk_ASN1_GEN_ITEM; `%ASN1.Base.proj2_of_3; `%List.Tot.map; `%ASN1.Pulse.Interpreter.all_defaultable];
+  zeta; iota; primops]]
+let validate_octetsSet : LPS.validator #(asn1_t D.octetsSet) #asn1_strong_parser_kind (asn1_as_parser D.octetsSet) =
+  validate_k D.octetsSet (_ by (FStar.Tactics.norm [delta; zeta; iota; primops]; FStar.Tactics.trivial ()))

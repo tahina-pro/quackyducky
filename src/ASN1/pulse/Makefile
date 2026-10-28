@@ -83,6 +83,7 @@ $(eval $(call difftest_case,Constructed_PrivExp,Constructed,constructed.json,Dif
 $(eval $(call difftest_case,Constructed_HighCtx,Constructed,constructed.json,DiffConstructed.HighCtx,validate_highCtx))
 $(eval $(call difftest_case,Constructed_HighApp,Constructed,constructed.json,DiffConstructed.HighApp,validate_highApp))
 $(eval $(call difftest_case,Constructed_Nested,Constructed,constructed.json,DiffConstructed.Nested,validate_nested))
+$(eval $(call difftest_case,Constructed_OctetsSet,Constructed,constructed.json,DiffConstructed.OctetsSet,validate_octetsSet))
 
 .SECONDEXPANSION:
 $(C_OUTPUT_DIR)/test_%.exe: $(C_OUTPUT_DIR)/ASN1.Pulse.DiffTest.$$($$*.module).c test/driver.c
