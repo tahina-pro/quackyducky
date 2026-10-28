@@ -118,5 +118,31 @@ FORCE:
 test: $(addprefix test-,$(C_TESTS))
 test-oracle: $(addprefix test-oracle-,$(C_TESTS))
 
-.PRECIOUS: $(C_OUTPUT_DIR)/%.c $(C_OUTPUT_DIR)/%.h $(C_OUTPUT_DIR)/test_%.exe
-.PHONY: test test-oracle FORCE
+# Corpus tests: the X.509 certificate and CRL validators (ASN1.Pulse.X509)
+# against the pure F* spec runner on ../evaluation/data
+EVALUATION_DIR := ../evaluation
+SPEC_RUNNER := $(EVALUATION_DIR)/ASN1_Parser.exe
+CORPUS_TESTS := X509 CRL
+X509.entry := validate_certificate
+CRL.entry := validate_crl
+
+$(C_OUTPUT_DIR)/corpus_%.exe: $(C_OUTPUT_DIR)/ASN1.Pulse.X509.c test/files_driver.c
+	$(CC) $(TEST_CFLAGS) -I $(C_OUTPUT_DIR) \
+	  -DHEADER='"ASN1.Pulse.X509.h"' \
+	  -DVALIDATE=ASN1_Pulse_X509_$($*.entry) \
+	  -o $@ $< test/files_driver.c
+
+$(SPEC_RUNNER): FORCE
+	$(MAKE) -C .. evaluation/ASN1_Parser.exe
+
+$(EVALUATION_DIR)/data:
+	$(MAKE) -C $(EVALUATION_DIR) prepare
+
+test-corpus-%: $(C_OUTPUT_DIR)/corpus_%.exe $(SPEC_RUNNER) $(EVALUATION_DIR)/data
+	python3 test/corpus.py --format $* --spec $(SPEC_RUNNER) --exe $< \
+	  $(EVALUATION_DIR)/data/$*/positive $(EVALUATION_DIR)/data/$*/negative
+
+test-corpus: $(addprefix test-corpus-,$(CORPUS_TESTS))
+
+.PRECIOUS: $(C_OUTPUT_DIR)/%.c $(C_OUTPUT_DIR)/%.h $(C_OUTPUT_DIR)/test_%.exe $(C_OUTPUT_DIR)/corpus_%.exe
+.PHONY: test test-oracle test-corpus FORCE

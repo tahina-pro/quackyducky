@@ -86,9 +86,8 @@ let opt_fits (o: option int) : Tot bool =
   | None -> true
   | Some c -> int_fits c
 
-inline_for_extraction
 [@@asn1_restrict_attr]
-let rec int_in (neg big: bool) (mag: U64.t) (l: list int { all_fit l }) : Tot bool (decreases l) =
+let rec int_in (neg big: bool) (mag: U64.t) ([@@@FStar.Attributes.monomorphize] l: list int { all_fit l }) : Tot bool (decreases l) =
   match l with
   | [] -> false
   | c :: tl -> int_eq neg big mag c || int_in neg big mag tl
@@ -118,7 +117,7 @@ let int_pred (#k: asn1_terminal_k) (r: asn1_restriction k) (x: int) : Tot bool =
 
 inline_for_extraction
 [@@asn1_restrict_attr]
-let int_check (#k: asn1_terminal_k) (r: asn1_restriction k { int_restriction_ok r }) (neg big: bool) (mag: U64.t) : Tot bool =
+let int_check (#[@@@FStar.Attributes.monomorphize] k: asn1_terminal_k) ([@@@FStar.Attributes.monomorphize] r: asn1_restriction k { int_restriction_ok r }) (neg big: bool) (mag: U64.t) : Tot bool =
   match r with
   | RESTRICT_INT_IN l -> int_in neg big mag l
   | RESTRICT_INT_RANGE lo hi ->
@@ -320,9 +319,8 @@ let validate_boolean_neq (defv: asn1_terminal_t ASN1_BOOLEAN)
 
 (* BOOLEAN value sets *)
 
-inline_for_extraction
 [@@asn1_restrict_attr]
-let rec bool_in (l: list bool) (x: bool) : Tot bool (decreases l) =
+let rec bool_in ([@@@FStar.Attributes.monomorphize] l: list bool) (x: bool) : Tot bool (decreases l) =
   match l with
   | [] -> false
   | c :: tl -> (x = c) || bool_in tl x
@@ -412,21 +410,21 @@ let validate_octetstring_size (r: asn1_restriction ASN1_OCTETSTRING { size_restr
     #(asn1_content_t (ASN1_RESTRICTED_TERMINAL ASN1_OCTETSTRING r))
     #asn1_weak_parser_kind
     (asn1_content_as_parser (ASN1_RESTRICTED_TERMINAL ASN1_OCTETSTRING r))
-= match r with
-  | RESTRICT_SIZE lo hi ->
-    SZ.fits_at_least_16 lo;
-    let hi_sz : SZ.t = (match hi with None -> 0sz | Some h -> SZ.fits_at_least_16 h; SZ.uint_to_t h) in
-    Term.validate_all_bytes_pred
-      (asn1_content_as_parser (ASN1_RESTRICTED_TERMINAL ASN1_OCTETSTRING r))
-      (size_accept lo hi)
-      (check_size (SZ.uint_to_t lo) (Some? hi) hi_sz (Ghost.hide hi))
-      (size_restricted_pred lo hi)
+= [@inline_let] let lo = RESTRICT_SIZE?.lo r in
+  [@inline_let] let hi = RESTRICT_SIZE?.hi r in
+  SZ.fits_at_least_16 lo;
+  [@inline_let] let hi_sz : SZ.t = (if Some? hi then (SZ.fits_at_least_16 (Some?.v hi); SZ.uint_to_t (Some?.v hi)) else 0sz) in
+  Term.validate_all_bytes_pred
+    (asn1_content_as_parser (ASN1_RESTRICTED_TERMINAL ASN1_OCTETSTRING r))
+    (size_accept lo hi)
+    (check_size (SZ.uint_to_t lo) (Some? hi) hi_sz (Ghost.hide hi))
+    (size_restricted_pred lo hi)
 
 (* BOOLEAN (restricted to a value set) DEFAULT defv *)
 
 inline_for_extraction
 [@@asn1_restrict_attr]
-let bool_in_neq (l: list bool) (defv: bool) (x: bool) : Tot bool =
+let bool_in_neq ([@@@FStar.Attributes.monomorphize] l: list bool) (defv: bool) (x: bool) : Tot bool =
   bool_in l x && not (x = defv)
 
 inline_for_extraction
