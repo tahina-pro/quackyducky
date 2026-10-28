@@ -1,6 +1,7 @@
 module ASN1.Pulse.AnyDefinedBy
 #lang-pulse
-(* Validators for ANY DEFINED BY with an empty prefix: the key (e.g. an
+(* Validators for ANY DEFINED BY (a nonempty prefix is handled with
+   ASN1.Pulse.SeqAny, see the end of this module): the key (e.g. an
    OBJECT IDENTIFIER) is not stored in memory; instead, the validator
    reads the identifier and length of the key, then tries each entry of
    the dispatch table in order, by checking that the key contents are
@@ -579,5 +580,208 @@ let adb_content_some
     consumed #asn1_weak_parser_kind (asn1_content_as_parser (adb_k kid key_k ls (Some fb) pf pf')) b ==
     consumed #(and_then_kind asn1_strong_parser_kind asn1_weak_parser_kind) (T.parse_tagged_union (key_p kid key_k) (tag_of_gen_choice_type_with_fallback (extract_types lp) (Mkgenparser?.t (adb_fb fb))) (make_gen_choice_with_fallback_weak_payload_parser lp (adb_fb fb))) b)
     by (FStar.Tactics.norm [delta_only [`%adb_k; `%asn1_content_as_parser; `%asn1_content_t; `%asn1_sequence_any_t_core; `%asn1_sequence_as_parser; `%make_asn1_sequence_any_parser; `%make_asn1_sequence_any_parser'; `%key_p; `%adb_fb; `%make_gen_choice_weak_parser; `%make_gen_choice_with_fallback_weak_parser; `%Mkparsertwin?.p]; zeta; iota; primops])
+
+#pop-options
+
+(* ANY DEFINED BY with a nonempty prefix: the suffix (key and dispatch) as
+   a parser twin, as in the spec, and its validators, both when the key
+   identifier has not been read yet and when the prefix has already read
+   it. *)
+
+let key_fp (kid: asn1_id_t) (key_k: asn1_terminal_k) (id: asn1_id_t) : Tot (asn1_strong_parser (asn1_terminal_t key_k)) =
+  ASN1.Spec.ILC.parse_asn1_ILC_twin kid #(ASN1_TERMINAL key_k) (asn1_terminal_as_parser key_k) id
+
+#push-options "--z3rlimit 128 --ifuel 2"
+
+#restart-solver
+
+let adb_twin_eq
+  (kid: asn1_id_t)
+  (key_k: asn1_terminal_k)
+  (#data_t: Type)
+  (tag: data_t -> Tot (asn1_terminal_t key_k))
+  (pl: (x: asn1_terminal_t key_k) -> Tot (asn1_weak_parser (refine_with_tag tag x)))
+  (id: asn1_id_t)
+  (b: bytes)
+: Lemma (consumed #(and_then_kind asn1_strong_parser_kind asn1_weak_parser_kind) (T.parse_tagged_union (key_fp kid key_k id) tag pl) b == (
+    if id = kid
+    then
+      match SB.parse (SDER.parse_bounded_der_length32 0 ILC.asn1_length_max) b with
+      | None -> None
+      | Some (len, c2) ->
+        match consumed (disp_p key_k tag pl (U32.v len)) (Seq.slice b c2 (Seq.length b)) with
+        | None -> None
+        | Some c3 -> Some (c2 + c3)
+    else None
+  ))
+= let p = asn1_terminal_as_parser key_k in
+  T.parse_tagged_union_eq (key_fp kid key_k id) tag pl b;
+  if id = kid
+  then begin
+    ILC.lc_eq p b;
+    SVG.parse_vlgen_weak_unfold 0 ILC.asn1_length_max #(SDER.parse_bounded_der_length32_kind 0 ILC.asn1_length_max) (SDER.parse_bounded_der_length32 0 ILC.asn1_length_max) #asn1_weak_parser_kind #(asn1_terminal_t key_k) p b;
+    match SB.parse (SDER.parse_bounded_der_length32 0 ILC.asn1_length_max) b with
+    | None -> ()
+    | Some (len, c2) ->
+      let b2 = Seq.slice b c2 (Seq.length b) in
+      let l = U32.v len in
+      SCo.parse_tagged_union_eq #(SFL.parse_fldata_kind l asn1_weak_parser_kind) (SFL.parse_fldata p l) tag #asn1_weak_parser_kind (pl_spec tag pl) b2;
+      fldata_eq #asn1_weak_parser_kind p l b2;
+      if Seq.length b2 < l
+      then ()
+      else begin
+        Seq.slice_slice b c2 (Seq.length b) 0 l;
+        Seq.slice_slice b c2 (Seq.length b) l (Seq.length b2)
+      end
+  end
+  else ()
+
+#pop-options
+
+#push-options "--z3rlimit 64"
+
+inline_for_extraction
+fn validate_adb_twin
+  (kid: asn1_id_t)
+  (key_k: Ghost.erased asn1_terminal_k)
+  (#data_t: Type0)
+  (tag: Ghost.erased (data_t -> Tot (asn1_terminal_t key_k)))
+  (pl: Ghost.erased ((x: asn1_terminal_t key_k) -> Tot (asn1_weak_parser (refine_with_tag tag x))))
+  (vd: (l: SZ.t) -> LPS.validator #data_t #(disp_kind (SZ.v l)) (disp_p key_k tag pl (SZ.v l)))
+  (id: asn1_id_t)
+: LPS.validator #data_t #(and_then_kind asn1_strong_parser_kind asn1_weak_parser_kind) (T.parse_tagged_union (key_fp kid key_k id) tag pl)
+=
+  (input: slice byte)
+  (poffset: R.ref SZ.t)
+  (#offset: Ghost.erased SZ.t)
+  (#pm: perm)
+  (#v: Ghost.erased bytes)
+{
+  S.pts_to_len input;
+  adb_twin_eq kid key_k tag pl id (Seq.slice v (SZ.v offset) (Seq.length v));
+  if (ILC.asn1_id_eq id kid) {
+    let ol = ILC.vread_length input poffset;
+    match ol {
+      None -> { false }
+      Some len -> {
+        with off2 . assert (R.pts_to poffset off2);
+        Seq.slice_slice v (SZ.v offset) (Seq.length v) (SZ.v off2 - SZ.v offset) (Seq.length v - SZ.v offset);
+        let off = !poffset;
+        let rem = SZ.sub (S.len input) off;
+        if (LowParse.Pulse.SizeComparison.u32_lte_sizet len rem) {
+          SZ.fits_lte (U32.v len) (SZ.v rem);
+          vd (SZ.uint32_to_sizet len) input poffset
+        } else {
+          disp_short key_k tag pl (U32.v len) (Seq.slice v (SZ.v off) (Seq.length v));
+          false
+        }
+      }
+    }
+  } else {
+    false
+  }
+}
+
+#pop-options
+
+let key_twin (kid: asn1_id_t) (key_k: asn1_terminal_k) : Tot (parser_twin asn1_strong_parser_kind (asn1_terminal_t key_k)) =
+  let p = asn1_terminal_as_parser key_k in
+  ASN1.Spec.ILC.parser_asn1_ILC_twin_case_injective kid #(ASN1_TERMINAL key_k) p;
+  Mkparsertwin #asn1_strong_parser_kind #(asn1_terminal_t key_k) (key_p kid key_k) (key_fp kid key_k)
+
+let adb_sfx_none (kid: asn1_id_t) (key_k: asn1_terminal_k)
+  (ls: list (asn1_terminal_t key_k & asn1_gen_items_lk))
+: Tot (parser_twin asn1_weak_parser_kind (make_gen_choice_type (extract_types (asn1_ls_as_parser (asn1_terminal_t key_k) ls))))
+= let supported_p = asn1_ls_as_parser (asn1_terminal_t key_k) ls in
+  ASN1.Spec.ILC.parser_asn1_ILC_twin_case_injective kid #(ASN1_TERMINAL key_k) (asn1_terminal_as_parser key_k);
+  make_gen_choice_weak_parser_twin_and_then_cases_injective (key_fp kid key_k) supported_p;
+  Mkparsertwin
+    (weaken asn1_weak_parser_kind (make_gen_choice_weak_parser (key_p kid key_k) supported_p))
+    (fun id -> weaken asn1_weak_parser_kind (make_gen_choice_weak_parser_twin (key_fp kid key_k) supported_p id))
+
+let adb_sfx_some (kid: asn1_id_t) (key_k: asn1_terminal_k)
+  (ls: list (asn1_terminal_t key_k & asn1_gen_items_lk))
+  (fb: asn1_gen_items_lk)
+: Tot (parser_twin asn1_weak_parser_kind (make_gen_choice_type_with_fallback (extract_types (asn1_ls_as_parser (asn1_terminal_t key_k) ls)) (Mkgenparser?.t (adb_fb fb))))
+= let supported_p = asn1_ls_as_parser (asn1_terminal_t key_k) ls in
+  ASN1.Spec.ILC.parser_asn1_ILC_twin_case_injective kid #(ASN1_TERMINAL key_k) (asn1_terminal_as_parser key_k);
+  make_gen_choice_with_fallback_weak_parser_twin_and_then_cases_injective (key_fp kid key_k) supported_p (adb_fb fb);
+  Mkparsertwin
+    (weaken asn1_weak_parser_kind (make_gen_choice_with_fallback_weak_parser (key_p kid key_k) supported_p (adb_fb fb)))
+    (fun id -> weaken asn1_weak_parser_kind (make_gen_choice_with_fallback_weak_parser_twin (key_fp kid key_k) supported_p (adb_fb fb) id))
+
+[@@noextract_to "krml"]
+noextract
+let adb_prefix_k (ipd: id_decs) (prefix: asn1_gen_items_l ipd) (kid: asn1_id_t) (key_k: asn1_terminal_k)
+  (ls: list (asn1_terminal_t key_k & asn1_gen_items_lk)) (ofb: option asn1_gen_items_lk)
+  (pf: squash (asn1_any_prefix_k_wf (FStar.Set.singleton kid) ipd))
+  (pf': squash (List.Tot.noRepeats (List.Tot.map fst ls)))
+: Tot asn1_content_k
+= ASN1_ANY_DEFINED_BY ipd prefix kid key_k ls ofb pf pf'
+
+#push-options "--z3rlimit 64"
+
+let adb_prefix_content_none
+  (ipd: id_decs) (prefix: asn1_gen_items_l ipd)
+  (kid: asn1_id_t) (key_k: asn1_terminal_k)
+  (ls: list (asn1_terminal_t key_k & asn1_gen_items_lk))
+  (pf: squash (asn1_any_prefix_k_wf (FStar.Set.singleton kid) ipd))
+  (pf': squash (List.Tot.noRepeats (List.Tot.map fst ls)))
+  (b: bytes)
+: Lemma
+  (ensures (
+    consumed #asn1_weak_parser_kind (asn1_content_as_parser (adb_prefix_k ipd prefix kid key_k ls None pf pf')) b ==
+    consumed #asn1_weak_parser_kind (ASN1.Pulse.SeqAny.seqa_p (asn1_sequence_as_parser prefix) (adb_sfx_none kid key_k ls) None) b))
+= assert (
+    asn1_content_as_parser (adb_prefix_k ipd prefix kid key_k ls None pf pf') ==
+    make_asn1_sequence_any_parser (asn1_sequence_as_parser prefix) (adb_sfx_none kid key_k ls))
+    by (FStar.Tactics.norm [delta_only [`%adb_prefix_k; `%asn1_content_as_parser; `%adb_sfx_none; `%adb_fb; `%key_p; `%key_fp; `%Mkparsertwin?.p; `%Mkparsertwin?.fp]; zeta; iota; primops]; FStar.Tactics.trefl ());
+  assert (
+    make_asn1_sequence_any_parser (asn1_sequence_as_parser prefix) (adb_sfx_none kid key_k ls) ==
+    ASN1.Pulse.SeqAny.seqa_p (asn1_sequence_as_parser prefix) (adb_sfx_none kid key_k ls) None)
+    by (FStar.Tactics.norm [delta_only [`%make_asn1_sequence_any_parser; `%ASN1.Pulse.SeqAny.seqa_p]]; FStar.Tactics.trefl ())
+
+let adb_prefix_content_some
+  (ipd: id_decs) (prefix: asn1_gen_items_l ipd)
+  (kid: asn1_id_t) (key_k: asn1_terminal_k)
+  (ls: list (asn1_terminal_t key_k & asn1_gen_items_lk))
+  (fb: asn1_gen_items_lk)
+  (pf: squash (asn1_any_prefix_k_wf (FStar.Set.singleton kid) ipd))
+  (pf': squash (List.Tot.noRepeats (List.Tot.map fst ls)))
+  (b: bytes)
+: Lemma
+  (ensures (
+    consumed #asn1_weak_parser_kind (asn1_content_as_parser (adb_prefix_k ipd prefix kid key_k ls (Some fb) pf pf')) b ==
+    consumed #asn1_weak_parser_kind (ASN1.Pulse.SeqAny.seqa_p (asn1_sequence_as_parser prefix) (adb_sfx_some kid key_k ls fb) None) b))
+= assert (
+    asn1_content_as_parser (adb_prefix_k ipd prefix kid key_k ls (Some fb) pf pf') ==
+    make_asn1_sequence_any_parser (asn1_sequence_as_parser prefix) (adb_sfx_some kid key_k ls fb))
+    by (FStar.Tactics.norm [delta_only [`%adb_prefix_k; `%asn1_content_as_parser; `%adb_sfx_some; `%adb_fb; `%key_p; `%key_fp; `%Mkparsertwin?.p; `%Mkparsertwin?.fp]; zeta; iota; primops]; FStar.Tactics.trefl ());
+  assert (
+    make_asn1_sequence_any_parser (asn1_sequence_as_parser prefix) (adb_sfx_some kid key_k ls fb) ==
+    ASN1.Pulse.SeqAny.seqa_p (asn1_sequence_as_parser prefix) (adb_sfx_some kid key_k ls fb) None)
+    by (FStar.Tactics.norm [delta_only [`%make_asn1_sequence_any_parser; `%ASN1.Pulse.SeqAny.seqa_p]]; FStar.Tactics.trefl ())
+
+(* The suffix twin, on consumed lengths *)
+
+let adb_sfx_none_eq (kid: asn1_id_t) (key_k: asn1_terminal_k)
+  (ls: list (asn1_terminal_t key_k & asn1_gen_items_lk)) (st: option asn1_id_t) (b: bytes)
+: Lemma (
+    let lp = asn1_ls_as_parser (asn1_terminal_t key_k) ls in
+    consumed #asn1_weak_parser_kind (ASN1.Pulse.SeqAny.sfx_p (adb_sfx_none kid key_k ls) st) b ==
+    consumed #(and_then_kind asn1_strong_parser_kind asn1_weak_parser_kind) (T.parse_tagged_union (match st with None -> key_p kid key_k | Some id -> key_fp kid key_k id) (tag_of_gen_choice_type (extract_types lp)) (make_gen_choice_weak_payload_parser lp)) b)
+= match st with
+  | None -> ()
+  | Some id -> ()
+
+let adb_sfx_some_eq (kid: asn1_id_t) (key_k: asn1_terminal_k)
+  (ls: list (asn1_terminal_t key_k & asn1_gen_items_lk)) (fb: asn1_gen_items_lk) (st: option asn1_id_t) (b: bytes)
+: Lemma (
+    let lp = asn1_ls_as_parser (asn1_terminal_t key_k) ls in
+    consumed #asn1_weak_parser_kind (ASN1.Pulse.SeqAny.sfx_p (adb_sfx_some kid key_k ls fb) st) b ==
+    consumed #(and_then_kind asn1_strong_parser_kind asn1_weak_parser_kind) (T.parse_tagged_union (match st with None -> key_p kid key_k | Some id -> key_fp kid key_k id) (tag_of_gen_choice_type_with_fallback (extract_types lp) (Mkgenparser?.t (adb_fb fb))) (make_gen_choice_with_fallback_weak_payload_parser lp (adb_fb fb))) b)
+= match st with
+  | None -> ()
+  | Some id -> ()
 
 #pop-options
