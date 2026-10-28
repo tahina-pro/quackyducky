@@ -21,6 +21,9 @@ module SO = ASN1.Pulse.SetOf
 module Rs = ASN1.Pulse.Restrict
 module SC = ASN1.Pulse.SetComp
 module Any = ASN1.Pulse.Any
+module ADB = ASN1.Pulse.AnyDefinedBy
+module PPFL = LowParse.PulseParse.FLData
+module SCo = LowParse.Spec.Combinators
 module U32 = FStar.UInt32
 module U64 = FStar.UInt64
 
@@ -65,7 +68,10 @@ let rec supported_content (k: asn1_content_k) : Tot bool (decreases k) =
   | ASN1_SET_OF _ k' -> supported_k k'
   | ASN1_SET _ items _ -> supported_items items && items_len items <= 64
   | ASN1_PREFIXED k' -> supported_k k'
-  | _ -> false
+  | ASN1_ANY_DEFINED_BY _ prefix _ key_k ls ofb _ _ ->
+    (* Only an empty prefix and OBJECT IDENTIFIER keys, as in X.509 *)
+    ASN1_GEN_ITEMS_NIL? prefix && ASN1_OID? key_k && supported_ls ls &&
+    (match ofb with None -> true | Some fb -> supported_items (dsnd fb))
 
 and supported_k (#s: _) (k: asn1_k s) : Tot bool (decreases k) =
   match k with
@@ -77,6 +83,11 @@ and supported_lc (lc: list (asn1_id_t & asn1_content_k)) : Tot bool (decreases l
   match lc with
   | [] -> true
   | (_, ck) :: tl -> supported_content ck && supported_lc tl
+
+and supported_ls (#t: eqtype) (ls: list (t & asn1_gen_items_lk)) : Tot bool (decreases ls) =
+  match ls with
+  | [] -> true
+  | (_, y) :: tl -> supported_items (dsnd y) && supported_ls tl
 
 and supported_items (#i: _) (ls: asn1_gen_items_l i) : Tot bool (decreases ls) =
   match ls with
@@ -182,6 +193,33 @@ let rec set_final (#i: _) (ls: asn1_gen_items_l i)
     SC.test_bit_spec m j;
     (not (PLAIN? d) || SC.test_bit m j) && set_final tl (U32.add j 1ul) m
 
+(* ANY DEFINED BY: equality of an OBJECT IDENTIFIER key with a constant *)
+
+[@@asn1_pulse_attr]
+inline_for_extraction
+let rec validate_subids_eq (l: list U32.t)
+: Tot (LPS.validator #_ #ADB.subids_kind (ADB.subids_eq_p l))
+  (decreases l)
+= match l with
+  | [] -> ADB.validate_subids_eq_nil ()
+  | h :: tl -> ADB.validate_subids_eq_cons h tl (validate_subids_eq tl)
+
+[@@asn1_pulse_attr]
+inline_for_extraction
+let oid_enc (x: asn1_oid_t) : Tot (l: list U32.t { l == ADB.oid_enc x }) =
+  match x with
+  | a :: b :: tl ->
+    (if a = 2ul then U32.add 80ul b else U32.add (U32.mul 40ul a) b) :: tl
+
+[@@asn1_pulse_attr]
+inline_for_extraction
+let validate_key_eq (key_k: asn1_terminal_k) (u: squash (ASN1_OID? key_k)) (x: asn1_terminal_t key_k)
+: Tot (LPS.validator #_ #(SCo.parse_filter_kind asn1_weak_parser_kind) (SCo.parse_filter #asn1_weak_parser_kind (asn1_terminal_as_parser key_k) (ADB.key_eq x)))
+= match key_k with
+  | ASN1_OID ->
+    Classical.forall_intro (ADB.oid_filter_consumed x);
+    validate_ext_consumed (validate_subids_eq (oid_enc x)) (SCo.parse_filter #asn1_weak_parser_kind (asn1_terminal_as_parser key_k) (ADB.key_eq x))
+
 (* The interpreter *)
 
 [@@asn1_pulse_attr]
@@ -278,6 +316,69 @@ let rec validate_content (k: asn1_content_k) (u: squash (supported_content k))
       #asn1_weak_parser_kind (asn1_content_as_parser k)
   | ASN1_PREFIXED k' ->
     LPS.validate_weaken asn1_weak_parser_kind (validate_k k' ())
+  | ASN1_ANY_DEFINED_BY _ prefix kid key_k ls ofb pf pf' ->
+    begin match prefix with
+    | ASN1_GEN_ITEMS_NIL ->
+      let lp = asn1_ls_as_parser (asn1_terminal_t key_k) ls in
+      begin match ofb with
+      | None ->
+        Classical.forall_intro (ADB.adb_content_none kid key_k ls pf pf');
+        validate_ext_consumed
+          (ADB.validate_adb kid key_k
+            (ASN1.Spec.Choice.tag_of_gen_choice_type (ASN1.Spec.Choice.extract_types lp))
+            (ASN1.Spec.Any.make_gen_choice_weak_payload_parser lp)
+            (fun l -> validate_disp key_k () ls () l))
+          (asn1_content_as_parser k)
+      | Some fb ->
+        Classical.forall_intro (ADB.adb_content_some kid key_k ls fb pf pf');
+        validate_ext_consumed
+          (ADB.validate_adb kid key_k
+            (ASN1.Spec.Any.tag_of_gen_choice_type_with_fallback (ASN1.Spec.Choice.extract_types lp) (Mkgenparser?.t (ADB.adb_fb fb)))
+            (ASN1.Spec.Any.make_gen_choice_with_fallback_weak_payload_parser lp (ADB.adb_fb fb))
+            (fun l -> validate_disp_fb key_k () ls () fb
+              (LPS.validate_ext (validate_seq (dsnd fb) () None) #asn1_weak_parser_kind (Mkgenparser?.p (ADB.adb_fb fb)))
+              l))
+          (asn1_content_as_parser k)
+      end
+    end
+
+and validate_disp (key_k: asn1_terminal_k) (u: squash (ASN1_OID? key_k))
+  (ls: list (asn1_terminal_t key_k & asn1_gen_items_lk)) (u': squash (supported_ls ls)) (l: SZ.t)
+: Tot (LPS.validator #_ #(ADB.disp_kind (SZ.v l)) (ADB.choice_disp_p key_k (asn1_ls_as_parser (asn1_terminal_t key_k) ls) (SZ.v l)))
+  (decreases %[ls; 1])
+= match ls with
+  | [] ->
+    Classical.forall_intro (ADB.choice_disp_nil key_k (SZ.v l));
+    validate_fail (ADB.choice_disp_p key_k (asn1_ls_as_parser (asn1_terminal_t key_k) ls) (SZ.v l)) ()
+  | (x, y) :: tl ->
+    Classical.forall_intro (ADB.choice_disp_cons key_k x (ADB.adb_fb y) (asn1_ls_as_parser (asn1_terminal_t key_k) tl) (SZ.v l));
+    ADB.validate_try_else
+      (PPFL.validate_fldata (validate_key_eq key_k () x) l)
+      (LPS.validate_ext (validate_seq (dsnd y) () None) #asn1_weak_parser_kind (Mkgenparser?.p (ADB.adb_fb y)))
+      (validate_disp key_k () tl () l)
+      (ADB.choice_disp_p key_k (asn1_ls_as_parser (asn1_terminal_t key_k) ls) (SZ.v l))
+
+and validate_disp_fb (key_k: asn1_terminal_k) (u: squash (ASN1_OID? key_k))
+  (ls: list (asn1_terminal_t key_k & asn1_gen_items_lk)) (u': squash (supported_ls ls))
+  (fb: asn1_gen_items_lk)
+  (vfb: LPS.validator #_ #asn1_weak_parser_kind (Mkgenparser?.p (ADB.adb_fb fb)))
+  (l: SZ.t)
+: Tot (LPS.validator #_ #(ADB.disp_kind (SZ.v l)) (ADB.choice_fb_disp_p key_k (asn1_ls_as_parser (asn1_terminal_t key_k) ls) (ADB.adb_fb fb) (SZ.v l)))
+  (decreases %[ls; 1])
+= match ls with
+  | [] ->
+    Classical.forall_intro (ADB.choice_fb_disp_nil key_k (ADB.adb_fb fb) (SZ.v l));
+    ADB.validate_then_consumed
+      (PPFL.validate_fldata (validate_terminal key_k ()) l)
+      vfb
+      (ADB.choice_fb_disp_p key_k (asn1_ls_as_parser (asn1_terminal_t key_k) ls) (ADB.adb_fb fb) (SZ.v l))
+  | (x, y) :: tl ->
+    Classical.forall_intro (ADB.choice_fb_disp_cons key_k x (ADB.adb_fb y) (asn1_ls_as_parser (asn1_terminal_t key_k) tl) (ADB.adb_fb fb) (SZ.v l));
+    ADB.validate_try_else
+      (PPFL.validate_fldata (validate_key_eq key_k () x) l)
+      (LPS.validate_ext (validate_seq (dsnd y) () None) #asn1_weak_parser_kind (Mkgenparser?.p (ADB.adb_fb y)))
+      (validate_disp_fb key_k () tl () fb vfb l)
+      (ADB.choice_fb_disp_p key_k (asn1_ls_as_parser (asn1_terminal_t key_k) ls) (ADB.adb_fb fb) (SZ.v l))
 
 and validate_k (#s: _) (k: asn1_k s) (u: squash (supported_k k))
 : Tot (LPS.validator #(asn1_t k) #asn1_strong_parser_kind (asn1_as_parser k))

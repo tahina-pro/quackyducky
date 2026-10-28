@@ -478,19 +478,34 @@ let any_body_leaf_consumed (id: asn1_any_id_t) (b: bytes)
     tconsumed (parse_asn1_any_leaf id) b))
 = T.parse_synth_eq (parse_asn1_any_leaf id) (RV.RLeaf #asn1_value #asn1_octetstring_t) b
 
+(* A C function of its own: the branches capture [id], and C has no closures *)
+fn validate_any_body_impl
+  (id: asn1_any_id_t)
+  (input: S.slice byte)
+  (poffset: R.ref SZ.t)
+  (#offset: Ghost.erased SZ.t)
+  (#pm: perm)
+  (#v: Ghost.erased bytes)
+  requires pts_to input #pm v ** R.pts_to poffset offset ** pure (SZ.v offset <= Seq.length v)
+  returns res: bool
+  ensures pts_to input #pm v ** (exists* off . R.pts_to poffset off ** pure (LPS.validator_postcond #(RV.rec_vlgen_body_kind asn1_value_param.RV.tag_kind.parser_kind_injective) (RV.rec_vlgen_body asn1_value_param (RV.parse_rec_vlgen asn1_value_param) id) offset v off res))
+{
+  let p = Ghost.hide (RV.rec_vlgen_body asn1_value_param (RV.parse_rec_vlgen asn1_value_param) id);
+  if (CONSTRUCTED? (MK_ASN1_ID?.f id)) {
+    Classical.forall_intro (Classical.move_requires (any_body_node_consumed id));
+    validate_ext_consumed
+      (LPS.validate_ext (PPL.validate_list (RV.validate_rec_vlgen #asn1_value_param read_header_any validate_any_fl) ()) #(LowParse.Spec.List.parse_list_kind (RV.rec_vlgen_kind asn1_value_param).parser_kind_injective) (LowParse.Tot.List.parse_list (RV.parse_rec_vlgen asn1_value_param)))
+      #_ #(RV.rec_vlgen_body_kind asn1_value_param.RV.tag_kind.parser_kind_injective) (RV.rec_vlgen_body asn1_value_param (RV.parse_rec_vlgen asn1_value_param) id) input poffset
+  } else {
+    Classical.forall_intro (Classical.move_requires (any_body_leaf_consumed id));
+    validate_ext_consumed #_ #asn1_weak_parser_kind #_ (validate_any_leaf id) #_ #(RV.rec_vlgen_body_kind asn1_value_param.RV.tag_kind.parser_kind_injective) (RV.rec_vlgen_body asn1_value_param (RV.parse_rec_vlgen asn1_value_param) id) input poffset
+  }
+}
+
 inline_for_extraction
 let validate_any_body (id: asn1_any_id_t)
 : LPS.validator #_ #(RV.rec_vlgen_body_kind asn1_value_param.RV.tag_kind.parser_kind_injective) (RV.rec_vlgen_body asn1_value_param (RV.parse_rec_vlgen asn1_value_param) id)
-= let p = RV.rec_vlgen_body asn1_value_param (RV.parse_rec_vlgen asn1_value_param) id in
-  LPS.ifthenelse_validator p (CONSTRUCTED? (MK_ASN1_ID?.f id))
-    (fun _ ->
-      Classical.forall_intro (Classical.move_requires (any_body_node_consumed id));
-      validate_ext_consumed
-        (LPS.validate_ext (PPL.validate_list (RV.validate_rec_vlgen #asn1_value_param read_header_any validate_any_fl) ()) #(LowParse.Spec.List.parse_list_kind (RV.rec_vlgen_kind asn1_value_param).parser_kind_injective) (LowParse.Tot.List.parse_list (RV.parse_rec_vlgen asn1_value_param)))
-        p)
-    (fun _ ->
-      Classical.forall_intro (Classical.move_requires (any_body_leaf_consumed id));
-      validate_ext_consumed #_ #asn1_weak_parser_kind #_ (validate_any_leaf id) #_ #(RV.rec_vlgen_body_kind asn1_value_param.RV.tag_kind.parser_kind_injective) p)
+= validate_any_body_impl id
 
 let any_body_kind : parser_kind = RV.rec_vlgen_body_kind asn1_value_param.RV.tag_kind.parser_kind_injective
 
