@@ -37,6 +37,38 @@ let rec items_len (#i: _) (ls: asn1_gen_items_l i) : Tot (n: nat { n == List.Tot
   | ASN1_GEN_ITEMS_NIL -> 0
   | ASN1_GEN_ITEMS_CONS _ _ _ _ tl -> 1 + items_len tl
 
+(* Provably equal to `asn1_decorated_as_parser_twin dk` and
+   `asn1_sequence_as_parser ls`, but with the item descriptor `d` exposed
+   as a constructor argument, so that the value types of the sequence
+   validators (`asn1_sequence_t (List.Tot.map Mkgendcparser?.d items)`)
+   fully reduce at extraction time instead of leaving stuck projector
+   chains that blow up extraction time. *)
+
+[@@asn1_pulse_attr]
+let twin_of (#s: _) (#d: _) (dk: asn1_decorated_k s d)
+: Tot (gp: gen_decorated_parser_twin { gp == asn1_decorated_as_parser_twin dk })
+= let item = (| s, d, dk |) in
+  match dk with
+  | ASN1_PLAIN_ILC k ->
+    let pfp = asn1_as_parser_twin k in
+    Mkgendcparser item (fst pfp) (snd pfp)
+  | ASN1_OPTION_ILC k ->
+    let pfp = asn1_as_parser_twin k in
+    Mkgendcparser item (fst pfp) (snd pfp)
+  | ASN1_DEFAULT_TERMINAL id #k defv ->
+    let p = asn1_terminal_as_parser k in
+    Mkgendcparser item (parse_asn1_ILC id #(ASN1_TERMINAL k) p) (parse_asn1_ILC_twin id #(ASN1_TERMINAL k) p)
+  | ASN1_DEFAULT_RESTRICTED_TERMINAL id #k r defv ->
+    let p : asn1_weak_parser (asn1_decorated_pure_t item) = weaken _ ((asn1_terminal_as_parser k) `parse_filter` (restriction_pred r)) in
+    Mkgendcparser item (parse_asn1_ILC id #(ASN1_RESTRICTED_TERMINAL k r) p) (parse_asn1_ILC_twin id #(ASN1_RESTRICTED_TERMINAL k r) p)
+
+[@@asn1_pulse_attr]
+let rec twins_of (#i: _) (ls: asn1_gen_items_l i)
+: Tot (l: list gen_decorated_parser_twin { l == asn1_sequence_as_parser ls }) (decreases ls)
+= match ls with
+  | ASN1_GEN_ITEMS_NIL -> []
+  | ASN1_GEN_ITEMS_CONS _ _ dk _ tl -> twin_of dk :: twins_of tl
+
 (* The subset of schemas currently supported *)
 
 [@@asn1_pulse_attr]
@@ -309,7 +341,7 @@ let rec validate_content (k: asn1_content_k) (u: squash (supported_content k))
   | ASN1_SET _ items _ ->
     ASN1.Spec.Conformance.items_tagged_intro items;
     LPS.validate_ext
-      (SC.validate_set (Ghost.hide (asn1_sequence_as_parser items))
+      (SC.validate_set (Ghost.hide (twins_of items))
         (fun id -> set_comp items () 0ul id)
         (fun m -> set_final items 0ul m)
         (fun id -> validate_set_elem_twin items () id))
@@ -415,57 +447,57 @@ and validate_choice_payload (lc: list (asn1_id_t & asn1_content_k)) (u: squash (
       (fun _ -> validate_ext_consumed (validate_choice_payload tl () id) (ASN1.Spec.Choice.make_gen_choice_strong_payload_parser (asn1_lc_as_parser lc) id))
 
 and validate_dec_twin (#s: _) (#d: _) (dk: asn1_decorated_k s d) (u: squash (supported_dec dk)) (id: asn1_id_t)
-: Tot (LPS.validator #_ #asn1_strong_parser_kind (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id))
+: Tot (LPS.validator #_ #asn1_strong_parser_kind (parse_asn1_sequence_item_twin (twin_of dk) id))
   (decreases %[dk; 0])
 = match dk with
   | ASN1_PLAIN_ILC k ->
-    validate_item_twin_plain (asn1_decorated_as_parser_twin dk) id (validate_k_twin k () id)
+    validate_item_twin_plain (twin_of dk) id (validate_k_twin k () id)
   | ASN1_OPTION_ILC k ->
-    validate_item_twin_option (asn1_decorated_as_parser_twin dk) id (validate_k_twin k () id)
+    validate_item_twin_option (twin_of dk) id (validate_k_twin k () id)
   | ASN1_DEFAULT_TERMINAL id0 #k defv ->
     Classical.forall_intro (C.default_terminal_twin_consumed id0 #k defv id);
-    LPS.ifthenelse_validator (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id) (ILC.asn1_id_eq id0 id)
-      (fun _ -> validate_ext_consumed (ILC.validate_asn1_LC (validate_default_content k defv ())) (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id))
-      (fun _ -> validate_fail (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id) ())
+    LPS.ifthenelse_validator (parse_asn1_sequence_item_twin (twin_of dk) id) (ILC.asn1_id_eq id0 id)
+      (fun _ -> validate_ext_consumed (ILC.validate_asn1_LC (validate_default_content k defv ())) (parse_asn1_sequence_item_twin (twin_of dk) id))
+      (fun _ -> validate_fail (parse_asn1_sequence_item_twin (twin_of dk) id) ())
   | ASN1_DEFAULT_RESTRICTED_TERMINAL id0 #k r defv ->
     Classical.forall_intro (C.default_restricted_twin_consumed id0 #k r defv id);
-    LPS.ifthenelse_validator (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id) (ILC.asn1_id_eq id0 id)
-      (fun _ -> validate_ext_consumed (ILC.validate_asn1_LC (validate_default_restricted_content k r defv ())) (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id))
-      (fun _ -> validate_fail (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id) ())
+    LPS.ifthenelse_validator (parse_asn1_sequence_item_twin (twin_of dk) id) (ILC.asn1_id_eq id0 id)
+      (fun _ -> validate_ext_consumed (ILC.validate_asn1_LC (validate_default_restricted_content k r defv ())) (parse_asn1_sequence_item_twin (twin_of dk) id))
+      (fun _ -> validate_fail (parse_asn1_sequence_item_twin (twin_of dk) id) ())
 
 and validate_seq (#i: _) (ls: asn1_gen_items_l i) (u: squash (supported_items ls)) (st: option asn1_id_t)
-: Tot (LPS.validator #_ #asn1_weak_parser_kind (seq_p (asn1_sequence_as_parser ls) st))
+: Tot (LPS.validator #_ #asn1_weak_parser_kind (seq_p (twins_of ls) st))
   (decreases %[ls; 1])
 = match ls with
   | ASN1_GEN_ITEMS_NIL -> validate_seq_nil st
   | ASN1_GEN_ITEMS_CONS _ _ _ _ _ ->
     all_defaultable_correct ls;
-    validate_seq_cons (asn1_sequence_as_parser ls) (all_defaultable ls) (validate_seq_body ls ()) st
+    validate_seq_cons (twins_of ls) (all_defaultable ls) (validate_seq_body ls ()) st
 
-and validate_seq_body (#i: _) (ls: asn1_gen_items_l i) (u: squash (supported_items ls /\ Cons? (asn1_sequence_as_parser ls))) (id: asn1_id_t)
-: Tot (LPS.validator #_ #asn1_weak_parser_kind (seq_p (asn1_sequence_as_parser ls) (Some id)))
+and validate_seq_body (#i: _) (ls: asn1_gen_items_l i) (u: squash (supported_items ls /\ Cons? (twins_of ls))) (id: asn1_id_t)
+: Tot (LPS.validator #_ #asn1_weak_parser_kind (seq_p (twins_of ls) (Some id)))
   (decreases %[ls; 0])
 = match ls with
   | ASN1_GEN_ITEMS_CONS s d dk _ tl ->
-    let hd = Ghost.hide (asn1_decorated_as_parser_twin dk) in
+    let hd = Ghost.hide (twin_of dk) in
     match tl with
     | ASN1_GEN_ITEMS_NIL ->
       validate_seq_single_body hd id (validate_dec_twin dk () id)
     | ASN1_GEN_ITEMS_CONS _ _ _ _ _ ->
-      validate_seq_cons_cons_body hd (asn1_sequence_as_parser tl) id
+      validate_seq_cons_cons_body hd (twins_of tl) id
         (has_id_dec dk () id)
         (PLAIN? d)
         (validate_dec_twin dk () id)
         (validate_seq tl ())
 
 and validate_set_elem_twin (#i: _) (ls: asn1_gen_items_l i) (u: squash (supported_items ls)) (id: asn1_id_t)
-: Tot (LPS.validator #_ #asn1_strong_parser_kind (ASN1.Spec.SetComponents.parse_set_elem_twin (asn1_sequence_as_parser ls) id))
+: Tot (LPS.validator #_ #asn1_strong_parser_kind (ASN1.Spec.SetComponents.parse_set_elem_twin (twins_of ls) id))
   (decreases %[ls; 0])
 = match ls with
-  | ASN1_GEN_ITEMS_NIL -> validate_fail (ASN1.Spec.SetComponents.parse_set_elem_twin (asn1_sequence_as_parser ls) id) ()
+  | ASN1_GEN_ITEMS_NIL -> validate_fail (ASN1.Spec.SetComponents.parse_set_elem_twin (twins_of ls) id) ()
   | ASN1_GEN_ITEMS_CONS _ _ dk _ tl ->
-    let p = ASN1.Spec.SetComponents.parse_set_elem_twin (asn1_sequence_as_parser ls) id in
-    Classical.forall_intro (SC.set_elem_twin_cons_consumed (asn1_decorated_as_parser_twin dk) (asn1_sequence_as_parser tl) id);
+    let p = ASN1.Spec.SetComponents.parse_set_elem_twin (twins_of ls) id in
+    Classical.forall_intro (SC.set_elem_twin_cons_consumed (twin_of dk) (twins_of tl) id);
     LPS.ifthenelse_validator p (has_id_dec dk () id)
       (fun _ -> validate_ext_consumed (validate_dec_twin dk () id) #_ #asn1_strong_parser_kind p)
       (fun _ -> validate_ext_consumed (validate_set_elem_twin tl () id) #_ #asn1_strong_parser_kind p)

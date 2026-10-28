@@ -95,7 +95,7 @@ let lc_eq
 
 inline_for_extraction
 let validate_asn1_LC
-  (#ack : asn1_content_k)
+  (#ack : Ghost.erased asn1_content_k)
   (#p : asn1_weak_parser (asn1_content_t ack))
   (v: LPS.validator #(asn1_content_t ack) #asn1_weak_parser_kind p)
 : LPS.validator (parse_asn1_LC p)
@@ -109,7 +109,7 @@ let validate_asn1_LC
 
 inline_for_extraction
 fn jump_asn1_LC
-  (#ack : asn1_content_k)
+  (#ack : Ghost.erased asn1_content_k)
   (p : asn1_weak_parser (asn1_content_t ack))
 : LPS.jumper #(asn1_content_t ack) #asn1_strong_parser_kind (parse_asn1_LC p)
 =
@@ -172,7 +172,7 @@ let asn1_id_eq (id1 id2: asn1_id_t) : Tot (b: bool { b == (id1 = id2) }) =
 inline_for_extraction
 fn validate_asn1_ILC
   (id : asn1_id_t)
-  (#ack : asn1_content_k)
+  (#ack : Ghost.erased asn1_content_k)
   (#p : asn1_weak_parser (asn1_content_t ack))
   (v: LPS.validator #(asn1_content_t ack) #asn1_weak_parser_kind p)
 : LPS.validator #(asn1_content_t ack) #asn1_strong_parser_kind (parse_asn1_ILC id p)
@@ -205,7 +205,7 @@ fn validate_asn1_ILC
 inline_for_extraction
 fn jump_asn1_ILC
   (id : asn1_id_t)
-  (#ack : asn1_content_k)
+  (#ack : Ghost.erased asn1_content_k)
   (p : asn1_weak_parser (asn1_content_t ack))
 : LPS.jumper #(asn1_content_t ack) #asn1_strong_parser_kind (parse_asn1_ILC id p)
 =
