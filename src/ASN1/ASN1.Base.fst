@@ -391,9 +391,48 @@ let rec asn1_set_k_wf (li : id_decs) : prop =
     let (s, _) = hd in
     asn1_set_k_wf' s tl /\ asn1_set_k_wf tl
 
+// Value restrictions on terminals (X.680 49-51). Besides arbitrary
+// predicates (RESTRICT_CUSTOM), the common restrictions are first-class,
+// so that validator generators can implement them without inspecting
+// F* functions.
+noeq
+type asn1_restriction (k : asn1_terminal_k) : Type =
+// SingleValue / union of SingleValues, e.g. ENUMERATED, `version`
+| RESTRICT_IN : values : list (asn1_terminal_t k) -> asn1_restriction k
+// union of SingleValues on INTEGER (e.g. ENUMERATED)
+| RESTRICT_INT_IN : values : list int -> asn1_restriction k
+// ValueRange on INTEGER, with optional bounds (MIN, MAX)
+| RESTRICT_INT_RANGE : lo : option int -> hi : option int -> asn1_restriction k
+// SizeConstraint on OCTET STRING, with an optional upper bound (MAX)
+| RESTRICT_SIZE : lo : nat -> hi : option nat -> asn1_restriction k
+| RESTRICT_CUSTOM : is_valid : (asn1_terminal_t k -> bool) -> asn1_restriction k
+
+let int_in_range (lo hi : option int) (x : int) : Tot bool =
+  (match lo with None -> true | Some l -> l <= x) &&
+  (match hi with None -> true | Some h -> x <= h)
+
+let restriction_pred (#k : asn1_terminal_k) (r : asn1_restriction k) (x : asn1_terminal_t k) : Tot bool =
+  match r with
+  | RESTRICT_IN l -> List.mem x l
+  | RESTRICT_INT_IN l ->
+    (match k with
+     | ASN1_INTEGER _ -> List.mem #int x l
+     | _ -> false)
+  | RESTRICT_INT_RANGE lo hi ->
+    (match k with
+     | ASN1_INTEGER _ -> int_in_range lo hi x
+     | _ -> false)
+  | RESTRICT_SIZE lo hi ->
+    (match k with
+     | ASN1_OCTETSTRING ->
+       lo <= Seq.length #byte x &&
+       (match hi with None -> true | Some h -> Seq.length #byte x <= h)
+     | _ -> false)
+  | RESTRICT_CUSTOM f -> f x
+
 noeq //noextract
 type asn1_content_k : Type =
-| ASN1_RESTRICTED_TERMINAL : (k : asn1_terminal_k) -> (is_valid : (asn1_terminal_t k) -> bool) -> asn1_content_k
+| ASN1_RESTRICTED_TERMINAL : (k : asn1_terminal_k) -> (r : asn1_restriction k) -> asn1_content_k
 | ASN1_TERMINAL : asn1_terminal_k -> asn1_content_k
 | ASN1_SEQUENCE : asn1_gen_items_lk -> asn1_content_k
 // `nonempty = true` encodes the `SIZE (1..MAX)` constraint
@@ -428,8 +467,8 @@ and asn1_decorated_k : Set.set asn1_id_t -> asn1_decorator -> Type =
 | ASN1_PLAIN_ILC : #s : _ -> k : asn1_k s -> asn1_decorated_k s PLAIN
 | ASN1_OPTION_ILC : #s : _ -> k : asn1_k s -> asn1_decorated_k s OPTION
 | ASN1_DEFAULT_TERMINAL : id : asn1_id_t -> #k : asn1_terminal_k -> defaultv : asn1_terminal_t k -> asn1_decorated_k (Set.singleton id) DEFAULT
-| ASN1_DEFAULT_RESTRICTED_TERMINAL : id : asn1_id_t -> #k : asn1_terminal_k -> is_valid : ((asn1_terminal_t k) -> bool) -> 
-                                     defaultv : asn1_terminal_t k {is_valid defaultv = true} -> asn1_decorated_k (Set.singleton id) DEFAULT
+| ASN1_DEFAULT_RESTRICTED_TERMINAL : id : asn1_id_t -> #k : asn1_terminal_k -> r : asn1_restriction k -> 
+                                     defaultv : asn1_terminal_t k {restriction_pred r defaultv = true} -> asn1_decorated_k (Set.singleton id) DEFAULT
 
 
 and asn1_gen_items_l : id_decs -> Type0 = 
@@ -542,7 +581,7 @@ let sized_list (nonempty : bool) (t : Type) = l : (list t) {list_size_ok nonempt
 
 let rec asn1_content_t (k : asn1_content_k) : Tot Type (decreases k) =
   match k with
-  | ASN1_RESTRICTED_TERMINAL k' is_valid -> parse_filter_refine is_valid
+  | ASN1_RESTRICTED_TERMINAL k' r -> parse_filter_refine (restriction_pred r)
   | ASN1_TERMINAL k' -> asn1_terminal_t k'
   | ASN1_SEQUENCE gitems -> asn1_sequence_t_core (dsnd gitems)
   | ASN1_SET _ items _ -> asn1_sequence_t_core items
@@ -581,7 +620,7 @@ and asn1_decorated_t_core #s #d (dk:asn1_decorated_k s d) : Tot Type  (decreases
   | ASN1_PLAIN_ILC k -> asn1_t k
   | ASN1_OPTION_ILC k -> option (asn1_t k)
   | ASN1_DEFAULT_TERMINAL id defv -> default_tv defv
-  | ASN1_DEFAULT_RESTRICTED_TERMINAL id #k is_valid defv -> default_tv #(parse_filter_refine is_valid) defv
+  | ASN1_DEFAULT_RESTRICTED_TERMINAL id #k r defv -> default_tv #(parse_filter_refine (restriction_pred r)) defv
 
 and asn1_sequence_t_core #id_decs (items:asn1_gen_items_l id_decs) : Tot Type (decreases items) =
   match items with
@@ -693,7 +732,7 @@ let asn1_decorated_pure_t (item : asn1_gen_item_k) : Type =
                      | ASN1_PLAIN_ILC k -> asn1_t k
                      | ASN1_OPTION_ILC k -> asn1_t k
                      | ASN1_DEFAULT_TERMINAL _ #k _ -> asn1_terminal_t k 
-                     | ASN1_DEFAULT_RESTRICTED_TERMINAL _ #k is_valid _ -> parse_filter_refine is_valid
+                     | ASN1_DEFAULT_RESTRICTED_TERMINAL _ #k r _ -> parse_filter_refine (restriction_pred r)
 
 type asn1_strong_parser_kind : parser_kind = {
   parser_kind_metadata = None;

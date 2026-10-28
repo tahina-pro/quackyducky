@@ -144,7 +144,7 @@ and dasn1_sequence_as_parser #id_decs (ls:asn1_gen_items_l id_decs)
 
 and dasn1_content_as_parser (k : asn1_content_k) : Tot (asn1_weak_parser (asn1_content_t k)) (decreases k) =
   match k with
-  | ASN1_RESTRICTED_TERMINAL k' is_valid -> weaken _ ((dasn1_terminal_as_parser k') `parse_filter` is_valid)
+  | ASN1_RESTRICTED_TERMINAL k' r -> weaken _ ((dasn1_terminal_as_parser k') `parse_filter` (restriction_pred r))
   | ASN1_TERMINAL k' -> dasn1_terminal_as_parser k'
   | ASN1_SEQUENCE gitems -> make_asn1_sequence_parser (dasn1_sequence_as_parser (dsnd gitems))
   | ASN1_SET _ items _ -> make_asn1_set_parser (dasn1_sequence_as_parser items)
@@ -245,9 +245,9 @@ and dasn1_decorated_as_parser_twin
   | ASN1_DEFAULT_TERMINAL id #k defv ->
     let p = dasn1_terminal_as_parser k in
     Mkgendcparser item (parse_asn1_ILC id #(ASN1_TERMINAL k) p) (parse_asn1_ILC_twin id #(ASN1_TERMINAL k) p)
-  | ASN1_DEFAULT_RESTRICTED_TERMINAL id #k is_valid defv ->
-    let p : asn1_weak_parser (asn1_decorated_pure_t item) = weaken _ ((dasn1_terminal_as_parser k) `parse_filter` is_valid) in
-    Mkgendcparser item (parse_asn1_ILC id #(ASN1_RESTRICTED_TERMINAL k is_valid) p) (parse_asn1_ILC_twin id #(ASN1_RESTRICTED_TERMINAL k is_valid) p)
+  | ASN1_DEFAULT_RESTRICTED_TERMINAL id #k r defv ->
+    let p : asn1_weak_parser (asn1_decorated_pure_t item) = weaken _ ((dasn1_terminal_as_parser k) `parse_filter` (restriction_pred r)) in
+    Mkgendcparser item (parse_asn1_ILC id #(ASN1_RESTRICTED_TERMINAL k r) p) (parse_asn1_ILC_twin id #(ASN1_RESTRICTED_TERMINAL k r) p)
 
 #pop-options
 
@@ -286,7 +286,7 @@ let rec asn1_terminal_as_parser (k : asn1_terminal_k) : asn1_weak_parser (asn1_t
 
 and asn1_content_as_parser (k : asn1_content_k) : Tot (asn1_weak_parser (asn1_content_t k)) (decreases k) =
   match k with
-  | ASN1_RESTRICTED_TERMINAL k' is_valid -> weaken _ ((asn1_terminal_as_parser k') `parse_filter` is_valid)
+  | ASN1_RESTRICTED_TERMINAL k' r -> weaken _ ((asn1_terminal_as_parser k') `parse_filter` (restriction_pred r))
   | ASN1_TERMINAL k' -> asn1_terminal_as_parser k'
   | ASN1_SEQUENCE gitems -> make_asn1_sequence_parser (asn1_sequence_as_parser (dsnd gitems))
   | ASN1_SET _ items _ -> make_asn1_set_parser (asn1_sequence_as_parser items)
@@ -376,9 +376,9 @@ and asn1_decorated_as_parser_twin #s #d (dk:asn1_decorated_k s d)
   | ASN1_DEFAULT_TERMINAL id #k defv ->
     let p = asn1_terminal_as_parser k in
     Mkgendcparser item (parse_asn1_ILC id #(ASN1_TERMINAL k) p) (parse_asn1_ILC_twin id #(ASN1_TERMINAL k) p)
-  | ASN1_DEFAULT_RESTRICTED_TERMINAL id #k is_valid defv ->
-    let p : asn1_weak_parser (asn1_decorated_pure_t item) = weaken _ ((asn1_terminal_as_parser k) `parse_filter` is_valid) in
-    Mkgendcparser item (parse_asn1_ILC id #(ASN1_RESTRICTED_TERMINAL k is_valid) p) (parse_asn1_ILC_twin id #(ASN1_RESTRICTED_TERMINAL k is_valid) p)
+  | ASN1_DEFAULT_RESTRICTED_TERMINAL id #k r defv ->
+    let p : asn1_weak_parser (asn1_decorated_pure_t item) = weaken _ ((asn1_terminal_as_parser k) `parse_filter` (restriction_pred r)) in
+    Mkgendcparser item (parse_asn1_ILC id #(ASN1_RESTRICTED_TERMINAL k r) p) (parse_asn1_ILC_twin id #(ASN1_RESTRICTED_TERMINAL k r) p)
 
 and asn1_sequence_as_parser 
   #id_decs (ls:asn1_gen_items_l id_decs)

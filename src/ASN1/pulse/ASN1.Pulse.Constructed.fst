@@ -238,15 +238,15 @@ let asn1_choice_twin_consumed (lc: list (asn1_id_t & asn1_content_k)) (pf: squas
 (* DEFAULT: the item is present iff it is not equal to the default value *)
 
 let default_content (k: asn1_terminal_k) (defv: asn1_terminal_t k) : Tot asn1_content_k =
-  ASN1_RESTRICTED_TERMINAL k (defaultv_filter defv)
+  ASN1_RESTRICTED_TERMINAL k (RESTRICT_CUSTOM (defaultv_filter defv))
 
 #push-options "--z3rlimit 32"
 
 let lc_filter_consumed (k: asn1_terminal_k) (f: asn1_terminal_t k -> bool) (b: bytes)
 : Lemma (consumed #(parse_filter_kind asn1_strong_parser_kind) (T.parse_filter (parse_asn1_LC #(ASN1_TERMINAL k) (asn1_terminal_as_parser k)) f) b ==
-    consumed #asn1_strong_parser_kind (parse_asn1_LC #(ASN1_RESTRICTED_TERMINAL k f) (asn1_content_as_parser (ASN1_RESTRICTED_TERMINAL k f))) b)
+    consumed #asn1_strong_parser_kind (parse_asn1_LC #(ASN1_RESTRICTED_TERMINAL k (RESTRICT_CUSTOM f)) (asn1_content_as_parser (ASN1_RESTRICTED_TERMINAL k (RESTRICT_CUSTOM f)))) b)
 = let p = asn1_terminal_as_parser k in
-  let pf = asn1_content_as_parser (ASN1_RESTRICTED_TERMINAL k f) in
+  let pf = asn1_content_as_parser (ASN1_RESTRICTED_TERMINAL k (RESTRICT_CUSTOM f)) in
   let pl = SDER.parse_bounded_der_length32 0 ILC.asn1_length_max in
   T.parse_filter_eq (parse_asn1_LC #(ASN1_TERMINAL k) p) f b;
   ILC.lc_eq p b;
@@ -258,7 +258,10 @@ let lc_filter_consumed (k: asn1_terminal_k) (f: asn1_terminal_t k -> bool) (b: b
   | Some (len, sz) ->
     if Seq.length b < sz + U32.v len
     then ()
-    else T.parse_filter_eq #asn1_weak_parser_kind p f (Seq.slice b sz (sz + U32.v len))
+    else begin
+      T.parse_filter_eq #asn1_weak_parser_kind p f (Seq.slice b sz (sz + U32.v len));
+      T.parse_filter_eq #asn1_weak_parser_kind p (restriction_pred (RESTRICT_CUSTOM f)) (Seq.slice b sz (sz + U32.v len))
+    end
 
 let default_terminal_twin_consumed (id0: asn1_id_t) (#k: asn1_terminal_k) (defv: asn1_terminal_t k) (id: asn1_id_t) (b: bytes)
 : Lemma (consumed #asn1_strong_parser_kind (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin (ASN1_DEFAULT_TERMINAL id0 #k defv)) id) b ==
@@ -267,6 +270,52 @@ let default_terminal_twin_consumed (id0: asn1_id_t) (#k: asn1_terminal_k) (defv:
   T.parse_filter_eq #asn1_strong_parser_kind fp (defaultv_filter defv) b;
   if id0 = id
   then lc_filter_consumed k (defaultv_filter defv) b
+  else ()
+
+let restricted_default_filter (#k: asn1_terminal_k) (r: asn1_restriction k) (defv: asn1_terminal_t k) (x: asn1_terminal_t k) : Tot bool =
+  restriction_pred r x && defaultv_filter defv x
+
+let default_restricted_content (k: asn1_terminal_k) (r: asn1_restriction k) (defv: asn1_terminal_t k) : Tot asn1_content_k =
+  ASN1_RESTRICTED_TERMINAL k (RESTRICT_CUSTOM (restricted_default_filter r defv))
+
+let lc_filter2_consumed (k: asn1_terminal_k) (r: asn1_restriction k) (defv: asn1_terminal_t k { restriction_pred r defv }) (b: bytes)
+: Lemma (
+    let p : asn1_weak_parser (parse_filter_refine (restriction_pred r)) = weaken _ (asn1_terminal_as_parser k `parse_filter` restriction_pred r) in
+    consumed #(parse_filter_kind (parse_filter_kind asn1_strong_parser_kind))
+      (T.parse_filter (T.parse_filter (parse_asn1_LC #(ASN1_RESTRICTED_TERMINAL k r) p) (restriction_pred r)) (defaultv_filter #(parse_filter_refine (restriction_pred r)) defv)) b ==
+    consumed #asn1_strong_parser_kind (parse_asn1_LC (asn1_content_as_parser (default_restricted_content k r defv))) b)
+= let p0 = asn1_terminal_as_parser k in
+  let p : asn1_weak_parser (parse_filter_refine (restriction_pred r)) = weaken _ (p0 `parse_filter` restriction_pred r) in
+  let pf = asn1_content_as_parser (default_restricted_content k r defv) in
+  let pl = SDER.parse_bounded_der_length32 0 ILC.asn1_length_max in
+  let q = T.parse_filter (parse_asn1_LC #(ASN1_RESTRICTED_TERMINAL k r) p) (restriction_pred r) in
+  T.parse_filter_eq q (defaultv_filter #(parse_filter_refine (restriction_pred r)) defv) b;
+  T.parse_filter_eq (parse_asn1_LC #(ASN1_RESTRICTED_TERMINAL k r) p) (restriction_pred r) b;
+  ILC.lc_eq p b;
+  ILC.lc_eq pf b;
+  SVG.parse_vlgen_weak_unfold 0 ILC.asn1_length_max #(SDER.parse_bounded_der_length32_kind 0 ILC.asn1_length_max) pl #asn1_weak_parser_kind p b;
+  SVG.parse_vlgen_weak_unfold 0 ILC.asn1_length_max #(SDER.parse_bounded_der_length32_kind 0 ILC.asn1_length_max) pl #asn1_weak_parser_kind pf b;
+  match SB.parse pl b with
+  | None -> ()
+  | Some (len, sz) ->
+    if Seq.length b < sz + U32.v len
+    then ()
+    else begin
+      let b' = Seq.slice b sz (sz + U32.v len) in
+      T.parse_filter_eq #asn1_weak_parser_kind p0 (restriction_pred r) b';
+      T.parse_filter_eq #asn1_weak_parser_kind p0 (restriction_pred (RESTRICT_CUSTOM (restricted_default_filter r defv))) b'
+    end
+
+let default_restricted_twin_consumed (id0: asn1_id_t) (#k: asn1_terminal_k) (r: asn1_restriction k) (defv: asn1_terminal_t k { restriction_pred r defv }) (id: asn1_id_t) (b: bytes)
+: Lemma (consumed #asn1_strong_parser_kind (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin (ASN1_DEFAULT_RESTRICTED_TERMINAL id0 #k r defv)) id) b ==
+    (if id0 = id then consumed #asn1_strong_parser_kind (parse_asn1_LC (asn1_content_as_parser (default_restricted_content k r defv))) b else None))
+= let p : asn1_weak_parser (parse_filter_refine (restriction_pred r)) = weaken _ (asn1_terminal_as_parser k `parse_filter` restriction_pred r) in
+  let fp = parse_asn1_ILC_twin id0 #(ASN1_RESTRICTED_TERMINAL k r) p id in
+  let q = T.parse_filter fp (restriction_pred r) in
+  T.parse_filter_eq #asn1_strong_parser_kind fp (restriction_pred r) b;
+  T.parse_filter_eq q (defaultv_filter #(parse_filter_refine (restriction_pred r)) defv) b;
+  if id0 = id
+  then lc_filter2_consumed k r defv b
   else ()
 
 #pop-options

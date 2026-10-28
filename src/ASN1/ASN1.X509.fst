@@ -103,7 +103,7 @@ let curve
   (_ by (seq_tac ()))
 
 let eCPVer
-= mk_restricted_field asn1_integer (fun x -> x = 1)
+= mk_restriction_field asn1_integer (RESTRICT_INT_IN [1])
 
 let id_fieldType = ansi_X9_62 /+ 1
 
@@ -198,7 +198,7 @@ let supported_algorithms
    (id_ecPublicKey, ecpkParameters_field)]
 
 let version
-= mk_restricted_field asn1_integer (fun x -> x = 2)
+= mk_restriction_field asn1_integer (RESTRICT_INT_IN [2])
 
 let certificateSerialNumber = asn1_integer
 
@@ -320,10 +320,10 @@ let critical_field
 = mk_default_field asn1_boolean false
 
 let critical_field_MUST_false
-= mk_restricted_default_field asn1_boolean (fun b -> b = false) false
+= mk_restriction_default_field asn1_boolean (RESTRICT_IN [false]) false
 
 let critical_field_MUST_true
-= mk_restricted_field asn1_boolean (fun b -> b = true)
+= mk_restriction_field asn1_boolean (RESTRICT_IN [true])
 
 let id_pe_ipAddrBlocks = id_pe /+ 7
 
@@ -351,7 +351,7 @@ let iPAddressChoice
 
 let iPAddressFamily
 = asn1_sequence [
-    "addressFamily" *^ (PLAIN ^: (mk_restricted_field asn1_octetstring (fun s -> let l = Seq.length s in 2 <= l && l <= 3)));
+    "addressFamily" *^ (PLAIN ^: (mk_restriction_field asn1_octetstring (RESTRICT_SIZE 2 (Some 3))));
     "ipAddressChoice" *^ (PLAIN ^: iPAddressChoice)]
     (_ by (seq_tac ()))
 
@@ -368,7 +368,7 @@ let id_ad_caIssuers = id_ad /+ 1
 let id_ad_ocsp = id_ad /+ 2
 
 let accessMethod
-= mk_restricted_field asn1_oid (fun oid -> oid = id_ad_caIssuers || oid = id_ad_ocsp)
+= mk_restriction_field asn1_oid (RESTRICT_IN [id_ad_caIssuers; id_ad_ocsp])
 
 let otherName
 = asn1_any_oid_with_fallback
@@ -430,7 +430,7 @@ let id_ce_basicConstraints = id_ce /+ 19
 let basicConstraints
 = asn1_sequence [
     "cA" *^ (DEFAULT ^: (mk_default_field asn1_boolean false));
-    "pathLenConstraint" *^ (OPTION ^: (mk_restricted_field asn1_integer (fun x -> x >= 0)))]
+    "pathLenConstraint" *^ (OPTION ^: (mk_restriction_field asn1_integer (RESTRICT_INT_RANGE (Some 0) None)))]
     (_ by (seq_tac ()))
 
 let basicConstraints_expansion

@@ -63,19 +63,19 @@ let read_boolean
 : PPB.leaf_reader #asn1_boolean_t #parse_asn1_boolean_t_kind parse_asn1_boolean
 = leaf_read_of_vreader (vread_boolean ())
 
-(* BOOLEAN DEFAULT defv: the encoding must not be the default value
-   (X.690 11.5) *)
+(* BOOLEAN filtered by a predicate (restrictions, DEFAULT) *)
 inline_for_extraction
-let validate_boolean_neq (defv: asn1_terminal_t ASN1_BOOLEAN)
+let validate_boolean_filter (f: asn1_boolean_t -> bool)
 : LPS.validator
-    #(asn1_content_t (ASN1_RESTRICTED_TERMINAL ASN1_BOOLEAN (ASN1.Spec.Sequence.defaultv_filter defv)))
-    #asn1_weak_parser_kind
-    (asn1_content_as_parser (ASN1_RESTRICTED_TERMINAL ASN1_BOOLEAN (ASN1.Spec.Sequence.defaultv_filter defv)))
-= Classical.forall_intro (T.parse_filter_eq #asn1_weak_parser_kind (asn1_terminal_as_parser ASN1_BOOLEAN) (ASN1.Spec.Sequence.defaultv_filter defv));
+    #(T.parse_filter_refine f)
+    #(LowParse.Spec.Combinators.parse_filter_kind asn1_weak_parser_kind)
+    (T.parse_filter (asn1_terminal_as_parser ASN1_BOOLEAN) f)
+= Classical.forall_intro (T.parse_filter_eq #asn1_weak_parser_kind (asn1_terminal_as_parser ASN1_BOOLEAN) f);
   LPS.validate_ext
     #_ #(LowParse.Spec.Combinators.parse_filter_kind asn1_weak_parser_kind)
-    (validate_of_vreader (vread_filter (vread_weaken asn1_weak_parser_kind (vread_boolean ()) ()) (ASN1.Spec.Sequence.defaultv_filter defv)))
-    #asn1_weak_parser_kind (asn1_content_as_parser (ASN1_RESTRICTED_TERMINAL ASN1_BOOLEAN (ASN1.Spec.Sequence.defaultv_filter defv)))
+    (validate_of_vreader (vread_filter (vread_weaken asn1_weak_parser_kind (vread_boolean ()) ()) f))
+    #(LowParse.Spec.Combinators.parse_filter_kind asn1_weak_parser_kind)
+    (T.parse_filter (asn1_terminal_as_parser ASN1_BOOLEAN) f)
 
 (* OCTET STRING *)
 

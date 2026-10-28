@@ -1305,9 +1305,9 @@ let rec content_lemma (id: asn1_id_t) (k: asn1_content_k)
   (ensures (content_sound id (asn1_content_as_parser k)))
   (decreases k)
 = match k with
-  | ASN1_RESTRICTED_TERMINAL k' f ->
+  | ASN1_RESTRICTED_TERMINAL k' r ->
     terminal_sound id k';
-    content_sound_filter id (asn1_terminal_as_parser k') f
+    content_sound_filter id (asn1_terminal_as_parser k') (restriction_pred r)
   | ASN1_TERMINAL k' -> terminal_sound id k'
   | ASN1_SEQUENCE gitems ->
     items_lemma (dsnd gitems);
@@ -1386,10 +1386,10 @@ and dec_lemma (#s: _) (#d: _) (dk: asn1_decorated_k s d)
   | ASN1_DEFAULT_TERMINAL id #k _ ->
     terminal_sound id k;
     ilc_twin_sound id #(ASN1_TERMINAL k) (asn1_terminal_as_parser k)
-  | ASN1_DEFAULT_RESTRICTED_TERMINAL id #k is_valid _ ->
+  | ASN1_DEFAULT_RESTRICTED_TERMINAL id #k r _ ->
     terminal_sound id k;
-    content_sound_filter id (asn1_terminal_as_parser k) is_valid;
-    ilc_twin_sound id #(ASN1_RESTRICTED_TERMINAL k is_valid) (weaken _ ((asn1_terminal_as_parser k) `parse_filter` is_valid))
+    content_sound_filter id (asn1_terminal_as_parser k) (restriction_pred r);
+    ilc_twin_sound id #(ASN1_RESTRICTED_TERMINAL k r) (weaken _ ((asn1_terminal_as_parser k) `parse_filter` (restriction_pred r)))
 
 and items_lemma (#ids: _) (ls: asn1_gen_items_l ids)
 : Lemma
@@ -1532,12 +1532,12 @@ let dec_twin_tag (#s: _) (#d: _) (dk: asn1_decorated_k s d) (id: asn1_id_t) (b: 
     let fp = Mkgendcparser?.fp item in
     parse_synth_eq ((fp id) `parse_filter` (defaultv_filter defv)) (defaultv_synth defv) b;
     parse_filter_eq (fp id) (defaultv_filter defv) b
-  | ASN1_DEFAULT_RESTRICTED_TERMINAL id0 #k is_valid defv ->
+  | ASN1_DEFAULT_RESTRICTED_TERMINAL id0 #k r defv ->
     let fp = Mkgendcparser?.fp item in
     let d = Mkgendcparser?.d item in
-    parse_synth_eq (((fp id) `parse_filter` is_valid) `parse_filter` (defaultv_filter #(asn1_decorated_pure_t d) defv)) (defaultv_synth #(asn1_decorated_pure_t d) defv) b;
-    parse_filter_eq ((fp id) `parse_filter` is_valid) (defaultv_filter #(asn1_decorated_pure_t d) defv) b;
-    parse_filter_eq (fp id) is_valid b
+    parse_synth_eq (((fp id) `parse_filter` (restriction_pred r)) `parse_filter` (defaultv_filter #(asn1_decorated_pure_t d) defv)) (defaultv_synth #(asn1_decorated_pure_t d) defv) b;
+    parse_filter_eq ((fp id) `parse_filter` (restriction_pred r)) (defaultv_filter #(asn1_decorated_pure_t d) defv) b;
+    parse_filter_eq (fp id) (restriction_pred r) b
 #pop-options
 
 let item_tagged (item: gen_decorated_parser_twin) : prop =

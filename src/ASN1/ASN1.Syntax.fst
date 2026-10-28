@@ -167,10 +167,18 @@ let mk_default_field (#s) (x : asn1_k s {is_terminal x}) (v : proj_terminal_t x)
 = ASN1_DEFAULT_TERMINAL (proj_identifier x) #(proj_terminal_k x) v
 
 let mk_restricted_default_field (#s) (x : asn1_k s {is_terminal x}) (f : proj_terminal_t x -> bool) (v : proj_terminal_t x {f v})
-= ASN1_DEFAULT_RESTRICTED_TERMINAL (proj_identifier x) #(proj_terminal_k x) f v
+= ASN1_DEFAULT_RESTRICTED_TERMINAL (proj_identifier x) #(proj_terminal_k x) (RESTRICT_CUSTOM f) v
 
 let mk_restricted_field (#s) (x : asn1_k s {is_terminal x}) (f : proj_terminal_t x -> bool)
-= ASN1_ILC (proj_identifier x) (ASN1_RESTRICTED_TERMINAL (proj_terminal_k x) f)
+= ASN1_ILC (proj_identifier x) (ASN1_RESTRICTED_TERMINAL (proj_terminal_k x) (RESTRICT_CUSTOM f))
+
+(* Restrictions given as first-class descriptors (see asn1_restriction),
+   which validator generators can implement *)
+let mk_restriction_default_field (#s) (x : asn1_k s {is_terminal x}) (r : asn1_restriction (proj_terminal_k x)) (v : proj_terminal_t x {restriction_pred r v})
+= ASN1_DEFAULT_RESTRICTED_TERMINAL (proj_identifier x) #(proj_terminal_k x) r v
+
+let mk_restriction_field (#s) (x : asn1_k s {is_terminal x}) (r : asn1_restriction (proj_terminal_k x))
+= ASN1_ILC (proj_identifier x) (ASN1_RESTRICTED_TERMINAL (proj_terminal_k x) r)
 
 let field_type (s : Set.set asn1_id_t) (d : asn1_decorator) 
 = match d with
@@ -232,7 +240,7 @@ let enumerated_id = mk_constant_id 10
 (* ENUMERATED { ... } (X.680 20) with the given admissible values; its
    contents are encoded as those of an INTEGER (X.690 8.4) *)
 let asn1_enumerated (values : list int)
-= ASN1_ILC enumerated_id (ASN1_RESTRICTED_TERMINAL (ASN1_INTEGER 20) (fun (x : asn1_integer_t 20) -> List.mem #int x values))
+= ASN1_ILC enumerated_id (ASN1_RESTRICTED_TERMINAL (ASN1_INTEGER 20) (RESTRICT_INT_IN values))
 
 let utf8string_id = mk_constant_id 12
 

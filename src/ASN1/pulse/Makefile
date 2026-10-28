@@ -59,6 +59,7 @@ $(eval $(call difftest_case,Prim_RelOid,Prim,prim.json,DiffRelOid.RelOid,validat
 $(eval $(call difftest_case,Prim_Desc,Prim,prim.json,DiffDesc.Desc,validate_desc))
 $(eval $(call difftest_case,Prim_Iri,Prim,prim.json,DiffIRI.Iri,validate_iri))
 $(eval $(call difftest_case,Prim_RelIri,Prim,prim.json,DiffIRI.RelIri,validate_relIri))
+$(eval $(call difftest_case,Prim_Enum,Prim,prim.json,DiffPrim.Enum,validate_enum_))
 $(eval $(call difftest_case,Strings_Utf8,Strings,strings.json,DiffStrings.Utf8,validate_utf8))
 $(eval $(call difftest_case,Strings_Numeric,Strings,strings.json,DiffStrings.Numeric,validate_numeric))
 $(eval $(call difftest_case,Strings_Printable,Strings,strings.json,DiffStrings.Printable,validate_printable))
@@ -84,6 +85,10 @@ $(eval $(call difftest_case,Constructed_HighCtx,Constructed,constructed.json,Dif
 $(eval $(call difftest_case,Constructed_HighApp,Constructed,constructed.json,DiffConstructed.HighApp,validate_highApp))
 $(eval $(call difftest_case,Constructed_Nested,Constructed,constructed.json,DiffConstructed.Nested,validate_nested))
 $(eval $(call difftest_case,Constructed_OctetsSet,Constructed,constructed.json,DiffConstructed.OctetsSet,validate_octetsSet))
+$(eval $(call difftest_case,Constraints_Sized,Constraints,constraints.json,DiffConstraints.Sized,validate_sized))
+$(eval $(call difftest_case,Constraints_Byte,Constraints,constraints.json,DiffConstraints.Byte,validate_byte))
+$(eval $(call difftest_case,Constraints_NonEmptySeqOf,Constraints,constraints.json,DiffConstraints.NonEmptySeqOf,validate_nonEmptySeqOf))
+$(eval $(call difftest_case,Constraints_NonEmptySetOf,Constraints,constraints.json,DiffConstraints.NonEmptySetOf,validate_nonEmptySetOf))
 
 .SECONDEXPANSION:
 $(C_OUTPUT_DIR)/test_%.exe: $(C_OUTPUT_DIR)/ASN1.Pulse.DiffTest.$$($$*.module).c test/driver.c

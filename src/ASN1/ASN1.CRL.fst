@@ -21,7 +21,7 @@ let crlExtension
 
 let crlExtensions = asn1_nonempty_sequence_of crlExtension
 
-let version = mk_restricted_field asn1_integer (fun x -> x = 1)
+let version = mk_restriction_field asn1_integer (RESTRICT_INT_IN [1])
 
 let revokedCertificate
 = asn1_sequence [

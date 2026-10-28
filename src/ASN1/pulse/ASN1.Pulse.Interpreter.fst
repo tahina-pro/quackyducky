@@ -18,6 +18,7 @@ module ILC = ASN1.Pulse.ILC
 module Term = ASN1.Pulse.Terminal
 module C = ASN1.Pulse.Constructed
 module SO = ASN1.Pulse.SetOf
+module Rs = ASN1.Pulse.Restrict
 
 (* Definitions tagged with this attribute are unfolded when specializing
    the interpreter to a given schema. *)
@@ -37,9 +38,18 @@ let supported_default (k: asn1_terminal_k) : Tot bool =
   ASN1_BOOLEAN? k || ASN1_NULL? k
 
 [@@asn1_pulse_attr]
+let supported_restriction (k: asn1_terminal_k) (r: asn1_restriction k) : Tot bool =
+  match k with
+  | ASN1_BOOLEAN -> RESTRICT_IN? r
+  | ASN1_INTEGER bound -> bound < 65536 && Rs.int_restriction_ok r
+  | ASN1_OCTETSTRING -> Rs.size_restriction_ok r
+  | _ -> false
+
+[@@asn1_pulse_attr]
 let rec supported_content (k: asn1_content_k) : Tot bool (decreases k) =
   match k with
   | ASN1_TERMINAL k' -> supported_terminal k'
+  | ASN1_RESTRICTED_TERMINAL k' r -> supported_restriction k' r
   | ASN1_SEQUENCE gitems -> supported_items (dsnd gitems)
   | ASN1_SEQUENCE_OF _ k' -> supported_k k'
   | ASN1_SET_OF _ k' -> supported_k k'
@@ -67,6 +77,7 @@ and supported_dec (#s: _) (#d: _) (dk: asn1_decorated_k s d) : Tot bool (decreas
   | ASN1_PLAIN_ILC k -> supported_k k
   | ASN1_OPTION_ILC k -> supported_k k
   | ASN1_DEFAULT_TERMINAL _ #k _ -> supported_default k
+  | ASN1_DEFAULT_RESTRICTED_TERMINAL _ #k r _ -> ASN1_BOOLEAN? k && RESTRICT_IN? r
   | _ -> false
 
 (* Static information about sequence items *)
@@ -124,10 +135,32 @@ inline_for_extraction
 let validate_default_content (k: asn1_terminal_k) (defv: asn1_terminal_t k) (u: squash (supported_default k))
 : Tot (LPS.validator #(asn1_content_t (C.default_content k defv)) #asn1_weak_parser_kind (asn1_content_as_parser (C.default_content k defv)))
 = match k with
-  | ASN1_BOOLEAN -> Term.validate_boolean_neq defv
+  | ASN1_BOOLEAN -> Rs.validate_boolean_neq defv
   | ASN1_NULL ->
     Classical.forall_intro C.default_null_fails;
     validate_fail (asn1_content_as_parser (C.default_content k defv)) ()
+
+[@@asn1_pulse_attr]
+inline_for_extraction
+let validate_restricted (k: asn1_terminal_k) (r: asn1_restriction k) (u: squash (supported_restriction k r))
+: Tot (LPS.validator #(asn1_content_t (ASN1_RESTRICTED_TERMINAL k r)) #asn1_weak_parser_kind (asn1_content_as_parser (ASN1_RESTRICTED_TERMINAL k r)))
+= match k with
+  | ASN1_BOOLEAN ->
+    let RESTRICT_IN l = r in
+    Rs.validate_boolean_in l
+  | ASN1_INTEGER bound ->
+    SZ.fits_at_least_16 bound;
+    Rs.validate_integer_restricted (SZ.uint_to_t bound) r
+  | ASN1_OCTETSTRING -> Rs.validate_octetstring_size r
+
+[@@asn1_pulse_attr]
+inline_for_extraction
+let validate_default_restricted_content (k: asn1_terminal_k) (r: asn1_restriction k) (defv: asn1_terminal_t k { restriction_pred r defv }) (u: squash (ASN1_BOOLEAN? k && RESTRICT_IN? r))
+: Tot (LPS.validator #(asn1_content_t (C.default_restricted_content k r defv)) #asn1_weak_parser_kind (asn1_content_as_parser (C.default_restricted_content k r defv)))
+= match k with
+  | ASN1_BOOLEAN ->
+    let RESTRICT_IN l = r in
+    Rs.validate_boolean_in_neq l defv
 
 [@@asn1_pulse_attr]
 inline_for_extraction
@@ -174,6 +207,7 @@ let rec validate_content (k: asn1_content_k) (u: squash (supported_content k))
   (decreases %[k; 0])
 = match k with
   | ASN1_TERMINAL k' -> validate_terminal k' ()
+  | ASN1_RESTRICTED_TERMINAL k' r -> validate_restricted k' r ()
   | ASN1_SEQUENCE gitems ->
     LPS.validate_ext (validate_seq (dsnd gitems) () None) #asn1_weak_parser_kind (asn1_content_as_parser k)
   | ASN1_SEQUENCE_OF ne k' ->
@@ -228,6 +262,11 @@ and validate_dec_twin (#s: _) (#d: _) (dk: asn1_decorated_k s d) (u: squash (sup
     LPS.ifthenelse_validator (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id) (ILC.asn1_id_eq id0 id)
       (fun _ -> validate_ext_consumed (ILC.validate_asn1_LC (validate_default_content k defv ())) (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id))
       (fun _ -> validate_fail (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id) ())
+  | ASN1_DEFAULT_RESTRICTED_TERMINAL id0 #k r defv ->
+    Classical.forall_intro (C.default_restricted_twin_consumed id0 #k r defv id);
+    LPS.ifthenelse_validator (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id) (ILC.asn1_id_eq id0 id)
+      (fun _ -> validate_ext_consumed (ILC.validate_asn1_LC (validate_default_restricted_content k r defv ())) (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id))
+      (fun _ -> validate_fail (parse_asn1_sequence_item_twin (asn1_decorated_as_parser_twin dk) id) ())
 
 and validate_seq (#i: _) (ls: asn1_gen_items_l i) (u: squash (supported_items ls)) (st: option asn1_id_t)
 : Tot (LPS.validator #_ #asn1_weak_parser_kind (seq_p (asn1_sequence_as_parser ls) st))
@@ -260,4 +299,5 @@ and has_id_dec (#s: _) (#d: _) (dk: asn1_decorated_k s d) (u: squash (supported_
 = match dk with
   | ASN1_PLAIN_ILC k -> has_id_k k () id
   | ASN1_OPTION_ILC k -> has_id_k k () id
+  | ASN1_DEFAULT_RESTRICTED_TERMINAL id0 _ _ -> ILC.asn1_id_eq id id0
   | ASN1_DEFAULT_TERMINAL id0 _ -> ILC.asn1_id_eq id id0

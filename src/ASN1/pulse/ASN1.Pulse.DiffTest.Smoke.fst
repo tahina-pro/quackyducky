@@ -14,7 +14,7 @@ let smoke_supported () : squash (supported_k Smoke.smoke) =
   _ by (FStar.Tactics.norm [delta; zeta; iota; primops]; FStar.Tactics.trivial ())
 
 [@@normalize_for_extraction [
-  delta_attr [`%asn1_pulse_attr];
+  delta_attr [`%asn1_pulse_attr; `%ASN1.Pulse.Restrict.asn1_restrict_attr];
   delta_namespace ["ASN1.DiffTest.Smoke"; "ASN1.Syntax"];
   delta_only [`%dfst; `%dsnd; `%Mkdtuple2?._1; `%Mkdtuple2?._2; `%ASN1.Base.k_as_lk; `%ASN1.Base.list_as_l; `%ASN1.Base.mk_ASN1_GEN_ITEM; `%ASN1.Base.proj2_of_3; `%List.Tot.map; `%ASN1.Pulse.Interpreter.all_defaultable];
   zeta; iota; primops]]
