@@ -75,6 +75,14 @@ $(eval $(call difftest_case,Time_Gen,Time,time.json,DiffTime.Gen,validate_gen))
 $(eval $(call difftest_case,Time_Date,Time,time.json,DiffTime2.Date,validate_date))
 $(eval $(call difftest_case,Time_Tod,Time,time.json,DiffTime2.Tod,validate_tod))
 $(eval $(call difftest_case,Time_DateTime,Time,time.json,DiffTime2.DateTime,validate_dateTime))
+$(eval $(call difftest_case,Constructed_Seq,Constructed,constructed.json,DiffConstructed.Seq,validate_seq))
+$(eval $(call difftest_case,Constructed_IntSeq,Constructed,constructed.json,DiffConstructed.IntSeq,validate_intSeq))
+$(eval $(call difftest_case,Constructed_Choice,Constructed,constructed.json,DiffConstructed.Choice,validate_choice))
+$(eval $(call difftest_case,Constructed_App,Constructed,constructed.json,DiffConstructed.App,validate_app))
+$(eval $(call difftest_case,Constructed_PrivExp,Constructed,constructed.json,DiffConstructed.PrivExp,validate_privExp))
+$(eval $(call difftest_case,Constructed_HighCtx,Constructed,constructed.json,DiffConstructed.HighCtx,validate_highCtx))
+$(eval $(call difftest_case,Constructed_HighApp,Constructed,constructed.json,DiffConstructed.HighApp,validate_highApp))
+$(eval $(call difftest_case,Constructed_Nested,Constructed,constructed.json,DiffConstructed.Nested,validate_nested))
 
 .SECONDEXPANSION:
 $(C_OUTPUT_DIR)/test_%.exe: $(C_OUTPUT_DIR)/ASN1.Pulse.DiffTest.$$($$*.module).c test/driver.c
