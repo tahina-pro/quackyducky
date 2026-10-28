@@ -25,33 +25,78 @@ $(C_OUTPUT_DIR)/%.c: %.fst.checked
 # (built by ../difftest) as the oracle.
 CC ?= cc
 # -Wno-type-limits: the extracted length decoder keeps range checks that are
-# tautologies on unsigned C types
-TEST_CFLAGS := -std=c11 -Wall -Wextra -Werror -Wno-type-limits -O1
+# tautologies on unsigned C types; -Wno-unused-variable: content validators
+# that ignore their input (e.g. NULL) leave the slice split by the length
+# check unused
+TEST_CFLAGS := -std=c11 -Wall -Wextra -Werror -Wno-type-limits -Wno-unused-variable -O1
 DIFFTEST_DIR := ../difftest
 DIFFTEST_OUT := $(DIFFTEST_DIR)/out
 
-# For each test module ASN1.Pulse.DiffTest.<T>: vectors file, ASN.1 type, entry point
+# For each test <T>: extraction root module ASN1.Pulse.DiffTest.<T>.module,
+# vectors file, ASN.1 type, and entry point (validator name in that module)
 C_TESTS := Smoke
+Smoke.module := Smoke
 Smoke.vectors := smoke.json
 Smoke.type := DiffSmoke.Smoke
 Smoke.entry := validate_smoke
 
-$(C_OUTPUT_DIR)/test_%.exe: $(C_OUTPUT_DIR)/ASN1.Pulse.DiffTest.%.c test/driver.c
+# <T> <module> <vectors> <ASN.1 type> <entry>
+define difftest_case
+C_TESTS += $(1)
+$(1).module := $(2)
+$(1).vectors := $(3)
+$(1).type := $(4)
+$(1).entry := $(5)
+endef
+
+$(eval $(call difftest_case,Prim_Bool,Prim,prim.json,DiffPrim.Bool,validate_bool_))
+$(eval $(call difftest_case,Prim_Int,Prim,prim.json,DiffPrim.Int,validate_int_))
+$(eval $(call difftest_case,Prim_Bits,Prim,prim.json,DiffPrim.Bits,validate_bits))
+$(eval $(call difftest_case,Prim_Octets,Prim,prim.json,DiffPrim.Octets,validate_octets))
+$(eval $(call difftest_case,Prim_Null,Prim,prim.json,DiffPrim.Null,validate_null_))
+$(eval $(call difftest_case,Prim_Oid,Prim,prim.json,DiffPrim.Oid,validate_oid))
+$(eval $(call difftest_case,Prim_RelOid,Prim,prim.json,DiffRelOid.RelOid,validate_relOid))
+$(eval $(call difftest_case,Prim_Desc,Prim,prim.json,DiffDesc.Desc,validate_desc))
+$(eval $(call difftest_case,Prim_Iri,Prim,prim.json,DiffIRI.Iri,validate_iri))
+$(eval $(call difftest_case,Prim_RelIri,Prim,prim.json,DiffIRI.RelIri,validate_relIri))
+$(eval $(call difftest_case,Strings_Utf8,Strings,strings.json,DiffStrings.Utf8,validate_utf8))
+$(eval $(call difftest_case,Strings_Numeric,Strings,strings.json,DiffStrings.Numeric,validate_numeric))
+$(eval $(call difftest_case,Strings_Printable,Strings,strings.json,DiffStrings.Printable,validate_printable))
+$(eval $(call difftest_case,Strings_Ia5,Strings,strings.json,DiffStrings.Ia5,validate_ia5))
+$(eval $(call difftest_case,Strings_Visible,Strings,strings.json,DiffStrings.Visible,validate_visible))
+$(eval $(call difftest_case,Strings_Bmp,Strings,strings.json,DiffStrings.Bmp,validate_bmp))
+$(eval $(call difftest_case,Strings_Universal,Strings,strings.json,DiffStrings.Universal,validate_universal))
+$(eval $(call difftest_case,Strings_Teletex,Strings,strings.json,DiffStrings.Teletex,validate_teletex))
+$(eval $(call difftest_case,Strings_Videotex,Strings,strings.json,DiffVideotex.Videotex,validate_videotex))
+$(eval $(call difftest_case,Strings_Graphic,Strings,strings.json,DiffStrings2.Graphic,validate_graphic))
+$(eval $(call difftest_case,Strings_General,Strings,strings.json,DiffStrings2.General,validate_general))
+$(eval $(call difftest_case,Time_Utc,Time,time.json,DiffTime.Utc,validate_utc))
+$(eval $(call difftest_case,Time_Gen,Time,time.json,DiffTime.Gen,validate_gen))
+$(eval $(call difftest_case,Time_Date,Time,time.json,DiffTime2.Date,validate_date))
+$(eval $(call difftest_case,Time_Tod,Time,time.json,DiffTime2.Tod,validate_tod))
+$(eval $(call difftest_case,Time_DateTime,Time,time.json,DiffTime2.DateTime,validate_dateTime))
+
+.SECONDEXPANSION:
+$(C_OUTPUT_DIR)/test_%.exe: $(C_OUTPUT_DIR)/ASN1.Pulse.DiffTest.$$($$*.module).c test/driver.c
 	$(CC) $(TEST_CFLAGS) -I $(C_OUTPUT_DIR) \
-	  -DHEADER='"ASN1.Pulse.DiffTest.$*.h"' \
-	  -DVALIDATE=ASN1_Pulse_DiffTest_$*_$($*.entry) \
+	  -DHEADER='"ASN1.Pulse.DiffTest.$($*.module).h"' \
+	  -DVALIDATE=ASN1_Pulse_DiffTest_$($*.module)_$($*.entry) \
 	  -o $@ $< test/driver.c
 
 test-%: $(C_OUTPUT_DIR)/test_%.exe
 	python3 test/vectors.py --type $($*.type) $(DIFFTEST_DIR)/vectors/$($*.vectors) | $<
 
 test-oracle-%: $(C_OUTPUT_DIR)/test_%.exe
-	$(MAKE) -C $(DIFFTEST_DIR) out/ours.jsonl
 	python3 test/vectors.py --type $($*.type) --oracle $(DIFFTEST_OUT)/ours.jsonl \
 	  $(DIFFTEST_DIR)/vectors/$($*.vectors) $(DIFFTEST_OUT)/gen/mutations.json | $<
+
+$(addprefix test-oracle-,$(C_TESTS)): $(DIFFTEST_OUT)/ours.jsonl
+$(DIFFTEST_OUT)/ours.jsonl: FORCE
+	$(MAKE) -C $(DIFFTEST_DIR) out/ours.jsonl
+FORCE:
 
 test: $(addprefix test-,$(C_TESTS))
 test-oracle: $(addprefix test-oracle-,$(C_TESTS))
 
 .PRECIOUS: $(C_OUTPUT_DIR)/%.c $(C_OUTPUT_DIR)/%.h $(C_OUTPUT_DIR)/test_%.exe
-.PHONY: test test-oracle
+.PHONY: test test-oracle FORCE

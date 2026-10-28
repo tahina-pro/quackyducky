@@ -24,12 +24,11 @@ irreducible let asn1_pulse_attr : unit = ()
 (* The subset of schemas currently supported *)
 
 [@@asn1_pulse_attr]
-let supported_terminal (k: asn1_terminal_k) : Tot bool =
+let rec supported_terminal (k: asn1_terminal_k) : Tot bool (decreases k) =
   match k with
-  | ASN1_BOOLEAN -> true
-  | ASN1_OCTETSTRING -> true
   | ASN1_INTEGER bound -> bound < 65536
-  | _ -> false
+  | ASN1_PREFIXED_TERMINAL _ k' -> supported_terminal k'
+  | _ -> true
 
 [@@asn1_pulse_attr]
 let rec supported_content (k: asn1_content_k) : Tot bool (decreases k) =
@@ -96,14 +95,41 @@ fn validate_fail
 
 [@@asn1_pulse_attr]
 inline_for_extraction
-let validate_terminal (k: asn1_terminal_k) (u: squash (supported_terminal k))
+let rec validate_terminal (k: asn1_terminal_k) (u: squash (supported_terminal k))
 : Tot (LPS.validator #(asn1_terminal_t k) #asn1_weak_parser_kind (asn1_terminal_as_parser k))
+  (decreases k)
 = match k with
   | ASN1_BOOLEAN -> Term.validate_boolean
-  | ASN1_OCTETSTRING -> Term.validate_octetstring
   | ASN1_INTEGER bound ->
     SZ.fits_at_least_16 bound;
     Term.validate_integer (SZ.uint_to_t bound)
+  | ASN1_BITSTRING -> Term.validate_bitstring
+  | ASN1_OCTETSTRING -> Term.validate_octetstring
+  | ASN1_UTF8STRING -> Term.validate_utf8
+  | ASN1_PRINTABLESTRING -> Term.validate_printable
+  | ASN1_IA5STRING -> Term.validate_ia5
+  | ASN1_VISIBLESTRING -> Term.validate_visible
+  | ASN1_BMPSTRING -> Term.validate_bmp
+  | ASN1_UNIVERSALSTRING -> Term.validate_universal
+  | ASN1_TELETEXSTRING -> Term.validate_raw_string k
+  | ASN1_NUMERICSTRING -> Term.validate_numeric
+  | ASN1_VIDEOTEXSTRING -> Term.validate_raw_string k
+  | ASN1_GRAPHICSTRING -> Term.validate_raw_string k
+  | ASN1_GENERALSTRING -> Term.validate_raw_string k
+  | ASN1_OBJECTDESCRIPTOR -> Term.validate_raw_string k
+  | ASN1_NULL -> Term.validate_null
+  | ASN1_OID -> ASN1.Pulse.OID.validate_oid
+  | ASN1_RELATIVE_OID -> ASN1.Pulse.OID.validate_relative_oid
+  | ASN1_OID_IRI -> Term.validate_oid_iri
+  | ASN1_RELATIVE_OID_IRI -> Term.validate_relative_oid_iri
+  | ASN1_UTCTIME -> Term.validate_utctime
+  | ASN1_GENERALIZEDTIME -> Term.validate_generalizedtime
+  | ASN1_DATE -> Term.validate_date
+  | ASN1_TIME_OF_DAY -> Term.validate_timeofday
+  | ASN1_DATE_TIME -> Term.validate_datetime
+  | ASN1_PREFIXED_TERMINAL id k' ->
+    LPS.validate_weaken asn1_weak_parser_kind
+      (ILC.validate_asn1_ILC id #(ASN1_TERMINAL k') #(asn1_terminal_as_parser k') (validate_terminal k' ()))
 
 [@@asn1_pulse_attr]
 inline_for_extraction
