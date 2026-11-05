@@ -68,7 +68,8 @@ prefix cleared in `O(n)`); hash hits are confirmed by `canon_cmp`
 scratch (`DUP_CONFIRM_NAIVE`). The 128-bit SipHash key must be secret and
 random; correctness never depends on it, only performance does.
 `dupcheck_hash_mask` (testing only) masks hashes to exhibit the all-collide
-worst case (`hash0-canon` below).
+worst case (`hash0-canon` below); `attack_hash.c` shows it is reachable
+with a known key.
 
 ### Scratch and stack
 
@@ -222,6 +223,86 @@ input size grows x1.05 and x4.02 per level respectively.)
    the confirmation/comparison of one key costs `O(D·|key|)` (visible as the
    slightly super-linear growth of B1, which compares two `d`-deep keys).
 
+## Collision attacks with a known key (`make attack`)
+
+`dupcheck_hash_mask = 0` (the `hash0-*` rows above) is a simulation: it
+models an attacker who makes every key collide. `attack_hash.c` checks
+whether a real attacker can do this when they **know the SipHash key**
+(fixed, leaked, or a caller passing a constant). It crafts real inputs
+against the real hash code and checks each input with that key and with a
+fresh random key. Results are in `attack.csv` (single core, best of 3).
+
+1. **Bucket flooding** (`bucket`, maps of `2^t` integer keys). The table
+   index is only the low `log2(cap) = t+1` bits of the hash, so keys whose
+   hashes share those bits are found by brute force in about `2^t · cap`
+   SipHash calls (`t = 16`: about 2^33 calls, under 3 minutes). Every insertion
+   then probes the whole cluster: `n^2/2` probes, but no confirmations,
+   because the full 64-bit hashes differ.
+
+   | t | keys | wf | sort | hash, known key | hash, secret key | probes known / secret |
+   |---|---|---|---|---|---|---|
+   | 12 | 4096 | 0.08 ms | 0.26 ms | 7.6 ms | 0.13 ms | 8.4M / 1.9k |
+   | 14 | 16384 | 0.33 ms | 1.2 ms | 110 ms | 0.60 ms | 134M / 8.2k |
+   | 16 | 65536 | 1.3 ms | 5.3 ms | **1.83 s** | 2.5 ms | 2.1G / 32k |
+
+2. **Full 64-bit multicollisions through the additive map hash** (`mapsum`).
+   A map key is hashed through `Σ E(k, v) mod 2^64`. With a known key, a
+   4-sum `E(a,x) + E(b,y) = E(a,x') + E(b,y')` with `(x,y) != (x',y')` costs
+   two lists of 2^22 entry hashes plus a merge on the low 22 bits and a
+   birthday match on the high 42 bits (Wagner's generalized birthday,
+   about 4 s per 4-sum). `t` independent 4-sums on disjoint key pairs give
+   `2^t` distinct maps with `2t` entries each and identical sums, hence
+   identical key hashes (a Joux-style multicollision). The crafting cost is
+   linear in `t` and `2^t` keys collide, so this is *exactly* the `hash0`
+   regime: `n^2/2` confirmations, each a full map comparison.
+
+   | t | colliding keys | bytes | wf | sort | hash, known key | hash, secret key | hash-naive, known key |
+   |---|---|---|---|---|---|---|---|
+   | 8 | 256 | 25 KB | 0.08 ms | 0.97 ms | 16 ms | 0.34 ms | 4.5 ms |
+   | 10 | 1024 | 125 KB | 0.39 ms | 8.1 ms | 436 ms | 1.5 ms | 69 ms |
+   | 12 | 4096 | 602 KB | 1.9 ms | 48 ms | **8.08 s** | 7.6 ms | (skipped) |
+
+   Crafting `t = 12` took 50 s on one core, and every further doubling of
+   the key count costs about 4 s more. All variants accept every input (the
+   keys are pairwise distinct), so the attack is pure CPU exhaustion: 600 KB
+   take 8 s, 1000x the secret-key time and 170x the sort variant.
+
+**Conclusions.**
+
+- With a **secret, uniformly random key** neither attack applies. The
+  attacker never sees hash values, and SipHash is a PRF. Any fixed pair of
+  distinct keys then collides on 64 bits with probability about 2^-64, and
+  the probe counts above (about 0.5 per key) match the analysis. The only
+  remaining routes are key recovery or timing side channels across many
+  queries with the same key, and no practical such attack on SipHash is known.
+- With a **known key**, both attacks are cheap. Flooding a 64K-key map to
+  ~1.8 s needs only brute force; the additive map hash allows arbitrarily
+  large full multicollisions at negligible cost. The mask is therefore not
+  artificial: it is what a known-key attacker obtains.
+- The key is a security parameter. The API must not let a constant key look
+  acceptable: draw it from the OS RNG, or make the library own it.
+
+**Hardening that removes the key from the worst case** (not implemented):
+
+1. Replace the open-addressing table by a sort of the `(hash, offset)` pairs
+   on the 64-bit hash (radix sort: `O(n)` time and `16n` bytes, no more scratch
+   than the table). This removes bucket flooding by construction: only full
+   64-bit equalities remain.
+2. Inside each run of equal hashes, sort with `canon_sort` instead of
+   confirming pairwise. The worst case of the hash variant is then the
+   sort variant's worst case, whether or not the key is known (8.08 s ->
+   about 48 ms on `mapsum` 12), and the expected case stays linear.
+3. Optionally, make full collisions expensive even with a known key by
+   hashing a map from its *sorted* entry hashes instead of their sum
+   (`8N` more bytes per nested level). Collisions then need generic 64-bit
+   SipHash collisions (2^32 work per pair, much more for k-way), instead
+   of a 4-sum.
+
+With (1) and (2), the hash variant is never asymptotically worse than the
+sort variant and is linear in expectation with a secret key. The proof
+obligations are unchanged: the sort on hashes needs no correctness argument
+beyond permutation, and the run sort reuses the comparator.
+
 ## Recommendation for verification
 
 - **Default: hash-based check with canonical confirmation.** Linear expected
@@ -231,8 +312,9 @@ input size grows x1.05 and x4.02 per level respectively.)
   commutativity lemma for the map entry sum; SipHash itself can be an
   uninterpreted function), and (b) the canonical comparator decides
   `raw_equiv` on valid items (shared with the sort variant). The API must take
-  the secret key from the caller (or a platform RNG), and document the
-  quadratic worst case if it leaks.
+  the secret key from the caller (or a platform RNG). With a leaked key the
+  current version is quadratic in practice (see the attacks section), so the
+  hardening (1)+(2) above should be part of the verified design.
 - **Deterministic alternative: the sort-based check**, recommended when map
   keys cannot contain maps (e.g. CDDL-constrained protocols such as COSE/CWT
   with integer/text keys): `O(K log n)` worst case, no secret, smallest
@@ -254,6 +336,7 @@ recursion is bounded by `D` but not removed; one machine, one compiler.
 make test        # correctness (1e5 random iterations by default)
 make test-asan   # same under ASan/UBSan
 make bench       # ~2.5 min: bench.csv and bench_fit.md
+make attack      # ~5 min: known-key collision attacks -> attack.csv
 ```
 
 `./out/bench_dupcheck.exe quick` runs reduced sizes (~40 s).

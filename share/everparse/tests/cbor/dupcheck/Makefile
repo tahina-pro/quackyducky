@@ -5,6 +5,7 @@
 #   make test        correctness (differential + random), no-malloc check
 #   make test-asan   same, with -fsanitize=address,undefined
 #   make bench       benchmarks -> bench.csv, then fit.py -> bench_fit.md
+#   make attack      known-key hash collision attacks -> attack.csv
 
 EVERPARSE_HOME ?= $(realpath ../../../../..)
 NONDET_C ?= $(EVERPARSE_HOME)/src/cbor/pulse/nondet/c
@@ -23,7 +24,7 @@ DUP_HDR = dupcheck.h dupcheck_internal.h
 
 all: test bench
 
-.PHONY: all test test-asan bench clean stack-usage
+.PHONY: all test test-asan bench attack clean stack-usage
 
 out/%.o: %.c $(DUP_HDR)
 	@mkdir -p out
@@ -40,6 +41,12 @@ out/test_dupcheck.exe: test_dupcheck.c gen.h $(DUP_OBJ) out/verified_wrap.o
 
 out/bench_dupcheck.exe: bench_dupcheck.c gen.h $(DUP_OBJ) out/verified_wrap.o
 	$(CC) $(CFLAGS_DUP) $(EXTRA) -Wno-unused-function -o $@ $< $(DUP_OBJ) out/verified_wrap.o -lm
+
+out/attack_hash.exe: attack_hash.c gen.h $(DUP_OBJ) out/verified_wrap.o
+	$(CC) $(CFLAGS_DUP) $(EXTRA) -Wno-unused-function -o $@ $< $(DUP_OBJ) out/verified_wrap.o
+
+attack: out/attack_hash.exe
+	./out/attack_hash.exe > attack.csv
 
 test: out/test_dupcheck.exe
 	./out/test_dupcheck.exe
