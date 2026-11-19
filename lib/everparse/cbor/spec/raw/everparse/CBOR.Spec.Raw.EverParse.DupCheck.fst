@@ -354,7 +354,23 @@ let offsets_match_step
     (forall (j: nat) . j < i ==> SZ.v (Seq.index s j) < SZ.v x)
   )
   (ensures offsets_match b s' (i + 1) v)
-= ()
+= assert (forall (j1 j2: nat) . j1 < j2 /\ j2 < i ==> SZ.v (Seq.index s j1) < SZ.v (Seq.index s j2));
+  let entry_prf (j: nat) : Lemma
+    (requires j < i + 1)
+    (ensures entry_of b (Seq.index s' j) == List.Tot.index v j)
+  = if j = i then () else
+      assert (entry_of b (Seq.index s j) == List.Tot.index v j)
+  in
+  let order_prf (j1 j2: nat) : Lemma
+    (requires j1 < j2 /\ j2 < i + 1)
+    (ensures SZ.v (Seq.index s' j1) < SZ.v (Seq.index s' j2))
+  = if j2 = i then
+      assert (SZ.v (Seq.index s j1) < SZ.v x)
+    else
+      assert (SZ.v (Seq.index s j1) < SZ.v (Seq.index s j2))
+  in
+  assert (forall (j: nat) . j < i + 1 ==> entry_of b (Seq.index s' j) == List.Tot.index v j);
+  assert (forall (j1 j2: nat) . j1 < j2 /\ j2 < i + 1 ==> SZ.v (Seq.index s' j1) < SZ.v (Seq.index s' j2))
 
 let offsets_sort_ok
   (b: bytes) (s0: Seq.seq SZ.t) (v: list (raw_data_item & raw_data_item))
@@ -1221,6 +1237,7 @@ let ment_step_ok
     check_dups (List.Tot.append [fst e; snd e] []) == true)))
   (ensures ment_inv b (Seq.upd s i x) (i + 1) o' oh v m q true)
 = let e = List.Tot.index v i in
+  assert (SZ.v x == items_end b oh (2 * i));
   fill_inv_step b s i x v m q;
   items_end_2 b (SZ.v x);
   items_end_add b oh (2 * i) 2;
